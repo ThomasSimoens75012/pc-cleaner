@@ -48,9 +48,7 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
-        'tkinter', 'unittest',
-        'xmlrpc', 'pydoc', 'doctest', 'difflib', 'ftplib',
-        'imaplib', 'mailbox', 'smtplib',
+        'tkinter',
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
