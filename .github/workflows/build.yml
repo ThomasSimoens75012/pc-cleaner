@@ -35,10 +35,17 @@ jobs:
           $proc = Start-Process `
             -FilePath "dist\OpenCleaner\OpenCleaner.exe" `
             -ArgumentList "--smoke-test" `
-            -PassThru -Wait -NoNewWindow `
+            -PassThru -NoNewWindow `
             -RedirectStandardOutput smoke_stdout.txt `
             -RedirectStandardError  smoke_stderr.txt
-          Get-Content smoke_stdout.txt, smoke_stderr.txt
+          $finished = $proc.WaitForExit(20000)   # timeout 20 secondes
+          Get-Content smoke_stdout.txt -ErrorAction SilentlyContinue
+          Get-Content smoke_stderr.txt -ErrorAction SilentlyContinue
+          if (-not $finished) {
+            $proc | Stop-Process -Force
+            Write-Error "Smoke test timeout — le process n'a pas terminé en 20s"
+            exit 1
+          }
           if ($proc.ExitCode -ne 0) {
             Write-Error "Smoke test échoué (exit code $($proc.ExitCode))"
             exit 1

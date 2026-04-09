@@ -708,6 +708,7 @@ def _smoke_test():
     import socket as _sock
     import urllib.request as _ur
     import time as _t
+    import sys as _sys
 
     with _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM) as s:
         s.bind(('127.0.0.1', 0))
@@ -723,13 +724,13 @@ def _smoke_test():
         try:
             code = _ur.urlopen(f'http://127.0.0.1:{port}/', timeout=1).getcode()
             if code == 200:
-                print(f"[smoke-test] OK — Flask répond 200 sur le port {port}")
-                os._exit(0)
+                print(f"[smoke-test] OK — Flask répond 200 sur le port {port}", flush=True)
+                _sys.exit(0)
         except Exception:
             _t.sleep(0.2)
 
-    print("[smoke-test] ÉCHEC — Flask n'a pas répondu dans les délais")
-    os._exit(1)
+    print("[smoke-test] ÉCHEC — Flask n'a pas répondu dans les délais", flush=True)
+    _sys.exit(1)
 
 
 if __name__ == "__main__":
