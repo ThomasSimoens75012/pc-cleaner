@@ -1813,6 +1813,65 @@ def disable_hibernation():
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Analyse intelligente de l'espace disque
+# ──────────────────────────────────────────────────────────────────────────────
+
+_DISK_SKIP = {"$Recycle.Bin", "System Volume Information", "Recovery",
+              "Config.Msi", "MSOCache"}
+
+
+def scan_disk_level(folder, on_item=None):
+    """
+    Scanne les enfants directs de folder, calcule leur taille en parallèle.
+    Appelle on_item({name, path, size, size_fmt, is_dir}) dès qu'un résultat est prêt.
+    Retourne la liste complète triée par taille décroissante.
+    """
+    folder = Path(folder)
+    entries = []
+    try:
+        for entry in os.scandir(folder):
+            if entry.name in _DISK_SKIP:
+                continue
+            try:
+                is_dir = entry.is_dir(follow_symlinks=False)
+                # Ignore les points de jonction (Windows.old, etc. peuvent être des junctions)
+                if entry.stat(follow_symlinks=False).st_file_attributes & 0x400:
+                    continue
+                entries.append((entry.name, entry.path, is_dir))
+            except (OSError, PermissionError):
+                pass
+    except (OSError, PermissionError):
+        pass
+
+    results = []
+
+    def _measure(name, path, is_dir):
+        if is_dir:
+            size = get_folder_size(path)
+        else:
+            try:
+                size = Path(path).stat().st_size
+            except OSError:
+                size = 0
+        item = {"name": name, "path": path, "size": size,
+                "size_fmt": fmt_size(size), "is_dir": is_dir}
+        if on_item:
+            on_item(item)
+        return item
+
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        futures = {ex.submit(_measure, n, p, d): (n, p, d) for n, p, d in entries}
+        for f in as_completed(futures):
+            try:
+                results.append(f.result())
+            except Exception:
+                pass
+
+    results.sort(key=lambda x: x["size"], reverse=True)
+    return results
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Windows.old
 # ──────────────────────────────────────────────────────────────────────────────
 

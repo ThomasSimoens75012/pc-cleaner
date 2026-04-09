@@ -31,6 +31,7 @@ from cleaner import (
     get_software_updates,
     get_privacy_items, clean_privacy_items,
     get_hibernation_info, disable_hibernation,
+    scan_disk_level,
     get_windows_old_info, delete_windows_old,
     find_old_installers, delete_installer_files,
     is_admin,
@@ -430,6 +431,46 @@ def api_hibernation_disable():
         return jsonify({"error": "Droits administrateur requis."}), 403
     ok, err = disable_hibernation()
     return jsonify({"ok": ok, "error": err if not ok else None})
+
+
+@app.route("/api/disk-analysis", methods=["POST"])
+def api_disk_analysis():
+    data   = request.get_json(force=True) or {}
+    folder = data.get("folder", "C:\\")
+    if not Path(folder).exists():
+        return jsonify({"error": "Dossier introuvable."}), 400
+    job_id = _create_job()
+    threading.Thread(target=_run_disk_analysis, args=(job_id, folder), daemon=True).start()
+    return jsonify({"job_id": job_id})
+
+
+def _run_disk_analysis(job_id, folder):
+    with JOBS_LOCK:
+        job = JOBS.get(job_id)
+    if not job:
+        return
+    q = job["queue"]
+    q.put({"type": "start", "msg": f"Analyse de {folder}…"})
+    results = []
+
+    def on_item(item):
+        results.append(item)
+        q.put({"type": "item", "item": item})
+
+    try:
+        scan_disk_level(folder, on_item=on_item)
+        total = sum(r["size"] for r in results)
+        # Recalcule les pourcentages maintenant qu'on a le total
+        for r in results:
+            r["pct"] = round(r["size"] / total * 100, 1) if total else 0
+        q.put({"type": "result", "items": results,
+               "total": total, "total_fmt": fmt_size(total), "folder": folder})
+        q.put({"type": "done", "msg": f"Analyse terminée — {fmt_size(total)} analysés.",
+               "freed_bytes": 0, "freed_fmt": "—"})
+    except Exception as e:
+        q.put({"type": "done", "msg": f"Erreur : {e}", "freed_bytes": 0, "freed_fmt": "—"})
+    finally:
+        job["done"] = True
 
 
 @app.route("/api/windows-old")

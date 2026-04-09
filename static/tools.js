@@ -1015,6 +1015,161 @@ async function deleteSelectedLargeFiles() {
   );
 }
 
+// ── Analyse de l'espace disque ────────────────────────────────────────────────
+
+let _daHistory   = [];   // pile de navigation : [{folder, items, total}]
+let _daItems     = [];   // résultats courants
+let _daTotal     = 0;
+let _daEsActive  = null;
+
+function startDiskAnalysis(folder) {
+  const inputEl = document.getElementById("da-folder");
+  folder = folder || inputEl.value.trim() || "C:\\";
+  inputEl.value = folder;
+  _runDiskAnalysis(folder, true);
+}
+
+function _runDiskAnalysis(folder, resetHistory) {
+  if (_daEsActive) { _daEsActive.close(); _daEsActive = null; }
+  if (resetHistory) _daHistory = [];
+
+  const resultEl = document.getElementById("da-results");
+  const btnEl    = document.getElementById("btn-scan-da");
+  resultEl.innerHTML = _daSkeleton();
+  _btnScan(btnEl, "Analyse…");
+  _daItems = [];
+  _daTotal = 0;
+
+  _updateBreadcrumb(folder);
+
+  fetch("/api/disk-analysis", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ folder }),
+  })
+  .then(r => r.json())
+  .then(({ job_id }) => {
+    const es = new EventSource(`/api/stream/${job_id}`);
+    _daEsActive = es;
+
+    es.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+
+      if (msg.type === "item") {
+        _daItems.push(msg.item);
+        _daTotal += msg.item.size;
+        _renderDiskItems(_daItems, _daTotal, folder);
+      }
+      if (msg.type === "result") {
+        _daItems  = msg.items;
+        _daTotal  = msg.total;
+        _renderDiskItems(_daItems, _daTotal, folder);
+        _btnDone(btnEl, "Analyse terminée", true);
+        es.close(); _daEsActive = null;
+      }
+      if (msg.type === "done" && !msg.items) {
+        _btnDone(btnEl, "Terminé", true);
+        es.close(); _daEsActive = null;
+      }
+    };
+    es.onerror = () => {
+      es.close(); _daEsActive = null; _btnReset(btnEl);
+    };
+  })
+  .catch(err => {
+    resultEl.innerHTML = `<div class="tool-error">Erreur : ${err.message}</div>`;
+    _btnReset(btnEl);
+  });
+}
+
+function _daSkeleton() {
+  return Array.from({length: 6}, (_, i) => `
+    <div class="da-loading">
+      <div class="da-icon">📁</div>
+      <div class="da-name" style="flex:1"><div class="skeleton-box" style="width:${35+i*8}%;height:12px"></div></div>
+      <div class="da-bar-wrap"><div class="da-bar" style="width:100%"></div></div>
+      <div class="da-size"><div class="skeleton-box" style="width:45px;height:11px"></div></div>
+    </div>`).join("");
+}
+
+function _renderDiskItems(items, total, folder) {
+  const el = document.getElementById("da-results");
+  if (!items.length) {
+    el.innerHTML = `<div class="tool-empty">Dossier vide ou inaccessible.</div>`;
+    return;
+  }
+
+  const maxSize = items[0]?.size || 1;
+  el.innerHTML = "";
+
+  items.forEach(item => {
+    const row = document.createElement("div");
+    row.className = "da-row" + (item.is_dir ? " da-dir" : "");
+
+    const icon = document.createElement("div");
+    icon.className = "da-icon";
+    icon.textContent = item.is_dir ? "📁" : "📄";
+
+    const name = document.createElement("div");
+    name.className = "da-name";
+    name.textContent = item.name;
+
+    const barWrap = document.createElement("div"); barWrap.className = "da-bar-wrap";
+    const bar     = document.createElement("div"); bar.className = "da-bar";
+    bar.style.width = maxSize > 0 ? (item.size / maxSize * 100) + "%" : "0%";
+    barWrap.appendChild(bar);
+
+    const sizeEl = document.createElement("div"); sizeEl.className = "da-size"; sizeEl.textContent = item.size_fmt;
+    const pct    = total > 0 ? (item.size / total * 100).toFixed(1) : 0;
+    const pctEl  = document.createElement("div"); pctEl.className = "da-pct"; pctEl.textContent = pct + "%";
+
+    row.append(icon, name, barWrap, sizeEl, pctEl);
+
+    if (item.is_dir) {
+      row.addEventListener("click", () => {
+        _daHistory.push({ folder, items: [..._daItems], total: _daTotal });
+        document.getElementById("da-folder").value = item.path;
+        _runDiskAnalysis(item.path, false);
+      });
+    }
+
+    el.appendChild(row);
+  });
+}
+
+function _updateBreadcrumb(folder) {
+  const el = document.getElementById("da-breadcrumb");
+  if (_daHistory.length === 0) { el.style.display = "none"; return; }
+
+  el.style.display = "block";
+  el.innerHTML = "";
+
+  // Bouton retour
+  const back = document.createElement("span");
+  back.style.cssText = "cursor:pointer;color:var(--accent);margin-right:8px";
+  back.textContent = "← Retour";
+  back.addEventListener("click", () => {
+    const prev = _daHistory.pop();
+    if (!prev) return;
+    document.getElementById("da-folder").value = prev.folder;
+    _daItems = prev.items;
+    _daTotal = prev.total;
+    _renderDiskItems(_daItems, _daTotal, prev.folder);
+    _updateBreadcrumb(prev.folder);
+  });
+  el.appendChild(back);
+
+  // Chemin complet
+  const parts = folder.replace(/\\/g, "/").split("/").filter(Boolean);
+  parts.forEach((part, i) => {
+    const sep = document.createTextNode(i === 0 ? "" : " › ");
+    el.appendChild(sep);
+    const span = document.createElement("span");
+    span.textContent = part;
+    span.style.color = i === parts.length - 1 ? "var(--text)" : "var(--text-dim)";
+    el.appendChild(span);
+  });
+}
+
 // ── Windows.old ──────────────────────────────────────────────────────────────
 
 async function loadWindowsOld() {

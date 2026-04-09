@@ -520,6 +520,21 @@
     .dupe-path { font-size: 12px; color: var(--text-mid); word-break: break-all; cursor: pointer; }
     .dupe-size { font-weight: 600; color: var(--text); margin-right: 8px; }
 
+    /* Analyse disque */
+    .da-row { display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid var(--border); cursor:default; transition:background .15s; }
+    .da-row:last-child { border-bottom:none; }
+    .da-row.da-dir { cursor:pointer; }
+    .da-row.da-dir:hover { background:var(--hover); }
+    .da-row.da-dir:hover .da-name { color:var(--accent); }
+    .da-icon { font-size:16px; width:20px; text-align:center; flex-shrink:0; }
+    .da-name { font-size:13px; font-weight:600; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .da-bar-wrap { width:160px; flex-shrink:0; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+    .da-bar { height:100%; background:var(--accent); border-radius:3px; transition:width .4s ease; }
+    .da-size { font-size:12px; color:var(--text-dim); width:60px; text-align:right; flex-shrink:0; }
+    .da-pct  { font-size:11px; color:var(--text-dim); width:38px; text-align:right; flex-shrink:0; }
+    .da-loading { display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid var(--border); opacity:.5; }
+    .da-loading .da-bar { animation:shimmer 1.4s infinite; background:linear-gradient(90deg,var(--border) 25%,var(--bg3,#ddd) 50%,var(--border) 75%); background-size:200%; }
+
     /* Planificateur */
     .sched-grid { display: flex; flex-direction: column; gap: 16px; }
     .sched-row  { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
@@ -871,6 +886,24 @@
 <div id="tab-outils" class="tab-panel">
 <div class="tools-main">
 <div class="tools-section">
+
+  <!-- Analyse de l'espace disque -->
+  <div>
+    <div class="section-head">
+      <div>
+        <div class="tool-section-title">Analyse de l'espace disque</div>
+        <div class="tool-section-sub">Visualisez ce qui occupe de la place sur votre disque</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body" style="display:flex;gap:10px;align-items:center">
+        <input class="dupe-folder-input" id="da-folder" value="C:\" style="flex:1">
+        <button class="btn-primary" id="btn-scan-da" onclick="startDiskAnalysis()" style="min-width:auto;flex:none;padding:9px 18px">Analyser</button>
+      </div>
+      <div id="da-breadcrumb" style="padding:0 16px 8px;font-size:12px;color:var(--text-dim);display:none"></div>
+      <div id="da-results" style="border-top:1px solid var(--border)"></div>
+    </div>
+  </div>
 
   <!-- Mises à jour logicielles -->
   <div>
