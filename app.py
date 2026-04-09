@@ -3,6 +3,7 @@ app.py — PC Cleaner (PyQt6 + Flask interne)
 """
 
 import json
+import os
 import queue
 import subprocess
 import threading
@@ -324,6 +325,7 @@ def api_relaunch_admin():
     if is_admin():
         return jsonify({"ok": True, "already": True})
     _relaunch_as_admin()
+    threading.Timer(0.6, lambda: os._exit(0)).start()
     return jsonify({"ok": True})
 
 

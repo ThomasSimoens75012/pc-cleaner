@@ -341,6 +341,18 @@
     .badge-safe  { background: var(--green-bg); color: var(--green); }
     .badge-admin { background: var(--amber-bg); color: var(--amber); }
 
+    /* Task verrouillée sans admin */
+    .task-item.locked { opacity: .45; cursor: not-allowed; pointer-events: none; }
+    .task-item.locked .toggle-track { background: var(--border2) !important; }
+
+    /* Section outil verrouillée */
+    .tool-section-locked .tool-section-title::after {
+      content: " 🔒"; font-size: 13px;
+    }
+    .tool-section-locked .btn-primary {
+      opacity: .5; cursor: not-allowed; pointer-events: none;
+    }
+
     .size-wrap { text-align: right; flex-shrink: 0; min-width: 64px; }
     .size-val  { font-size: 13px; font-weight: 700; transition: color .3s; }
     .size-sub  { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
@@ -930,7 +942,7 @@
   </div>
 
   <!-- Registre -->
-  <div>
+  <div{% if not is_admin %} class="tool-section-locked"{% endif %}>
     <div class="section-head">
       <div>
         <div class="tool-section-title">Nettoyage du registre</div>

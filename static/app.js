@@ -85,10 +85,11 @@ function renderTasks() {
     grpDiv.className = meta.grpCls;
 
     tasks.forEach(t => {
+      const locked = !window.IS_ADMIN && t.admin;
       const item = document.createElement("div");
-      item.className = "task-item" + (t.checked ? " on" : "");
+      item.className = "task-item" + (t.checked && !locked ? " on" : "") + (locked ? " locked" : "");
       item.id = "task-row-" + t.id;
-      item.onclick = () => toggleTask(t.id);
+      if (!locked) item.onclick = () => toggleTask(t.id);
 
       const badge = t.admin
         ? `<span class="badge badge-admin">Admin requis</span>`
@@ -123,7 +124,7 @@ function toggleTask(id) {
   if (t) { t.checked = !t.checked; renderTasks(); saveCheckedState(); }
 }
 
-function checkAll()   { if (!cleaning) { TASKS.forEach(t => t.checked = true);  renderTasks(); saveCheckedState(); } }
+function checkAll()   { if (!cleaning) { TASKS.forEach(t => { if (window.IS_ADMIN || !t.admin) t.checked = true;  }); renderTasks(); saveCheckedState(); } }
 function uncheckAll() { if (!cleaning) { TASKS.forEach(t => t.checked = false); renderTasks(); saveCheckedState(); } }
 
 function sizeColorClass(bytes) {
@@ -403,7 +404,7 @@ function startClean() {
 }
 
 async function _doClean() {
-  const selected = TASKS.filter(t => t.checked).map(t => t.id);
+  const selected = TASKS.filter(t => t.checked && (window.IS_ADMIN || !t.admin)).map(t => t.id);
   if (!selected.length) return;
 
   cleaning = true;
