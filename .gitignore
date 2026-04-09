@@ -16,6 +16,11 @@ mockup_animations.html
 .pytest_cache/
 tests/__pycache__/
 
+# Build PyInstaller
+dist/
+build/
+installer_output/
+
 # OS
 .DS_Store
 Thumbs.db

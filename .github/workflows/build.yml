@@ -1,0 +1,74 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'   # déclenché sur : git tag v1.0.0 && git push --tags
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write   # nécessaire pour créer la Release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: pyinstaller opencleaner.spec
+
+      - name: Install Inno Setup
+        run: |
+          choco install innosetup --no-progress -y
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.TrimStart('v')
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          # Met à jour la version dans le .iss
+          (Get-Content installer.iss) -replace '#define AppVersion\s+"[^"]*"', "#define AppVersion `"$version`"" |
+            Set-Content installer.iss
+
+      - name: Build installer with Inno Setup
+        run: |
+          New-Item -ItemType Directory -Force -Path installer_output
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "OpenCleaner v${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## OpenCleaner v${{ steps.version.outputs.VERSION }}
+
+            ### Installation
+            1. Télécharger `OpenCleanerSetup-v${{ steps.version.outputs.VERSION }}.exe`
+            2. Double-cliquer et suivre l'assistant
+            3. OpenCleaner apparaît dans le Menu Démarrer
+
+            ### Prérequis
+            - Windows 10 / 11 (64 bits)
+            - Aucune dépendance — tout est inclus
+
+            ### Notes
+            - Certaines fonctionnalités (registre, points de restauration) nécessitent les droits administrateur
+            - L'app propose elle-même une élévation à la demande
+          files: |
+            installer_output/OpenCleanerSetup-v${{ steps.version.outputs.VERSION }}.exe
+          draft: false
+          prerelease: false
