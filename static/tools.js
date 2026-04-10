@@ -61,40 +61,70 @@ function _btnScan(btn, label = "Analyse…") {
   btn.innerHTML = `<span class="btn-icon">⟳</span><span>${label}</span>`;
   btn.classList.add("btn-running");
   btn.disabled = true;
+  _scanSpinnerShow(btn);
 }
 
-// success=true → vert (rien à faire), success=false → rouge (erreur réelle),
-// success="found" → accent bleu (résultats trouvés, état permanent jusqu'au prochain scan)
-function _btnDone(btn, label, success = true) {
+function _scanSpinnerShow(btn) {
+  const targetId = btn?.dataset?.logTarget;
+  if (!targetId) return;
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  el.querySelectorAll(".scan-spinner-row").forEach(n => n.remove());
+  const row = document.createElement("div");
+  row.className = "scan-spinner-row";
+  row.innerHTML = `<span class="scan-spinner"></span><span>Analyse en cours…</span>`;
+  el.prepend(row);
+}
+
+function _scanSpinnerHide(btn) {
+  const targetId = btn?.dataset?.logTarget;
+  if (!targetId) return;
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  el.querySelectorAll(".scan-spinner-row").forEach(n => n.remove());
+}
+
+function _applyAdminLock(row, cb, needsAdmin) {
+  if (!needsAdmin) return;
+  row.classList.add("row-locked");
+  cb.disabled = true;
+  cb.checked = false;
+  const badge = document.createElement("span");
+  badge.className = "admin-badge";
+  badge.textContent = "Admin requis";
+  badge.title = "Relancez l'application en mode administrateur pour pouvoir supprimer cet élément.";
+  row.appendChild(badge);
+}
+
+function _logAppend(logId, msg) {
+  const logEl = document.getElementById(logId);
+  if (!logEl) return;
+  const d = document.createElement("div");
+  d.className = "log-entry";
+  d.innerHTML = `<span class="log-ts">${new Date().toLocaleTimeString("fr-FR")}</span><span class="log-msg">${msg}</span>`;
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function _btnDone(btn, label) {
   if (!btn) return;
   btn.disabled = false;
   btn.classList.remove("btn-running");
-  if (success === true) {
-    btn.innerHTML = `<span class="btn-icon">✓</span><span>${label}</span>`;
-    btn.classList.add("btn-success");
-    setTimeout(() => {
-      btn.innerHTML = btn.dataset.idle || label;
-      btn.classList.remove("btn-success");
-    }, 2500);
-  } else if (success === "found") {
-    // Items trouvés : affichage permanent en accent jusqu'au prochain scan
-    btn.innerHTML = `<span class="btn-icon">✓</span><span>${label}</span>`;
-    btn.classList.add("btn-found");
-  } else {
-    btn.innerHTML = `<span class="btn-icon">✕</span><span>${label}</span>`;
-    btn.classList.add("btn-error");
-    setTimeout(() => {
-      btn.innerHTML = btn.dataset.idle || label;
-      btn.classList.remove("btn-error");
-    }, 2500);
-  }
+  _scanSpinnerHide(btn);
+  btn.innerHTML = `<span class="btn-icon">✓</span><span>${label}</span>`;
+  btn.classList.add("btn-success");
+  setTimeout(() => {
+    btn.innerHTML = btn.dataset.idle || label;
+    btn.classList.remove("btn-success");
+  }, 2500);
 }
 
 function _btnReset(btn) {
   if (!btn) return;
   btn.disabled = false;
-  btn.classList.remove("btn-running", "btn-success", "btn-error", "btn-found");
+  btn.classList.remove("btn-running", "btn-success");
   if (btn.dataset.idle) btn.innerHTML = btn.dataset.idle;
+  _scanSpinnerHide(btn);
 }
 
 // ── Skeleton loader ───────────────────────────────────────────────────────────
@@ -126,7 +156,7 @@ function _makeSelHeader(el, { countText, deleteId, deleteLabel = "Supprimer la s
   if (!noSelAll) {
     const selAll = document.createElement("input"); selAll.type = "checkbox"; selAll.checked = true;
     selAll.className = "sel-all"; selAll.title = "Tout sélectionner / désélectionner";
-    selAll.addEventListener("change", () => el.querySelectorAll("input[type=checkbox]").forEach(cb => { cb.checked = selAll.checked; }));
+    selAll.addEventListener("change", () => el.querySelectorAll("input[type=checkbox]").forEach(cb => { if (!cb.disabled) cb.checked = selAll.checked; }));
     left.appendChild(selAll);
   }
 
@@ -162,8 +192,6 @@ function initTools() {
   loadExtensions();
   loadRestorePoints();
   loadPrivacy();
-  loadHibernation();
-  loadWindowsOld();
   _setDefaultInstallerFolder();
 }
 
@@ -186,13 +214,12 @@ async function loadStartup() {
 function renderStartup() {
   const el = document.getElementById("startup-list");
   if (!_startupEntries.length) {
-    el.innerHTML = `<div class="tool-empty">Aucun programme au démarrage détecté.</div>`;
+    el.innerHTML = `<div class="tool-empty">Aucun résultat.</div>`;
     return;
   }
-  const sorted = [..._startupEntries].sort((a, b) => {
-    if (a.enabled !== b.enabled) return b.enabled - a.enabled;
-    return a.name.localeCompare(b.name);
-  });
+  const sorted = [..._startupEntries].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+  );
   el.innerHTML = "";
   sorted.forEach(e => {
     const row = document.createElement("div");
@@ -268,7 +295,7 @@ function sortApps(key) {
 function renderApps(apps) {
   const el = document.getElementById("apps-list");
   if (!apps.length) {
-    el.innerHTML = `<div class="tool-empty">Aucune application trouvée.</div>`;
+    el.innerHTML = `<div class="tool-empty">Aucun résultat.</div>`;
     return;
   }
   el.innerHTML = "";
@@ -388,24 +415,17 @@ let duplicateGroups = [];
 async function startDuplicateScan() {
   const folder  = document.getElementById("dupe-folder").value.trim();
   const minSize = parseInt(document.getElementById("dupe-minsize").value) || 100;
-  if (!folder) { showToast("Dossier requis", "Entrez un chemin de dossier à analyser.", "warn"); return; }
+  if (!folder) { showToast("Dossier requis", "Entrez un dossier à analyser.", "warn"); return; }
 
-  const logEl    = document.getElementById("dupe-log");
   const resultEl = document.getElementById("dupe-results");
   const btnEl    = document.getElementById("btn-scan-dupes");
 
-  logEl.innerHTML = "";
+  document.getElementById("dupe-log").innerHTML = "";
   resultEl.innerHTML = "";
   duplicateGroups = [];
   _btnScan(btnEl, "Analyse…");
 
-  const dupeLog = (msg) => {
-    const d = document.createElement("div");
-    d.className = "log-entry";
-    d.innerHTML = `<span class="log-ts">${new Date().toLocaleTimeString("fr-FR")}</span><span class="log-msg">${msg}</span>`;
-    logEl.appendChild(d);
-    logEl.scrollTop = logEl.scrollHeight;
-  };
+  const dupeLog = (msg) => _logAppend("dupe-log", msg);
 
   try {
     const res  = await fetch("/api/duplicates", {
@@ -424,8 +444,7 @@ async function startDuplicateScan() {
       if (item.type === "result") renderDuplicates(item.groups, item.total_fmt);
       if (item.type === "done") {
         es.close(); _removeCancelBtn("dupes");
-        const n = duplicateGroups.length;
-        _btnDone(btnEl, n > 0 ? `${n} groupe(s)` : "Aucun doublon ✓", n === 0 ? true : "found");
+        _btnReset(btnEl);
       }
     };
     es.onerror = () => { es.close(); _removeCancelBtn("dupes"); _btnReset(btnEl); };
@@ -446,7 +465,8 @@ function renderDuplicates(groups, totalFmt) {
   duplicateGroups = sorted;
   const el = document.getElementById("dupe-results");
   if (!sorted.length) {
-    el.innerHTML = `<div class="tool-empty">Aucun doublon trouvé.</div>`;
+    el.innerHTML = "";
+    _logAppend("dupe-log", "Aucun résultat.");
     return;
   }
 
@@ -511,11 +531,13 @@ function renderDuplicates(groups, totalFmt) {
             renderRows();
           });
           row.append(cb, lbl, keepBtn);
+          _applyAdminLock(row, cb, f.needs_admin);
           group.appendChild(row);
           return;
         }
 
         row.append(cb, lbl);
+        _applyAdminLock(row, cb, f.needs_admin);
         group.appendChild(row);
       });
     };
@@ -526,14 +548,14 @@ function renderDuplicates(groups, totalFmt) {
 }
 
 async function deleteSelectedDupes() {
-  const checked = [...document.querySelectorAll("#dupe-results input[type=checkbox]:checked")];
-  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un fichier à supprimer.", "warn"); return; }
+  const checked = [...document.querySelectorAll("#dupe-results input[type=checkbox]:checked:not(.sel-all)")];
+  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un élément.", "warn"); return; }
 
   // Vérification de sécurité : s'assurer qu'au moins un fichier de chaque groupe est conservé
   const groups = document.querySelectorAll(".dupe-group");
   for (const group of groups) {
     const allInGroup    = group.querySelectorAll("input[type=checkbox]");
-    const checkedInGroup = group.querySelectorAll("input[type=checkbox]:checked");
+    const checkedInGroup = group.querySelectorAll("input[type=checkbox]:checked:not(.sel-all)");
     if (allInGroup.length > 0 && checkedInGroup.length >= allInGroup.length) {
       showToast("Action impossible", "Vous ne pouvez pas supprimer toutes les copies d'un groupe.", "warn");
       return;
@@ -543,7 +565,7 @@ async function deleteSelectedDupes() {
   const paths = checked.map(c => c.dataset.path);
   const btn = document.getElementById("btn-delete-dupes");
   showConfirm(
-    `Supprimer ${paths.length} fichier(s) ?`,
+    `Supprimer ${paths.length} élément(s) ?`,
     "Cette action est irréversible. Les fichiers cochés seront définitivement supprimés du disque.",
     async () => {
       if (btn) { btn.disabled = true; btn.textContent = "Suppression…"; }
@@ -557,9 +579,9 @@ async function deleteSelectedDupes() {
         if (!res.ok) throw new Error(data.error || "Erreur serveur");
         const errCount = (data.errors || []).length;
         if (errCount > 0) {
-          showToast("Suppression partielle", `${data.freed_fmt} libérés — ${errCount} fichier(s) inaccessible(s).`, "warn");
+          showToast("Suppression partielle", `${paths.length - errCount} supprimé(s) — ${data.freed_fmt} libérés — ${errCount} échec(s).`, "warn");
         } else {
-          showToast("Doublons supprimés", data.freed_fmt + " libérés.", "success");
+          showToast("Suppression terminée", `${paths.length} supprimé(s) — ${data.freed_fmt} libérés.`, "success");
         }
         checked.forEach(c => c.closest(".dupe-row").remove());
         if (btn) { btn.disabled = false; btn.textContent = "Supprimer la sélection"; }
@@ -588,22 +610,15 @@ function startRegistryScan() {
 }
 
 async function _startRegistryScan() {
-  const logEl    = document.getElementById("reg-log");
   const resultEl = document.getElementById("reg-results");
   const btnEl    = document.getElementById("btn-scan-reg");
 
-  logEl.innerHTML = "";
+  document.getElementById("reg-log").innerHTML = "";
   resultEl.innerHTML = "";
   registryIssues = [];
   _btnScan(btnEl, "Analyse…");
 
-  const regLog = (msg) => {
-    const d = document.createElement("div");
-    d.className = "log-entry";
-    d.innerHTML = `<span class="log-ts">${new Date().toLocaleTimeString("fr-FR")}</span><span class="log-msg">${msg}</span>`;
-    logEl.appendChild(d);
-    logEl.scrollTop = logEl.scrollHeight;
-  };
+  const regLog = (msg) => _logAppend("reg-log", msg);
 
   try {
     const res = await fetch("/api/registry/scan", { method: "POST" });
@@ -619,8 +634,7 @@ async function _startRegistryScan() {
       if (item.type === "done") {
         regLog(item.msg);
         es.close(); _removeCancelBtn("reg");
-        const n = registryIssues.length;
-        _btnDone(btnEl, n > 0 ? `${n} problème(s)` : "Registre propre ✓", n === 0 ? true : "found");
+        _btnReset(btnEl);
       }
     };
     es.onerror = () => { es.close(); _removeCancelBtn("reg"); _btnReset(btnEl); };
@@ -635,7 +649,8 @@ function renderRegistryIssues(issues) {
   const el = document.getElementById("reg-results");
 
   if (!issues.length) {
-    el.innerHTML = `<div class="tool-empty">Aucun problème de registre détecté.</div>`;
+    el.innerHTML = "";
+    _logAppend("reg-log", "Aucun résultat.");
     return;
   }
 
@@ -687,12 +702,12 @@ function renderRegistryIssues(issues) {
 }
 
 async function fixSelectedRegistry() {
-  const checked = [...document.querySelectorAll("#reg-results input[type=checkbox]:checked")];
-  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins une entrée à corriger.", "warn"); return; }
+  const checked = [...document.querySelectorAll("#reg-results input[type=checkbox]:checked:not(.sel-all)")];
+  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un élément.", "warn"); return; }
 
   const selected = checked.map(c => registryIssues[parseInt(c.dataset.idx)]).filter(Boolean);
   showConfirm(
-    `Corriger ${selected.length} entrée(s) du registre ?`,
+    `Supprimer ${selected.length} élément(s) ?`,
     "Les références sélectionnées seront supprimées du registre Windows. Cette action est sans risque pour votre système.",
     () => _doFixRegistry(selected, checked)
   );
@@ -700,16 +715,9 @@ async function fixSelectedRegistry() {
 
 async function _doFixRegistry(selected, checked) {
   const btnEl  = document.getElementById("btn-fix-reg");
-  const logEl  = document.getElementById("reg-log");
   _btnScan(btnEl, "Correction…");
 
-  const regLog = (msg) => {
-    const d = document.createElement("div");
-    d.className = "log-entry";
-    d.innerHTML = `<span class="log-ts">${new Date().toLocaleTimeString("fr-FR")}</span><span class="log-msg">${msg}</span>`;
-    logEl.appendChild(d);
-    logEl.scrollTop = logEl.scrollHeight;
-  };
+  const regLog = (msg) => _logAppend("reg-log", msg);
 
   try {
     const res = await fetch("/api/registry/fix", {
@@ -727,8 +735,8 @@ async function _doFixRegistry(selected, checked) {
         regLog(item.msg);
         es.close();
         checked.forEach(c => c.closest(".dupe-row").remove());
-        _btnDone(btnEl, "Corrigé ✓", true);
-        showToast("Registre nettoyé", item.msg, "success");
+        _btnDone(btnEl, "Terminé");
+        showToast("Suppression terminée", item.msg, "success");
       }
     };
     es.onerror = () => { es.close(); _btnReset(btnEl); };
@@ -758,14 +766,14 @@ function renderExtensions(data) {
 
   const browsers = Object.entries(data).filter(([, exts]) => exts.length > 0);
   if (!browsers.length) {
-    el.innerHTML = `<div class="tool-empty">Aucune extension de navigateur trouvée.</div>`;
+    el.innerHTML = `<div class="tool-empty">Aucun résultat.</div>`;
     return;
   }
 
   // Logos navigateurs — SVG monochromes (Lucide-style)
   const BROWSER_META = {
     "Chrome":        { label: "Chrome",  svg: '<svg class="icon icon-lg" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="21.17" y1="8" x2="12" y2="8"/><line x1="3.95" y1="6.06" x2="8.54" y2="14"/><line x1="10.88" y1="21.94" x2="15.46" y2="14"/></svg>' },
-    "Edge":          { label: "Edge",    svg: '<svg class="icon icon-lg" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>' },
+    "Edge":          { label: "Edge",    svg: '<svg class="icon icon-lg" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><circle cx="12" cy="12" r="10"/><path d="M6 14c2-3 4-3 6 0s4 3 6 0"/></svg>' },
     "Brave-Browser": { label: "Brave",   svg: '<svg class="icon icon-lg" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' },
     "Firefox":       { label: "Firefox", svg: '<svg class="icon icon-lg" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>' },
   };
@@ -839,17 +847,19 @@ async function removeExtension(path, name, btn) {
 async function loadUpdates() {
   const el    = document.getElementById("updates-container");
   const btnEl = document.getElementById("btn-check-updates");
-  el.innerHTML = _skeleton(4, true);
-  _btnScan(btnEl, "Vérification…");
+  document.getElementById("updates-log").innerHTML = "";
+  el.innerHTML = "";
+  _btnScan(btnEl, "Analyse…");
 
   try {
     const res  = await fetch("/api/updates");
     const data = await res.json();
     const count = (data.updates || []).length;
-    _btnDone(btnEl, count > 0 ? `${count} mise(s) à jour` : "À jour ✓", count === 0 ? true : "found");
+    _btnReset(btnEl);
     renderUpdates(data);
   } catch (e) {
-    el.innerHTML = `<div class="tool-error">Erreur de chargement.</div>`;
+    el.innerHTML = "";
+    _logAppend("updates-log", "Erreur de chargement.");
     _btnReset(btnEl);
   }
 }
@@ -857,12 +867,14 @@ async function loadUpdates() {
 function renderUpdates(data) {
   const el = document.getElementById("updates-container");
   if (data.error) {
-    el.innerHTML = `<div class="tool-error">${data.error}</div>`;
+    el.innerHTML = "";
+    _logAppend("updates-log", data.error);
     return;
   }
   const updates = data.updates || [];
   if (!updates.length) {
-    el.innerHTML = `<div class="tool-empty">Tous vos logiciels sont à jour.</div>`;
+    el.innerHTML = "";
+    _logAppend("updates-log", "Aucun résultat.");
     return;
   }
 
@@ -982,7 +994,7 @@ async function loadShortcuts() {
   try {
     const res  = await fetch("/api/shortcuts");
     const data = await res.json();
-    _btnDone(btnEl, data.length > 0 ? `${data.length} raccourci(s)` : "Aucun cassé ✓", data.length === 0 ? true : "found");
+    _btnReset(btnEl);
     renderShortcuts(data);
   } catch (e) {
     el.innerHTML = `<div class="tool-error">Erreur de chargement.</div>`;
@@ -993,7 +1005,7 @@ async function loadShortcuts() {
 function renderShortcuts(shortcuts) {
   const el = document.getElementById("shortcuts-results");
   if (!shortcuts.length) {
-    el.innerHTML = `<div class="tool-empty">Aucun raccourci cassé détecté.</div>`;
+    el.innerHTML = `<div class="tool-empty">Aucun résultat.</div>`;
     return;
   }
   el.innerHTML = "";
@@ -1015,17 +1027,18 @@ function renderShortcuts(shortcuts) {
     const tgtSpan  = document.createElement("span"); tgtSpan.style.color = "var(--text-dim)"; tgtSpan.textContent = sc.target;
     lbl.append(nameSpan, " ", locSpan, document.createElement("br"), tgtSpan);
     row.append(cb, lbl);
+    _applyAdminLock(row, cb, sc.needs_admin);
     el.appendChild(row);
   });
 }
 
 async function deleteSelectedShortcuts() {
-  const checked = [...document.querySelectorAll("#shortcuts-results input[type=checkbox]:checked")];
-  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un raccourci.", "warn"); return; }
+  const checked = [...document.querySelectorAll("#shortcuts-results input[type=checkbox]:checked:not(.sel-all)")];
+  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un élément.", "warn"); return; }
   const paths = checked.map(c => c.dataset.path);
   const btn = document.getElementById("btn-delete-shortcuts");
   showConfirm(
-    `Supprimer ${paths.length} raccourci(s) ?`,
+    `Supprimer ${paths.length} élément(s) ?`,
     "Les fichiers .lnk sélectionnés seront définitivement supprimés. Cela n'affecte pas les applications elles-mêmes.",
     async () => {
       if (btn) { btn.disabled = true; btn.textContent = "Suppression…"; }
@@ -1038,10 +1051,11 @@ async function deleteSelectedShortcuts() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Erreur serveur");
         if (data.deleted === 0) {
-          showToast("Aucun raccourci supprimé", "Les fichiers sont peut-être déjà absents ou verrouillés.", "warn");
+          showToast("Suppression impossible", "Les fichiers sont peut-être déjà absents ou verrouillés.", "warn");
+        } else if (data.errors > 0) {
+          showToast("Suppression partielle", `${data.deleted} supprimé(s) — ${data.errors} échec(s).`, "warn");
         } else {
-          const msg = data.errors > 0 ? `${data.deleted} supprimé(s), ${data.errors} échec(s).` : `${data.deleted} raccourci(s) supprimé(s).`;
-          showToast("Raccourcis supprimés", msg, data.errors > 0 ? "warn" : "success");
+          showToast("Suppression terminée", `${data.deleted} supprimé(s).`, "success");
         }
         checked.forEach(c => c.closest(".dupe-row").remove());
         if (btn) { btn.disabled = false; btn.textContent = "Supprimer la sélection"; }
@@ -1060,21 +1074,16 @@ let _lfFiles = [], _lfTotalFmt = "", _lfSortKey = "size", _lfSortDir = -1;
 async function startLargeFileScan() {
   const folder  = document.getElementById("lf-folder").value.trim();
   const minGb   = parseFloat(document.getElementById("lf-minsize").value) || 0.5;
-  if (!folder) { showToast("Dossier requis", "Entrez un chemin à analyser.", "warn"); return; }
+  if (!folder) { showToast("Dossier requis", "Entrez un dossier à analyser.", "warn"); return; }
 
-  const logEl    = document.getElementById("lf-log");
   const resultEl = document.getElementById("lf-results");
   const btnEl    = document.getElementById("btn-scan-lf");
 
-  logEl.innerHTML = "";
+  document.getElementById("lf-log").innerHTML = "";
   resultEl.innerHTML = "";
   _btnScan(btnEl, "Analyse…");
 
-  const lfLog = (msg) => {
-    const d = document.createElement("div"); d.className = "log-entry";
-    d.innerHTML = `<span class="log-ts">${new Date().toLocaleTimeString("fr-FR")}</span><span class="log-msg">${msg}</span>`;
-    logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight;
-  };
+  const lfLog = (msg) => _logAppend("lf-log", msg);
 
   try {
     const res = await fetch("/api/largefiles", {
@@ -1093,7 +1102,7 @@ async function startLargeFileScan() {
       if (item.type === "result") renderLargeFiles(item.files, item.total_fmt);
       if (item.type === "done") {
         es.close(); _removeCancelBtn("lf");
-        _btnDone(btnEl, "Analyse terminée", true);
+        _btnReset(btnEl);
       }
     };
     es.onerror = () => { es.close(); _removeCancelBtn("lf"); _btnReset(btnEl); };
@@ -1105,7 +1114,8 @@ async function startLargeFileScan() {
 
 function renderLargeFiles(files, totalFmt) {
   if (!files.length) {
-    document.getElementById("lf-results").innerHTML = `<div class="tool-empty">Aucun fichier trouvé au-dessus du seuil.</div>`;
+    document.getElementById("lf-results").innerHTML = "";
+    _logAppend("lf-log", "Aucun résultat.");
     return;
   }
   _lfFiles = files; _lfTotalFmt = totalFmt;
@@ -1139,17 +1149,18 @@ function _renderLargeFiles() {
     const pathSpan = document.createElement("span"); pathSpan.style.color = "var(--text-dim)"; pathSpan.textContent = f.path;
     lbl.append(sizeSpan, " ", nameSpan, document.createElement("br"), pathSpan);
     row.append(cb, lbl);
+    _applyAdminLock(row, cb, f.needs_admin);
     el.appendChild(row);
   });
 }
 
 async function deleteSelectedLargeFiles() {
-  const checked = [...document.querySelectorAll("#lf-results input[type=checkbox]:checked")];
-  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un fichier.", "warn"); return; }
+  const checked = [...document.querySelectorAll("#lf-results input[type=checkbox]:checked:not(.sel-all)")];
+  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un élément.", "warn"); return; }
   const paths = checked.map(c => c.dataset.path);
   const btn = document.getElementById("btn-delete-lf");
   showConfirm(
-    `Supprimer ${paths.length} fichier(s) ?`,
+    `Supprimer ${paths.length} élément(s) ?`,
     "Ces fichiers seront définitivement supprimés du disque. Cette action est irréversible.",
     async () => {
       if (btn) { btn.disabled = true; btn.textContent = "Suppression…"; }
@@ -1162,9 +1173,9 @@ async function deleteSelectedLargeFiles() {
         if (!res.ok) throw new Error(data.error || "Erreur serveur");
         const errCount = (data.errors || []).length;
         if (errCount > 0) {
-          showToast("Suppression partielle", `${data.freed_fmt} libérés — ${errCount} fichier(s) inaccessible(s).`, "warn");
+          showToast("Suppression partielle", `${paths.length - errCount} supprimé(s) — ${data.freed_fmt} libérés — ${errCount} échec(s).`, "warn");
         } else {
-          showToast("Fichiers supprimés", data.freed_fmt + " libérés.", "success");
+          showToast("Suppression terminée", `${paths.length} supprimé(s) — ${data.freed_fmt} libérés.`, "success");
         }
         checked.forEach(c => c.closest(".dupe-row").remove());
         if (btn) { btn.disabled = false; btn.textContent = "Supprimer la sélection"; }
@@ -1231,11 +1242,11 @@ function _runDiskAnalysis(folder, resetHistory) {
         _daItems  = msg.items;
         _daTotal  = msg.total;
         _renderDiskItems(_daItems, _daTotal, folder);
-        _btnDone(btnEl, "Analyse terminée", true);
+        _btnReset(btnEl);
         es.close(); _daEsActive = null; _removeCancelBtn("da");
       }
       if (msg.type === "done" && !msg.items) {
-        _btnDone(btnEl, "Terminé", true);
+        _btnReset(btnEl);
         es.close(); _daEsActive = null; _removeCancelBtn("da");
       }
     };
@@ -1276,7 +1287,7 @@ function _daSortBy(key) {
 function _renderDiskItems(items, total, folder) {
   const el = document.getElementById("da-results");
   if (!items.length) {
-    el.innerHTML = `<div class="tool-empty">Dossier vide ou inaccessible.</div>`;
+    el.innerHTML = `<div class="tool-empty">Aucun résultat.</div>`;
     return;
   }
 
@@ -1373,19 +1384,27 @@ function _updateBreadcrumb(folder) {
 async function loadWindowsOld() {
   const el = document.getElementById("windows-old-info");
   if (!el) return;
+  const btnEl = document.getElementById("btn-scan-winold");
+  document.getElementById("winold-log").innerHTML = "";
+  el.innerHTML = "";
+  _btnScan(btnEl, "Analyse…");
   try {
     const res  = await fetch("/api/windows-old");
     const data = await res.json();
     renderWindowsOld(data);
+    _btnReset(btnEl);
   } catch (e) {
-    el.innerHTML = `<div class="tool-error">Erreur de chargement.</div>`;
+    el.innerHTML = "";
+    _logAppend("winold-log", "Erreur de chargement.");
+    _btnReset(btnEl);
   }
 }
 
 function renderWindowsOld(data) {
   const el = document.getElementById("windows-old-info");
   if (!data.exists) {
-    el.innerHTML = `<div class="tool-empty">Aucun dossier Windows.old détecté sur ce système.</div>`;
+    el.innerHTML = "";
+    _logAppend("winold-log", "Aucun résultat.");
     return;
   }
   el.innerHTML = "";
@@ -1449,7 +1468,7 @@ async function startInstallerScan() {
     });
     const data = await res.json();
     if (!res.ok) { showToast("Erreur", data.error, "warn"); _btnReset(btnEl); return; }
-    _btnDone(btnEl, data.count > 0 ? `${data.count} fichier(s)` : "Aucun installer ancien ✓", data.count === 0 ? true : "found");
+    _btnReset(btnEl);
     renderInstallers(data);
   } catch (e) {
     resultEl.innerHTML = `<div class="tool-error">Erreur : ${e.message}</div>`;
@@ -1459,7 +1478,7 @@ async function startInstallerScan() {
 
 function renderInstallers(data) {
   if (!data.files.length) {
-    document.getElementById("inst-results").innerHTML = `<div class="tool-empty">Aucun installer de plus de ${document.getElementById("inst-age").value} jours trouvé.</div>`;
+    document.getElementById("inst-results").innerHTML = `<div class="tool-empty">Aucun résultat.</div>`;
     return;
   }
   _instFiles = data.files; _instTotalFmt = data.total_fmt;
@@ -1495,17 +1514,18 @@ function _renderInstallers() {
     const ageSpan  = document.createElement("span"); ageSpan.style.color = "var(--text-dim)"; ageSpan.textContent = `${f.age_days} jours`;
     lbl.append(sizeSpan, " ", nameSpan, " — ", ageSpan);
     row.append(cb, lbl);
+    _applyAdminLock(row, cb, f.needs_admin);
     el.appendChild(row);
   });
 }
 
 async function deleteSelectedInstallers() {
-  const checked = [...document.querySelectorAll("#inst-results input[type=checkbox]:checked")];
-  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un fichier.", "warn"); return; }
+  const checked = [...document.querySelectorAll("#inst-results input[type=checkbox]:checked:not(.sel-all)")];
+  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un élément.", "warn"); return; }
   const paths = checked.map(c => c.dataset.path);
   const btn = document.getElementById("btn-delete-inst");
   showConfirm(
-    `Supprimer ${paths.length} fichier(s) ?`,
+    `Supprimer ${paths.length} élément(s) ?`,
     "Ces fichiers d'installation seront définitivement supprimés. Vous devrez les re-télécharger si besoin.",
     async () => {
       if (btn) { btn.disabled = true; btn.textContent = "Suppression…"; }
@@ -1519,7 +1539,11 @@ async function deleteSelectedInstallers() {
           showToast("Erreur", (data.errors || []).join(", ") || "Suppression impossible.", "warn");
         } else {
           const errCount = (data.errors || []).length;
-          showToast("Fichiers supprimés", `${data.freed_fmt} libérés.`, errCount > 0 ? "warn" : "success");
+          const title = errCount > 0 ? "Suppression partielle" : "Suppression terminée";
+          const msg = errCount > 0
+            ? `${paths.length - errCount} supprimé(s) — ${data.freed_fmt} libérés — ${errCount} échec(s).`
+            : `${paths.length} supprimé(s) — ${data.freed_fmt} libérés.`;
+          showToast(title, msg, errCount > 0 ? "warn" : "success");
           checked.forEach(c => c.closest(".dupe-row").remove());
         }
         if (btn) { btn.disabled = false; btn.textContent = "Supprimer la sélection"; }
@@ -1552,39 +1576,71 @@ async function loadPrivacy() {
 
 function renderPrivacy(items) {
   const el = document.getElementById("privacy-results");
-  if (!items.length) { el.innerHTML = `<div class="tool-empty">Aucun élément de confidentialité détecté.</div>`; return; }
+  if (!items.length) {
+    el.innerHTML = `<div class="tool-empty">Aucun résultat.</div>`;
+    return;
+  }
+
+  // Ne garder que les categories qui ont quelque chose a nettoyer
+  const active = items.filter(i => i.count > 0);
+  if (!active.length) {
+    el.innerHTML = `<div class="tool-empty">Aucun résultat.</div>`;
+    return;
+  }
 
   el.innerHTML = "";
   el.appendChild(_makeSelHeader(el, {
-    countText:   `${items.length} catégorie(s)`,
+    countText:   `${active.length} catégorie(s)`,
     deleteId:    "btn-clean-privacy",
     deleteLabel: "Nettoyer la sélection",
     deleteFn:    cleanSelectedPrivacy,
   }));
 
-  items.forEach((item, i) => {
-    const row  = document.createElement("div"); row.className = "dupe-row";
-    const cbId = `priv-${i}`;
-    const cb   = document.createElement("input"); cb.type = "checkbox"; cb.id = cbId; cb.dataset.id = item.id; cb.checked = item.count > 0;
-    if (item.count === 0) { cb.disabled = true; }
-    const lbl  = document.createElement("label"); lbl.htmlFor = cbId;
-    lbl.style.cssText = "flex:1;font-size:12px;color:var(--text-mid);cursor:pointer";
-    const nameSpan = document.createElement("span"); nameSpan.style.cssText = "font-weight:600;color:var(--text)"; nameSpan.textContent = item.label;
-    const countSpan = document.createElement("span"); countSpan.className = "dupe-size"; countSpan.textContent = item.size_fmt;
-    const descSpan  = document.createElement("span"); descSpan.style.color = "var(--text-dim)"; descSpan.textContent = item.desc;
-    lbl.append(nameSpan, " ", countSpan, document.createElement("br"), descSpan);
-    row.append(cb, lbl);
+  active.forEach((item, i) => {
+    const row = document.createElement("div");
+    row.className = "tool-row";
+    row.style.cursor = "pointer";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.id = `priv-${i}`;
+    cb.dataset.id = item.id;
+    cb.checked = true;
+    cb.style.accentColor = "var(--accent)";
+    cb.style.flexShrink = "0";
+
+    const info = document.createElement("div");
+    info.className = "tool-info";
+    const name = document.createElement("div");
+    name.className = "tool-name";
+    name.textContent = item.label;
+    const desc = document.createElement("div");
+    desc.className = "tool-sub";
+    desc.textContent = item.desc;
+    desc.style.maxWidth = "none";
+    info.append(name, desc);
+
+    const meta = document.createElement("div");
+    meta.className = "tool-meta";
+    meta.textContent = item.size_fmt;
+
+    // Clic sur toute la ligne toggle la case
+    row.addEventListener("click", (e) => {
+      if (e.target !== cb) cb.checked = !cb.checked;
+    });
+
+    row.append(cb, info, meta);
     el.appendChild(row);
   });
 }
 
 async function cleanSelectedPrivacy() {
-  const checked = [...document.querySelectorAll("#privacy-results input[type=checkbox]:checked")];
+  const checked = [...document.querySelectorAll("#privacy-results input[type=checkbox]:checked:not(.sel-all)")];
   if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un élément.", "warn"); return; }
   const ids = checked.map(c => c.dataset.id);
   const btn = document.getElementById("btn-clean-privacy");
   showConfirm(
-    `Nettoyer ${ids.length} élément(s) de confidentialité ?`,
+    `Supprimer ${ids.length} élément(s) ?`,
     "L'historique sélectionné sera effacé. Cette action ne supprime pas de fichiers personnels.",
     async () => {
       if (btn) { btn.disabled = true; btn.textContent = "Nettoyage…"; }
@@ -1597,7 +1653,7 @@ async function cleanSelectedPrivacy() {
         if (!res.ok || !data.ok) {
           showToast("Erreur", (data.errors || []).join(", ") || data.error || "Nettoyage impossible.", "warn");
         } else {
-          showToast("Confidentialité nettoyée", `${data.cleaned} élément(s) supprimé(s).`, "success");
+          showToast("Suppression terminée", `${data.cleaned} supprimé(s).`, "success");
           loadPrivacy();
         }
         if (btn) { btn.disabled = false; btn.textContent = "Nettoyer la sélection"; }
@@ -1614,19 +1670,27 @@ async function cleanSelectedPrivacy() {
 async function loadHibernation() {
   const el = document.getElementById("hiberfil-info");
   if (!el) return;
+  const btnEl = document.getElementById("btn-scan-hiber");
+  document.getElementById("hiber-log").innerHTML = "";
+  el.innerHTML = "";
+  _btnScan(btnEl, "Analyse…");
   try {
     const res  = await fetch("/api/hibernation");
     const data = await res.json();
     renderHibernation(data);
+    _btnReset(btnEl);
   } catch (e) {
-    el.innerHTML = `<div class="tool-error">Erreur de chargement.</div>`;
+    el.innerHTML = "";
+    _logAppend("hiber-log", "Erreur de chargement.");
+    _btnReset(btnEl);
   }
 }
 
 function renderHibernation(data) {
   const el = document.getElementById("hiberfil-info");
   if (!data.enabled) {
-    el.innerHTML = `<div class="tool-empty">L'hibernation est déjà désactivée — aucun fichier hiberfil.sys sur le disque.</div>`;
+    el.innerHTML = "";
+    _logAppend("hiber-log", "Aucun résultat.");
     return;
   }
   el.innerHTML = "";
@@ -1674,7 +1738,7 @@ let _emptyFolders = [];
 
 async function startEmptyFolderScan() {
   const folder  = document.getElementById("ef-folder").value.trim();
-  if (!folder) { showToast("Dossier requis", "Entrez un chemin à analyser.", "warn"); return; }
+  if (!folder) { showToast("Dossier requis", "Entrez un dossier à analyser.", "warn"); return; }
 
   const logEl    = document.getElementById("ef-log");
   const resultEl = document.getElementById("ef-results");
@@ -1708,7 +1772,7 @@ async function startEmptyFolderScan() {
       if (item.type === "result") { _emptyFolders = item.folders; renderEmptyFolders(item.folders); }
       if (item.type === "done") {
         es.close(); _removeCancelBtn("ef");
-        _btnDone(btnEl, item.count > 0 ? `${item.count} trouvé(s)` : "Aucun dossier vide ✓", item.count === 0 ? true : "found");
+        _btnReset(btnEl);
       }
     };
     es.onerror = () => { es.close(); _removeCancelBtn("ef"); _btnReset(btnEl); };
@@ -1721,7 +1785,8 @@ async function startEmptyFolderScan() {
 function renderEmptyFolders(folders) {
   const el = document.getElementById("ef-results");
   if (!folders.length) {
-    el.innerHTML = `<div class="tool-empty">Aucun dossier vide trouvé.</div>`;
+    el.innerHTML = "";
+    _logAppend("ef-log", "Aucun résultat.");
     return;
   }
   el.innerHTML = "";
@@ -1742,17 +1807,18 @@ function renderEmptyFolders(folders) {
     const pathSpan = document.createElement("span"); pathSpan.style.color = "var(--text-dim)"; pathSpan.textContent = f.path;
     lbl.append(nameSpan, document.createElement("br"), pathSpan);
     row.append(cb, lbl);
+    _applyAdminLock(row, cb, f.needs_admin);
     el.appendChild(row);
   });
 }
 
 async function deleteSelectedEmptyFolders() {
-  const checked = [...document.querySelectorAll("#ef-results input[type=checkbox]:checked")];
-  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un dossier.", "warn"); return; }
+  const checked = [...document.querySelectorAll("#ef-results input[type=checkbox]:checked:not(.sel-all)")];
+  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un élément.", "warn"); return; }
   const paths = checked.map(c => c.dataset.path);
   const btn = document.getElementById("btn-delete-ef");
   showConfirm(
-    `Supprimer ${paths.length} dossier(s) vide(s) ?`,
+    `Supprimer ${paths.length} élément(s) ?`,
     "Ces dossiers sont vides et seront définitivement supprimés.",
     async () => {
       if (btn) { btn.disabled = true; btn.textContent = "Suppression…"; }
@@ -1762,10 +1828,17 @@ async function deleteSelectedEmptyFolders() {
           body: JSON.stringify({ paths }),
         });
         const data = await res.json();
-        if (!res.ok || !data.ok) {
-          showToast("Erreur", (data.errors || []).join(", ") || "Suppression impossible.", "warn");
+        if (!res.ok) {
+          showToast("Erreur", data.error || "Suppression impossible.", "warn");
+        } else if (!data.ok) {
+          showToast("Erreur", (data.errors || []).join("\n") || "Suppression impossible.", "warn");
         } else {
-          showToast("Dossiers supprimés", `${data.deleted} dossier(s) supprimé(s).`, "success");
+          const errCount = (data.errors || []).length;
+          if (errCount > 0) {
+            showToast("Suppression partielle", `${data.deleted} supprimé(s) — ${errCount} échec(s).`, "warn");
+          } else {
+            showToast("Suppression terminée", `${data.deleted} supprimé(s).`, "success");
+          }
           checked.forEach(c => c.closest(".dupe-row").remove());
         }
         if (btn) { btn.disabled = false; btn.textContent = "Supprimer la sélection"; }
@@ -1808,7 +1881,7 @@ async function startOrphanScan() {
       if (item.type === "result") renderOrphanFolders(item.folders, item.total_fmt);
       if (item.type === "done") {
         es.close(); _removeCancelBtn("orphan");
-        _btnDone(btnEl, item.count > 0 ? `${item.count} orphelin(s)` : "Aucun orphelin ✓", item.count === 0 ? true : "found");
+        _btnReset(btnEl);
       }
     };
     es.onerror = () => { es.close(); _removeCancelBtn("orphan"); _btnReset(btnEl); };
@@ -1820,7 +1893,8 @@ async function startOrphanScan() {
 
 function renderOrphanFolders(folders, totalFmt) {
   if (!folders.length) {
-    document.getElementById("orphan-results").innerHTML = `<div class="tool-empty">Aucun dossier orphelin détecté.</div>`;
+    document.getElementById("orphan-results").innerHTML = "";
+    _logAppend("orphan-log", "Aucun résultat.");
     return;
   }
   _orphanFolders = folders; _orphanTotalFmt = totalFmt || "";
@@ -1859,12 +1933,12 @@ function _renderOrphanFolders() {
 }
 
 async function deleteSelectedOrphanFolders() {
-  const checked = [...document.querySelectorAll("#orphan-results input[type=checkbox]:checked")];
-  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un dossier.", "warn"); return; }
+  const checked = [...document.querySelectorAll("#orphan-results input[type=checkbox]:checked:not(.sel-all)")];
+  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un élément.", "warn"); return; }
   const paths = checked.map(c => c.dataset.path);
   const btn = document.getElementById("btn-delete-orphan");
   showConfirm(
-    `Supprimer ${paths.length} dossier(s) orphelin(s) ?`,
+    `Supprimer ${paths.length} élément(s) ?`,
     "Assurez-vous que ces dossiers correspondent bien à des applications désinstallées. Cette action est irréversible.",
     async () => {
       if (btn) { btn.disabled = true; btn.textContent = "Suppression…"; }
@@ -1879,10 +1953,11 @@ async function deleteSelectedOrphanFolders() {
           showToast("Erreur", errMsg, "warn");
         } else {
           const errCount = (data.errors || []).length;
+          const title = errCount > 0 ? "Suppression partielle" : "Suppression terminée";
           const msg = errCount > 0
-            ? `${data.deleted} supprimé(s), ${errCount} échec(s).`
-            : `${data.deleted} dossier(s) supprimé(s).`;
-          showToast("Dossiers supprimés", msg, errCount > 0 ? "warn" : "success");
+            ? `${data.deleted} supprimé(s) — ${errCount} échec(s).`
+            : `${data.deleted} supprimé(s).`;
+          showToast(title, msg, errCount > 0 ? "warn" : "success");
           checked.forEach(c => c.closest(".dupe-row").remove());
         }
         if (btn) { btn.disabled = false; btn.textContent = "Supprimer la sélection"; }
@@ -1925,8 +2000,7 @@ function renderRestorePoints(data) {
   }
   const points = data.points || [];
   if (!points.length) {
-    el.innerHTML = `<div class="tool-empty">Aucun point de restauration trouvé.<br>
-      <span style="font-size:12px;color:var(--text-dim)">La protection du système est peut-être désactivée.</span></div>`;
+    el.innerHTML = `<div class="tool-empty">Aucun résultat.</div>`;
     return;
   }
 
@@ -1965,13 +2039,13 @@ function deleteSelectedRestorePoints() {
 }
 
 async function _deleteSelectedRestorePoints() {
-  const checked = [...document.querySelectorAll("#rp-results input[type=checkbox]:checked")];
-  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un point de restauration.", "warn"); return; }
+  const checked = [...document.querySelectorAll("#rp-results input[type=checkbox]:checked:not(.sel-all)")];
+  if (!checked.length) { showToast("Aucune sélection", "Cochez au moins un élément.", "warn"); return; }
 
   const ids = checked.map(c => parseInt(c.dataset.id));
   const btn = document.getElementById("btn-delete-rp");
   showConfirm(
-    `Supprimer ${ids.length} point(s) de restauration ?`,
+    `Supprimer ${ids.length} élément(s) ?`,
     "Ces points seront définitivement supprimés. Assurez-vous de conserver au moins un point récent si vous souhaitez pouvoir restaurer votre système.",
     async () => {
       if (btn) { btn.disabled = true; btn.textContent = "Suppression…"; }
@@ -1986,7 +2060,7 @@ async function _deleteSelectedRestorePoints() {
           if (btn) { btn.disabled = false; btn.textContent = "Supprimer la sélection"; }
           return;
         }
-        showToast("Points supprimés", `${data.deleted} point(s) de restauration supprimé(s).`, "success");
+        showToast("Suppression terminée", `${data.deleted} supprimé(s).`, "success");
         loadRestorePoints();
       } catch (e) {
         showToast("Erreur", e.message, "warn");

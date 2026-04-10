@@ -34,8 +34,19 @@ from cleaner import (
     scan_disk_level,
     get_windows_old_info, delete_windows_old,
     find_old_installers, delete_installer_files,
-    is_admin,
+    is_admin, is_admin_path,
 )
+
+
+def _reject_if_admin_paths(paths):
+    """Retourne une Response 403 si des chemins protégés sont présents et que l'user n'est pas admin. Sinon None."""
+    if is_admin():
+        return None
+    if any(is_admin_path(p) for p in paths):
+        return jsonify({
+            "error": "Droits administrateur requis pour certains des chemins sélectionnés. Relancez l'application en mode administrateur."
+        }), 403
+    return None
 
 app = Flask(__name__)
 
@@ -217,6 +228,9 @@ def api_duplicates_delete():
     paths = data.get("paths", [])
     if not paths:
         return jsonify({"error": "Aucun fichier sélectionné."}), 400
+    rejected = _reject_if_admin_paths(paths)
+    if rejected:
+        return rejected
     freed, errors = delete_duplicate_files(paths)
     return jsonify({"freed": freed, "freed_fmt": fmt_size(freed), "errors": errors})
 
@@ -285,6 +299,9 @@ def api_shortcuts_delete():
     paths = data.get("paths", [])
     if not paths:
         return jsonify({"error": "Aucun chemin fourni."}), 400
+    rejected = _reject_if_admin_paths(paths)
+    if rejected:
+        return rejected
     deleted, errors = delete_shortcuts(paths)
     return jsonify({"deleted": deleted, "errors": errors})
 
@@ -343,6 +360,9 @@ def api_empty_folders_delete():
     paths = data.get("paths", [])
     if not paths:
         return jsonify({"error": "Aucun chemin fourni."}), 400
+    rejected = _reject_if_admin_paths(paths)
+    if rejected:
+        return rejected
     deleted, errors = delete_empty_folders(paths)
     return jsonify({"ok": deleted > 0, "deleted": deleted, "errors": errors})
 
@@ -358,7 +378,7 @@ def _run_empty_folders(job_id, folder):
         results = find_empty_folders(folder, log=lambda m: q.put({"type": "log", "msg": m}))
         q.put({"type": "result", "folders": results, "count": len(results)})
         q.put({"type": "done", "msg": f"{len(results)} dossier(s) vide(s) trouvé(s).",
-               "freed_bytes": 0, "freed_fmt": "—"})
+               "count": len(results), "freed_bytes": 0, "freed_fmt": "—"})
     except Exception as e:
         q.put({"type": "done", "msg": f"Erreur : {e}", "freed_bytes": 0, "freed_fmt": "—"})
     finally:
@@ -502,6 +522,9 @@ def api_old_installers_delete():
     paths = data.get("paths", [])
     if not paths:
         return jsonify({"error": "Aucun fichier sélectionné."}), 400
+    rejected = _reject_if_admin_paths(paths)
+    if rejected:
+        return rejected
     freed, errors = delete_installer_files(paths)
     return jsonify({"ok": freed > 0 or not errors, "freed": freed,
                     "freed_fmt": fmt_size(freed), "errors": errors})
@@ -557,7 +580,7 @@ def _run_update_install(job_id, pkg_id, old_version):
     if not job:
         return
     q   = job["queue"]
-    enc = "cp1252" if os.name == "nt" else "utf-8"
+    enc = "utf-8"
 
     def log(msg):
         q.put({"type": "log", "msg": msg})

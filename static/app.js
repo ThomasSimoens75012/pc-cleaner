@@ -371,7 +371,7 @@ function animateDiskBars() {
   document.querySelectorAll(".bar-fill").forEach(bar => {
     const orig = bar.style.background;
     bar.style.transition = "background .5s ease";
-    bar.style.background = "linear-gradient(90deg, var(--green), #4ade80)";
+    bar.style.background = "var(--green)";
     setTimeout(() => { bar.style.background = orig; }, 1800);
   });
 }

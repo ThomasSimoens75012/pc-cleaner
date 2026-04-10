@@ -45,23 +45,6 @@
       --red:   var(--text-mid); --red-bg:   var(--hover);
 
       --hover-strong: rgb(235, 235, 233);
-
-      /* Callouts — toutes les variantes sont en gris */
-      --cal-blue-bg:    var(--bg2);
-      --cal-blue-text:  var(--text);
-      --cal-blue-icon:  var(--text-mid);
-      --cal-green-bg:   var(--bg2);
-      --cal-green-text: var(--text);
-      --cal-green-icon: var(--text-mid);
-      --cal-yellow-bg:  var(--bg2);
-      --cal-yellow-text:var(--text);
-      --cal-yellow-icon:var(--text-mid);
-      --cal-red-bg:     var(--bg2);
-      --cal-red-text:   var(--text);
-      --cal-red-icon:   var(--text-mid);
-      --cal-gray-bg:    var(--bg2);
-      --cal-gray-text:  var(--text);
-      --cal-gray-icon:  var(--text-mid);
     }
 
     /* ══════════════════════════════════════════
@@ -95,22 +78,6 @@
       --red:   var(--text-mid); --red-bg:   var(--hover);
 
       --hover-strong: rgba(255, 255, 255, 0.09);
-
-      --cal-blue-bg:    var(--bg2);
-      --cal-blue-text:  var(--text);
-      --cal-blue-icon:  var(--text-mid);
-      --cal-green-bg:   var(--bg2);
-      --cal-green-text: var(--text);
-      --cal-green-icon: var(--text-mid);
-      --cal-yellow-bg:  var(--bg2);
-      --cal-yellow-text:var(--text);
-      --cal-yellow-icon:var(--text-mid);
-      --cal-red-bg:     var(--bg2);
-      --cal-red-text:   var(--text);
-      --cal-red-icon:   var(--text-mid);
-      --cal-gray-bg:    var(--bg2);
-      --cal-gray-text:  var(--text);
-      --cal-gray-icon:  var(--text-mid);
     }
 
     /* ══════════════════════════════════════════
@@ -263,26 +230,27 @@
       padding: 16px 18px; margin: 14px 0;
       border-radius: 6px;
       font-size: 14px; line-height: 1.55;
+      background: var(--bg2);
       border: 1px solid var(--border);
+      border-left: 3px solid var(--text-mid);
+      color: var(--text);
     }
-    .callout-icon { flex-shrink: 0; padding-top: 1px; }
+    .callout-icon { flex-shrink: 0; padding-top: 1px; color: var(--text-mid); }
     .callout-content { flex: 1; min-width: 0; }
     .callout strong { font-weight: 600; }
-    .callout-blue   { background: var(--cal-blue-bg);   color: var(--cal-blue-text); }
-    .callout-blue   .callout-icon { color: var(--cal-blue-icon); }
-    .callout-green  { background: var(--cal-green-bg);  color: var(--cal-green-text); }
-    .callout-green  .callout-icon { color: var(--cal-green-icon); }
-    .callout-yellow { background: var(--cal-yellow-bg); color: var(--cal-yellow-text); }
-    .callout-yellow .callout-icon { color: var(--cal-yellow-icon); }
-    .callout-red    { background: var(--cal-red-bg);    color: var(--cal-red-text); }
-    .callout-red    .callout-icon { color: var(--cal-red-icon); }
-    .callout-gray   { background: var(--cal-gray-bg);   color: var(--cal-gray-text); }
-    .callout-gray   .callout-icon { color: var(--cal-gray-icon); }
+    .callout-yellow { border-left-color: var(--amber); }
+    .callout-yellow .callout-icon { color: var(--amber); }
+    .callout-red    { border-left-color: var(--red); }
+    .callout-red    .callout-icon { color: var(--red); }
+    .callout-green  { border-left-color: var(--green); }
+    .callout-green  .callout-icon { color: var(--green); }
+    .callout-blue   { border-left-color: var(--text); }
+    .callout-gray   { border-left-color: var(--text-dim); }
     .callout-action { align-items: center; }
     .callout-action .callout-content { flex: 1; }
     .callout-action .callout-title { font-size: 15px; font-weight: 600; }
     .callout-action .callout-sub { font-size: 13px; opacity: .8; margin-top: 2px; }
-    .callout-action .btn-primary { padding: 9px 18px; font-size: 14px; flex-shrink: 0; }
+    .callout-action .btn-primary { padding: 8px 14px; font-size: 14px; flex-shrink: 0; }
 
     /* ══════════════════════════════════════════
        TOGGLE BLOCK (collapsible)
@@ -382,14 +350,7 @@
     .stat-value.dim { color: var(--text-dim); font-weight: 500; font-size: 22px; }
     .stat-meta { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 
-    /* Sections H2 / sous-titres H3 */
-    .nett-section { margin-bottom: 40px; }
-    h2.nett-section-title {
-      font-size: 22px; font-weight: 700; letter-spacing: -0.012em;
-      margin-bottom: 14px;
-      display: flex; align-items: center; gap: 10px;
-    }
-    h2.nett-section-title .icon { font-size: 22px; }
+    /* Sous-titres H3 */
     h3.nett-subtitle {
       font-size: 12px; font-weight: 600; color: var(--text-mid);
       text-transform: uppercase; letter-spacing: 0.05em;
@@ -499,11 +460,11 @@
       display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
       color: var(--text);
     }
-    .task-desc { font-size: 13px; color: var(--text-mid); margin-top: 1px; }
+    .task-desc { font-size: 12px; color: var(--text-mid); margin-top: 1px; }
 
     .badge {
       font-size: 11px; font-weight: 500;
-      padding: 1px 8px; border-radius: 3px;
+      padding: 2px 7px; border-radius: 3px;
     }
     .badge-safe  { background: var(--green-bg); color: var(--green); }
     .badge-admin { background: var(--amber-bg); color: var(--amber); }
@@ -538,14 +499,6 @@
     .switch.on::after { transform: translateX(14px); }
     .switch[data-busy] { opacity: 0.5; pointer-events: none; }
 
-    .tool-section-locked .tool-section-title { display: inline-flex; align-items: center; gap: 8px; }
-    .tool-section-locked .tool-section-title::after {
-      content: ''; display: inline-block; width: 14px; height: 14px;
-      background: currentColor;
-      -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>') center/contain no-repeat;
-      mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>') center/contain no-repeat;
-      opacity: .6;
-    }
     .tool-section-locked .btn-primary { opacity: .5; cursor: not-allowed; pointer-events: none; }
 
     .size-wrap { text-align: right; flex-shrink: 0; min-width: 64px; }
@@ -611,30 +564,23 @@
     .btn-primary:disabled { opacity: .55; cursor: not-allowed; filter: none; }
     .btn-primary.btn-running { background: var(--accent); cursor: not-allowed; opacity: .85; }
     .btn-primary.btn-success { background: var(--green) !important; }
-    .btn-primary.btn-error   { background: var(--red) !important; animation: btn-shake .35s ease; }
-    .btn-primary.btn-found   { background: var(--accent) !important; }
 
     .btn-icon { font-size: 14px; display: inline-block; flex-shrink: 0; }
     .btn-running .btn-icon { animation: spin-icon .7s linear infinite; }
     @keyframes spin-icon { to { transform: rotate(360deg); } }
 
     .btn-cancel {
-      padding: 7px 13px; background: transparent; color: var(--red);
+      padding: 8px 14px; background: transparent; color: var(--red);
       border: 1px solid var(--border2); border-radius: 4px;
-      font-size: 13px; font-weight: 500; cursor: pointer;
+      font-size: 14px; font-weight: 500; cursor: pointer;
       display: inline-flex; align-items: center; gap: 6px;
       transition: background .12s, color .12s, border-color .12s;
     }
     .btn-cancel:hover { background: var(--red-bg); border-color: var(--red); }
     .btn-ghost.btn-running { background: var(--accent-bg); color: var(--accent); }
-    @keyframes btn-shake {
-      0%,100%{transform:translateX(0)}
-      20%{transform:translateX(-5px)} 40%{transform:translateX(5px)}
-      60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
-    }
 
     .btn-ghost {
-      padding: 7px 12px;
+      padding: 8px 14px;
       background: transparent; color: var(--text);
       font-family: 'IBM Plex Sans', -apple-system, sans-serif; font-size: 14px; font-weight: 500;
       border: 1px solid transparent; border-radius: 4px; cursor: pointer;
@@ -701,7 +647,8 @@
     .progress-label { font-size: 12px; color: var(--text-mid); margin-bottom: 5px; }
     .progress-bg    { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
     .progress-fill  { height: 100%; background: var(--accent); border-radius: 2px; transition: width .4s ease; }
-    .log-body { padding: 10px 14px; max-height: 150px; overflow-y: auto; font-family: 'IBM Plex Mono', 'SFMono-Regular', 'Menlo', monospace; font-size: 12px; line-height: 1.7; }
+    .log-body { padding: 10px 14px; max-height: 80px; overflow-y: auto; font-family: 'IBM Plex Mono', 'SFMono-Regular', 'Menlo', monospace; font-size: 12px; line-height: 1.7; }
+    .results-scroll { max-height: 360px; overflow-y: auto; }
     .log-entry { display: flex; gap: 12px; padding: 1px 0; }
     .log-ts   { color: var(--text-dim); flex-shrink: 0; font-size: 11px; padding-top: 1px; }
     .log-msg  { color: var(--text-mid); }
@@ -800,9 +747,25 @@
     .tool-sub   { font-size: 12px; color: var(--text-mid); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px; }
     .tool-meta  { font-size: 13px; color: var(--text-mid); min-width: 90px; text-align: right; font-variant-numeric: tabular-nums; }
     .tool-meta.dim { color: var(--text-dim); }
-    .tool-loading { padding: 24px 6px; text-align: center; color: var(--text-dim); font-size: 13px; }
+    .tool-loading { padding: 24px 6px; text-align: center; color: var(--text-mid); font-size: 13px; font-style: italic; }
+
+    /* Spinner d'analyse (rond qui tourne) */
+    @keyframes scan-spin { to { transform: rotate(360deg); } }
+    .scan-spinner-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; color: var(--text-mid); font-size: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .scan-spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--text);
+      border-radius: 50%;
+      animation: scan-spin .7s linear infinite;
+      display: inline-block; flex-shrink: 0;
+    }
     .tool-empty   { padding: 24px 6px; text-align: center; color: var(--text-dim); font-size: 13px; }
-    .tool-error   { padding: 24px 6px; text-align: center; color: var(--red); font-size: 13px; }
+    .tool-error   { padding: 24px 6px; text-align: center; color: var(--red); font-size: 13px; background: var(--red-bg); border-radius: 4px; }
 
     .source-badge {
       font-size: 11px; padding: 2px 7px; border-radius: 3px;
@@ -810,6 +773,16 @@
       border: 1px solid var(--border);
       white-space: nowrap; font-weight: 500;
     }
+    .admin-badge {
+      font-size: 10px; padding: 2px 7px; border-radius: 3px;
+      background: var(--amber-bg); color: var(--amber);
+      border: 1px solid var(--amber);
+      white-space: nowrap; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .04em;
+      margin-left: 8px; flex-shrink: 0;
+    }
+    .dupe-row.row-locked { opacity: .55; }
+    .dupe-row.row-locked input[type=checkbox] { cursor: not-allowed; }
 
     .btn-uninstall {
       padding: 4px 10px;
@@ -1108,25 +1081,16 @@
     .hm-bar-fill.hm-bad  { background: var(--red); }
     .hm-pct { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-    /* ══════════════════════════════════════════
-       BANNIÈRE ADMIN — Notion
-    ══════════════════════════════════════════ */
-    .admin-banner {
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 60px;
-      display: flex; align-items: center; gap: 10px;
-      font-size: 13px; color: var(--text-mid);
+    .sb-admin {
+      background: var(--amber-bg);
+      color: var(--amber);
+      font-weight: 600;
+      border: 1px solid var(--amber);
+      margin-bottom: 8px;
     }
-    .admin-banner-icon { color: var(--text-mid); flex-shrink: 0; }
-    .admin-banner-text { flex: 1; }
-    .admin-banner-btn {
-      padding: 5px 12px; background: var(--accent); color: var(--bg);
-      border: none; border-radius: 4px; font-size: 12px; font-weight: 500;
-      cursor: pointer; white-space: nowrap; font-family: 'IBM Plex Sans', -apple-system, sans-serif;
-      transition: filter .12s; flex-shrink: 0; overflow: hidden; position: relative;
-    }
-    .admin-banner-btn:hover { filter: brightness(0.85); }
+    .sb-admin .icon { color: var(--amber); opacity: 1; }
+    .sb-admin:hover { background: var(--amber); color: var(--bg); }
+    .sb-admin:hover .icon { color: var(--bg); }
 
     /* ══════════════════════════════════════════
        FOOTER — Notion
@@ -1189,6 +1153,12 @@
   <div class="sb-spacer"></div>
 
   <div class="sb-bottom">
+    {% if not is_admin %}
+    <button class="sb-item sb-admin" onclick="relancerAdmin()" title="Relancer l'application en mode administrateur">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+      Passer en administrateur
+    </button>
+    {% endif %}
     <div class="sb-item" style="cursor:default">
       <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       <span id="clock">--:--</span>
@@ -1202,14 +1172,6 @@
 
 <!-- ════════════════════ MAIN COLUMN ════════════════════ -->
 <div class="main">
-
-{% if not is_admin %}
-<div class="admin-banner" id="admin-banner">
-  <svg class="icon admin-banner-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-  <span class="admin-banner-text">Mode standard — registre, points de restauration et certaines tâches système nécessitent les droits administrateur</span>
-  <button class="admin-banner-btn" onclick="relancerAdmin()">Relancer en administrateur</button>
-</div>
-{% endif %}
 
 <div class="main-topbar">
   <div class="crumbs">
@@ -1293,20 +1255,24 @@
     </div>
 
     <!-- Disques -->
-    <div class="nett-section">
-      <h2 class="nett-section-title">
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>
-        Disques
-      </h2>
+    <div>
+      <div class="section-head">
+        <div>
+          <div class="tool-section-title">Disques</div>
+          <div class="tool-section-sub">État de l'espace libre sur chaque volume détecté</div>
+        </div>
+      </div>
       <div id="disk-container"></div>
     </div>
 
     <!-- Tâches -->
-    <div class="nett-section">
-      <h2 class="nett-section-title">
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        Tâches de nettoyage
-      </h2>
+    <div>
+      <div class="section-head">
+        <div>
+          <div class="tool-section-title">Tâches de nettoyage</div>
+          <div class="tool-section-sub">Cochez les catégories à nettoyer puis lancez l'opération</div>
+        </div>
+      </div>
 
       <div class="task-card" id="task-list"></div>
 
@@ -1399,7 +1365,7 @@
       Mode <strong>{% if is_admin %}Administrateur{% else %}Standard{% endif %}</strong>
     </div>
     <div class="prop">
-      <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       4 catégories
     </div>
   </div>
@@ -1410,7 +1376,7 @@
   <!-- ── GROUPE : Espace disque ── -->
   <div class="tools-group-header">
     <div class="tools-group-title">
-      <svg class="icon icon-lg" viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>
+      <svg class="icon icon-lg" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
       Espace disque
     </div>
     <div class="tools-group-desc">Identifiez ce qui prend de la place et récupérez de l'espace sur votre disque.</div>
@@ -1452,11 +1418,11 @@
           <button class="btn-ghost" onclick="browseFolder('lf-folder')">Parcourir…</button>
           <input class="dupe-size-input" id="lf-minsize" type="number" value="0.5" step="0.1" min="0.1" title="Taille minimale en Go">
           <span style="font-size:12px;color:var(--text-dim);white-space:nowrap">Go min.</span>
-          <button class="btn-primary" id="btn-scan-lf" onclick="startLargeFileScan()">Analyser</button>
+          <button class="btn-primary" id="btn-scan-lf" data-log-target="lf-log" onclick="startLargeFileScan()">Analyser</button>
         </div>
       </div>
-      <div class="log-body" id="lf-log" style="max-height:60px"></div>
-      <div id="lf-results" style="max-height:360px;overflow-y:auto"></div>
+      <div class="log-body" id="lf-log"></div>
+      <div id="lf-results" class="results-scroll"></div>
     </div>
   </div>
 
@@ -1475,11 +1441,11 @@
           <button class="btn-ghost" onclick="browseFolder('dupe-folder')">Parcourir…</button>
           <input class="dupe-size-input" id="dupe-minsize" type="number" value="100" title="Taille minimale en Ko">
           <span style="font-size:12px;color:var(--text-dim);white-space:nowrap">Ko min.</span>
-          <button class="btn-primary" id="btn-scan-dupes" onclick="startDuplicateScan()">Analyser</button>
+          <button class="btn-primary" id="btn-scan-dupes" data-log-target="dupe-log" onclick="startDuplicateScan()">Analyser</button>
         </div>
       </div>
-      <div class="log-body" id="dupe-log" style="max-height:100px"></div>
-      <div id="dupe-results" style="max-height:360px;overflow-y:auto"></div>
+      <div class="log-body" id="dupe-log"></div>
+      <div id="dupe-results" class="results-scroll"></div>
     </div>
   </div>
 
@@ -1501,7 +1467,7 @@
           <button class="btn-primary" id="btn-scan-inst" onclick="startInstallerScan()">Analyser</button>
         </div>
       </div>
-      <div id="inst-results" style="max-height:360px;overflow-y:auto"></div>
+      <div id="inst-results" class="results-scroll"></div>
     </div>
   </div>
 
@@ -1518,30 +1484,30 @@
         <div class="dupe-scan-bar">
           <input class="dupe-folder-input" id="ef-folder" placeholder="Ex: C:\Users" value="C:\Users">
           <button class="btn-ghost" onclick="browseFolder('ef-folder')">Parcourir…</button>
-          <button class="btn-primary" id="btn-scan-ef" onclick="startEmptyFolderScan()">Analyser</button>
+          <button class="btn-primary" id="btn-scan-ef" data-log-target="ef-log" onclick="startEmptyFolderScan()">Analyser</button>
         </div>
       </div>
-      <div class="log-body" id="ef-log" style="max-height:60px"></div>
-      <div id="ef-results" style="max-height:320px;overflow-y:auto"></div>
+      <div class="log-body" id="ef-log"></div>
+      <div id="ef-results" class="results-scroll"></div>
     </div>
   </div>
 
   <!-- Dossiers orphelins -->
-  <div>
+  <div{% if not is_admin %} class="tool-section-locked"{% endif %}>
     <div class="section-head">
       <div>
         <div class="tool-section-title">Dossiers orphelins</div>
-        <div class="tool-section-sub">Dossiers dans Program Files sans entrée registre correspondante</div>
+        <div class="tool-section-sub">Dossiers dans Program Files sans entrée registre correspondante — suppression nécessite les droits administrateur</div>
       </div>
     </div>
     <div class="card">
       <div class="card-body">
         <div class="dupe-scan-bar">
           <span style="font-size:12px;color:var(--text-mid);flex:1">Program Files &amp; Program Files (x86)</span>
-          <button class="btn-primary" id="btn-scan-orphan" onclick="startOrphanScan()">Analyser</button>
+          <button class="btn-primary" id="btn-scan-orphan" data-log-target="orphan-log" onclick="startOrphanScan()">Analyser</button>
         </div>
       </div>
-      <div class="log-body" id="orphan-log" style="max-height:60px"></div>
+      <div class="log-body" id="orphan-log"></div>
       <div id="orphan-results"><div class="tool-empty">Cliquez sur « Analyser » pour détecter les dossiers orphelins.</div></div>
     </div>
   </div>
@@ -1553,9 +1519,11 @@
         <div class="tool-section-title">Windows.old</div>
         <div class="tool-section-sub">Ancien système Windows conservé après une mise à jour majeure</div>
       </div>
+      <button class="btn-primary" id="btn-scan-winold" data-log-target="winold-log" onclick="loadWindowsOld()">Analyser</button>
     </div>
     <div class="card">
-      <div id="windows-old-info"><div class="tool-loading">Chargement…</div></div>
+      <div class="log-body" id="winold-log"></div>
+      <div id="windows-old-info"><div class="tool-empty">Cliquez sur « Analyser » pour lancer le scan.</div></div>
     </div>
   </div>
 
@@ -1575,10 +1543,11 @@
         <div class="tool-section-title">Mises à jour logicielles</div>
         <div class="tool-section-sub">Logiciels installés avec une version plus récente disponible</div>
       </div>
-      <button class="btn-primary" id="btn-check-updates" onclick="loadUpdates()">Analyser</button>
+      <button class="btn-primary" id="btn-check-updates" data-log-target="updates-log" onclick="loadUpdates()">Analyser</button>
     </div>
     <div class="card">
-      <div id="updates-container"><div class="tool-empty">Cliquez sur « Vérifier » pour rechercher les mises à jour disponibles.</div></div>
+      <div class="log-body" id="updates-log"></div>
+      <div id="updates-container"><div class="tool-empty">Cliquez sur « Analyser » pour lancer le scan.</div></div>
     </div>
   </div>
 
@@ -1595,7 +1564,7 @@
       <div class="search-wrap">
         <input class="search-input" id="apps-search" placeholder="Rechercher une application…" oninput="filterApps()">
       </div>
-      <div id="apps-list" style="max-height:360px;overflow-y:auto;">
+      <div id="apps-list" class="results-scroll">
         <div class="tool-loading">Chargement…</div>
       </div>
     </div>
@@ -1608,7 +1577,7 @@
         <div class="tool-section-title">Extensions de navigateurs</div>
         <div class="tool-section-sub">Gérez les extensions installées dans Chrome, Edge, Brave et Firefox</div>
       </div>
-      <button class="btn-ghost" onclick="loadExtensions()">↻ Actualiser</button>
+      <button class="btn-primary" onclick="loadExtensions()">Analyser</button>
     </div>
     <div class="card">
       <div id="ext-container">
@@ -1624,7 +1593,7 @@
         <div class="tool-section-title">Programmes au démarrage</div>
         <div class="tool-section-sub">Activez ou désactivez les programmes qui se lancent avec Windows</div>
       </div>
-      <button class="btn-ghost" onclick="loadStartup()">↻ Actualiser</button>
+      <button class="btn-primary" onclick="loadStartup()">Analyser</button>
     </div>
     <div class="card">
       <div id="startup-list" class="tool-loading">Chargement…</div>
@@ -1647,7 +1616,7 @@
         <div class="tool-section-title">Nettoyage du registre</div>
         <div class="tool-section-sub">Détecte et supprime les entrées obsolètes du registre Windows</div>
       </div>
-      <button class="btn-primary" id="btn-scan-reg" onclick="startRegistryScan()">Analyser le registre</button>
+      <button class="btn-primary" id="btn-scan-reg" data-log-target="reg-log" onclick="startRegistryScan()">Analyser</button>
     </div>
     <div class="callout callout-yellow">
       <div class="callout-icon">
@@ -1658,8 +1627,8 @@
       </div>
     </div>
     <div class="card">
-      <div class="log-body" id="reg-log" style="max-height:80px;"></div>
-      <div id="reg-results" style="max-height:360px;overflow-y:auto;"></div>
+      <div class="log-body" id="reg-log"></div>
+      <div id="reg-results" class="results-scroll"></div>
     </div>
   </div>
 
@@ -1670,10 +1639,10 @@
         <div class="tool-section-title">Raccourcis cassés</div>
         <div class="tool-section-sub">Raccourcis du Bureau et du Menu Démarrer pointant vers des programmes supprimés</div>
       </div>
-      <button class="btn-primary" id="btn-scan-shortcuts" onclick="loadShortcuts()">Scanner</button>
+      <button class="btn-primary" id="btn-scan-shortcuts" onclick="loadShortcuts()">Analyser</button>
     </div>
     <div class="card">
-      <div id="shortcuts-results"><div class="tool-empty">Cliquez sur « Scanner » pour analyser vos raccourcis.</div></div>
+      <div id="shortcuts-results"><div class="tool-empty">Cliquez sur « Analyser » pour lancer le scan.</div></div>
     </div>
   </div>
 
@@ -1684,9 +1653,11 @@
         <div class="tool-section-title">Fichier d'hibernation</div>
         <div class="tool-section-sub">hiberfil.sys — sauvegarde RAM pour la veille prolongée</div>
       </div>
+      <button class="btn-primary" id="btn-scan-hiber" data-log-target="hiber-log" onclick="loadHibernation()">Analyser</button>
     </div>
     <div class="card">
-      <div id="hiberfil-info"><div class="tool-loading">Chargement…</div></div>
+      <div class="log-body" id="hiber-log"></div>
+      <div id="hiberfil-info"><div class="tool-empty">Cliquez sur « Analyser » pour lancer le scan.</div></div>
     </div>
   </div>
 
@@ -1697,7 +1668,7 @@
         <div class="tool-section-title">Points de restauration</div>
         <div class="tool-section-sub">Supprimez les anciens points de restauration Windows pour libérer de l'espace</div>
       </div>
-      <button class="btn-ghost" id="btn-refresh-rp" onclick="loadRestorePoints()">↻ Actualiser</button>
+      <button class="btn-primary" id="btn-refresh-rp" onclick="loadRestorePoints()">Analyser</button>
     </div>
     <div class="card">
       <div id="rp-results"><div class="tool-loading">Chargement…</div></div>
@@ -1707,7 +1678,7 @@
   <!-- ── GROUPE : Confidentialité ── -->
   <div class="tools-group-header">
     <div class="tools-group-title">
-      <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
       Confidentialité
     </div>
     <div class="tools-group-desc">Effacez les traces de votre activité laissées sur ce PC : fichiers récents, historique, presse-papier.</div>
@@ -1720,7 +1691,7 @@
         <div class="tool-section-title">Nettoyage de confidentialité</div>
         <div class="tool-section-sub">Fichiers récents, historique de la barre d'adresse, jump lists, presse-papier</div>
       </div>
-      <button class="btn-ghost" id="btn-refresh-privacy" onclick="loadPrivacy()">↻ Actualiser</button>
+      <button class="btn-primary" id="btn-refresh-privacy" onclick="loadPrivacy()">Analyser</button>
     </div>
     <div class="card">
       <div id="privacy-results"><div class="tool-loading">Chargement…</div></div>
@@ -1775,22 +1746,24 @@
         espace disque, fichiers temporaires, cache navigateur, démarrage, corbeille et cache applicatif.
       </div>
       <div style="margin-top:14px;display:flex;gap:6px;">
-        <button class="btn-primary" onclick="loadHealth()">
-          <svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-          Réanalyser
-        </button>
+        <button class="btn-primary" id="btn-scan-health" data-log-target="health-log" onclick="loadHealth()">Analyser</button>
         <button class="btn-ghost" onclick="switchTab('nettoyage')">Nettoyer maintenant</button>
       </div>
     </div>
   </div>
 
   <!-- Métriques -->
-  <h2 class="nett-section-title" style="margin-top:32px">
-    <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 12v5h5v-5z"/><path d="M14 7v10h5V7z"/></svg>
-    Indicateurs détaillés
-  </h2>
-  <div class="health-metrics" id="health-metrics">
-    <div class="tool-loading">Chargement…</div>
+  <div>
+    <div class="section-head">
+      <div>
+        <div class="tool-section-title">Indicateurs détaillés</div>
+        <div class="tool-section-sub">Diagnostic complet de chaque composante analysée</div>
+      </div>
+    </div>
+    <div class="log-body" id="health-log"></div>
+    <div class="health-metrics" id="health-metrics">
+      <div class="tool-empty">Cliquez sur « Analyser » pour lancer le diagnostic.</div>
+    </div>
   </div>
 
 </div>
@@ -1820,7 +1793,7 @@
       <div style="margin-bottom:8px"><strong style="color:var(--text)">Outils</strong> — Détection avancée : doublons, gros fichiers, anciens installeurs, registre, raccourcis cassés, points de restauration et plus.</div>
       <div style="margin-bottom:14px"><strong style="color:var(--text)">Santé</strong> — Évalue l'état général de votre PC sur 6 indicateurs et propose des actions correctives.</div>
       <div class="h3" style="margin:18px 0 6px">Mode administrateur</div>
-      <p style="margin-bottom:14px">Certaines tâches (registre, hibernation, points de restauration) nécessitent les droits administrateur. Cliquez sur « Relancer en administrateur » dans la bannière jaune en haut de la page pour les débloquer.</p>
+      <p style="margin-bottom:14px">Certaines tâches (registre, hibernation, points de restauration) nécessitent les droits administrateur. Cliquez sur « Mode administrateur » en bas de la barre latérale pour relancer l'application avec les droits nécessaires.</p>
     </div>
     <div class="modal-actions">
       <button class="btn-primary" onclick="closeHelp()">Compris</button>
@@ -1832,7 +1805,7 @@
 <div id="history-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeHistory()">
   <div class="modal" style="max-width:560px">
     <div class="modal-title">Historique des nettoyages</div>
-    <div id="history-list" style="max-height:400px;overflow-y:auto"></div>
+    <div id="history-list" class="results-scroll"></div>
     <div class="modal-actions" style="margin-top:14px">
       <button class="btn-primary" onclick="closeHistory()">Fermer</button>
     </div>

@@ -25,6 +25,27 @@ def is_admin():
         return False
 
 
+_ADMIN_PATH_PREFIXES = tuple(
+    p.lower() for p in (
+        os.environ.get("ProgramFiles",      r"C:\Program Files"),
+        os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"),
+        os.environ.get("SystemRoot",        r"C:\Windows"),
+        r"C:\ProgramData",
+    )
+)
+
+
+def is_admin_path(path):
+    """True si la suppression du chemin nécessite les droits administrateur
+    que l'utilisateur courant ne possède pas. Renvoie toujours False si déjà admin."""
+    if is_admin():
+        return False
+    try:
+        return str(path).lower().startswith(_ADMIN_PATH_PREFIXES)
+    except Exception:
+        return False
+
+
 def fmt_size(size_bytes):
     if size_bytes == 0:
         return "0 o"
@@ -875,9 +896,10 @@ def find_duplicates(folder, min_size_kb=100, log=None):
             if result:
                 path, size, h = result
                 hashes[h].append({
-                    "path":     path,
-                    "size":     size,
-                    "size_fmt": fmt_size(size),
+                    "path":        path,
+                    "size":        size,
+                    "size_fmt":    fmt_size(size),
+                    "needs_admin": is_admin_path(path),
                 })
 
     duplicates = {h: files for h, files in hashes.items() if len(files) > 1}
@@ -1182,10 +1204,11 @@ def scan_shortcuts():
                 target = sc.Targetpath.strip()
                 if target and not Path(target).exists():
                     broken.append({
-                        "path":     str(lnk),
-                        "name":     lnk.stem,
-                        "target":   target,
-                        "location": loc_name,
+                        "path":        str(lnk),
+                        "name":        lnk.stem,
+                        "target":      target,
+                        "location":    loc_name,
+                        "needs_admin": is_admin_path(lnk),
                     })
             except Exception:
                 pass
@@ -1232,10 +1255,11 @@ def find_large_files(folder, min_size_bytes, log=None):
                             scanned += 1
                             if size >= min_size_bytes:
                                 results.append({
-                                    "path":     entry.path,
-                                    "name":     entry.name,
-                                    "size":     size,
-                                    "size_fmt": fmt_size(size),
+                                    "path":        entry.path,
+                                    "name":        entry.name,
+                                    "size":        size,
+                                    "size_fmt":    fmt_size(size),
+                                    "needs_admin": is_admin_path(entry.path),
                                 })
                     except (PermissionError, OSError):
                         pass
@@ -1299,7 +1323,7 @@ def find_empty_folders(folder, log=None):
                 if entry.is_dir(follow_symlinks=False)
             )
             if total_files == 0 and sub_dirs_empty and dirpath != str(root):
-                results.append({"path": dirpath, "name": p.name})
+                results.append({"path": dirpath, "name": p.name, "needs_admin": is_admin_path(dirpath)})
         except (PermissionError, OSError):
             pass
 
@@ -1317,8 +1341,15 @@ def delete_empty_folders(paths):
         try:
             Path(p).rmdir()
             deleted += 1
+        except PermissionError:
+            errors.append(f"{p} : accès refusé (droits administrateur requis)")
+        except OSError as e:
+            if getattr(e, "winerror", None) == 145:  # ERROR_DIR_NOT_EMPTY
+                errors.append(f"{p} : dossier non vide")
+            else:
+                errors.append(f"{p} : {e.strerror or e}")
         except Exception as e:
-            errors.append(f"{p}: {e}")
+            errors.append(f"{p} : {e}")
     return deleted, errors
 
 
@@ -1443,14 +1474,46 @@ def find_orphan_folders(log=None):
 
 
 def delete_orphan_folders(paths):
-    """Supprime les dossiers orphelins sélectionnés. Retourne (deleted, errors)."""
+    """Supprime les dossiers orphelins sélectionnés. Retourne (deleted, errors).
+
+    Gère les fichiers read-only (courant dans Program Files) en chmod + retry.
+    """
+    import stat
+
+    def _on_rm_error(func, path, exc_info):
+        # Tente de retirer le read-only puis re-essaie l'operation
+        try:
+            os.chmod(path, stat.S_IWRITE)
+            func(path)
+        except Exception:
+            raise  # laisse remonter l'exception originale
+
     deleted, errors = 0, []
     for p in paths:
         try:
-            shutil.rmtree(p)
+            if not Path(p).exists():
+                errors.append(f"{p}: dossier introuvable")
+                continue
+            shutil.rmtree(p, onerror=_on_rm_error)
             deleted += 1
+        except PermissionError:
+            errors.append(
+                f"{Path(p).name} : accès refusé (droits administrateur requis)"
+            )
+        except OSError as e:
+            winerr = getattr(e, "winerror", 0)
+            if winerr == 5:  # ACCESS_DENIED
+                errors.append(
+                    f"{Path(p).name} : accès refusé (droits administrateur requis)"
+                )
+            elif winerr == 32:  # SHARING_VIOLATION
+                errors.append(
+                    f"{Path(p).name} : fichier en cours d'utilisation"
+                )
+            else:
+                errors.append(f"{Path(p).name} : {e}")
         except Exception as e:
-            errors.append(f"{p}: {e}")
+            errors.append(f"{Path(p).name} : {e}")
     return deleted, errors
 
 
@@ -1725,15 +1788,23 @@ def get_privacy_items():
     except Exception:
         pass
 
-    # Presse-papier
-    items.append({
-        "id":    "clipboard",
-        "label": "Presse-papier",
-        "desc":  "Contenu actuellement copié dans le presse-papier",
-        "count": 1,
-        "size":  0,
-        "size_fmt": "—",
-    })
+    # Presse-papier — n'afficher que si le presse-papier contient quelque chose
+    try:
+        import ctypes
+        if ctypes.windll.user32.OpenClipboard(0):
+            n_formats = ctypes.windll.user32.CountClipboardFormats()
+            ctypes.windll.user32.CloseClipboard()
+            if n_formats > 0:
+                items.append({
+                    "id":    "clipboard",
+                    "label": "Presse-papier",
+                    "desc":  "Contenu actuellement copié dans le presse-papier",
+                    "count": n_formats,
+                    "size":  0,
+                    "size_fmt": f"{n_formats} format(s)",
+                })
+    except Exception:
+        pass
 
     return items
 
@@ -1772,11 +1843,16 @@ def clean_privacy_items(ids):
     if "explorer_searches" in ids:
         try:
             import winreg
+            # Bug fix : il faut KEY_READ ET KEY_WRITE pour pouvoir
+            # enumerer (EnumValue) puis supprimer (DeleteValue).
+            # KEY_SET_VALUE seul ne permet pas EnumValue.
             key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
                                  r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths",
-                                 0, winreg.KEY_SET_VALUE)
-            i = 0
+                                 0, winreg.KEY_READ | winreg.KEY_WRITE)
+            # Collecter tous les noms d'abord (EnumValue ne marche pas
+            # bien en meme temps que DeleteValue)
             names = []
+            i = 0
             while True:
                 try:
                     name, _, _ = winreg.EnumValue(key, i)
@@ -1784,12 +1860,13 @@ def clean_privacy_items(ids):
                     i += 1
                 except OSError:
                     break
+            # Ensuite supprimer
             for name in names:
                 try:
                     winreg.DeleteValue(key, name)
                     cleaned += 1
                 except Exception as e:
-                    errors.append(str(e))
+                    errors.append(f"TypedPaths/{name}: {e}")
             winreg.CloseKey(key)
         except Exception as e:
             errors.append(f"Historique barre d'adresse : {e}")
@@ -1966,11 +2043,12 @@ def find_old_installers(folder, max_age_days=90, log=None):
                     if st.st_mtime < cutoff:
                         age_days = int((datetime.now().timestamp() - st.st_mtime) / 86400)
                         results.append({
-                            "path":     entry.path,
-                            "name":     entry.name,
-                            "size":     st.st_size,
-                            "size_fmt": fmt_size(st.st_size),
-                            "age_days": age_days,
+                            "path":        entry.path,
+                            "name":        entry.name,
+                            "size":        st.st_size,
+                            "size_fmt":    fmt_size(st.st_size),
+                            "age_days":    age_days,
+                            "needs_admin": is_admin_path(entry.path),
                         })
                 except (OSError, PermissionError):
                     pass

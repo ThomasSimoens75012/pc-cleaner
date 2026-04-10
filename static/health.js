@@ -17,17 +17,19 @@ let healthInitialized = false;
 function initHealth() {
   if (healthInitialized) return;
   healthInitialized = true;
-  // Utiliser le cache si dispo (chargé en arrière-plan par app.js)
   if (window._healthCache) {
     renderHealth(window._healthCache);
-  } else {
-    loadHealth();
+    updateHealthBadge(window._healthCache);
   }
 }
 
 async function loadHealth() {
   const metricsEl = document.getElementById("health-metrics");
-  if (metricsEl) metricsEl.innerHTML = `<div class="tool-loading">Analyse en cours…</div>`;
+  const btnEl     = document.getElementById("btn-scan-health");
+  const logEl     = document.getElementById("health-log");
+  if (logEl) logEl.innerHTML = "";
+  if (metricsEl) metricsEl.innerHTML = "";
+  _btnScan(btnEl, "Analyse…");
 
   const ringFill = document.getElementById("health-ring-fill");
   const scoreVal = document.getElementById("health-score-val");
@@ -42,8 +44,10 @@ async function loadHealth() {
     window._healthCache = data;
     renderHealth(data);
     updateHealthBadge(data);
+    _btnReset(btnEl);
   } catch (e) {
-    if (metricsEl) metricsEl.innerHTML = `<div class="tool-error">Erreur de chargement.</div>`;
+    _logAppend("health-log", "Erreur de chargement.");
+    _btnReset(btnEl);
   }
 }
 
