@@ -55,21 +55,6 @@ from cleaner import (
 )
 
 
-def _safe_delete_or(paths, _normal_fn):
-    """Envoie les chemins à la corbeille Windows (toujours — comportement par défaut).
-
-    Retourne (freed_bytes, errors_list).
-    """
-    total = 0
-    for p in paths:
-        try:
-            total += Path(p).stat().st_size if Path(p).is_file() else 0
-        except Exception:
-            pass
-    res = send_to_recycle_bin(paths)
-    return total, res.get("errors", [])
-
-
 def _log_delete(op, summary, errors):
     app.logger.info("%s — %s, %d erreur(s)", op, summary, len(errors or []))
     for e in (errors or []):
@@ -520,7 +505,7 @@ def api_duplicates_delete():
     rejected = _reject_if_admin_paths(paths)
     if rejected:
         return rejected
-    freed, errors = _safe_delete_or(paths, delete_duplicate_files)
+    freed, errors = delete_duplicate_files(paths)
     _log_delete("duplicates/delete", f"{len(paths)} fichier(s), {fmt_size(freed)} libérés", errors)
     _save_history_entry(freed, kind="delete", label="Fichiers dupliqués", details={"count": len(paths), "errors": len(errors or [])})
     return jsonify({"freed": freed, "freed_fmt": fmt_size(freed), "errors": errors})
@@ -548,7 +533,7 @@ def api_duplicate_folders_delete():
     rejected = _reject_if_admin_paths(paths)
     if rejected:
         return rejected
-    freed, errors = _safe_delete_or(paths, delete_duplicate_folders)
+    freed, errors = delete_duplicate_folders(paths)
     _log_delete("duplicate-folders/delete", f"{len(paths)} dossier(s), {fmt_size(freed)} libérés", errors)
     _save_history_entry(freed, kind="delete", label="Dossiers dupliqués", details={"count": len(paths), "errors": len(errors or [])})
     return jsonify({"freed": freed, "freed_fmt": fmt_size(freed), "errors": errors})
@@ -856,7 +841,7 @@ def api_old_installers_delete():
     rejected = _reject_if_admin_paths(paths)
     if rejected:
         return rejected
-    freed, errors = _safe_delete_or(paths, delete_installer_files)
+    freed, errors = delete_installer_files(paths)
     _log_delete("old-installers/delete", f"{len(paths)} fichier(s), {fmt_size(freed)} libérés", errors)
     _save_history_entry(freed, kind="delete", label="Anciens installers", details={"count": len(paths), "errors": len(errors or [])})
     return jsonify({"ok": freed > 0 or not errors, "freed": freed,

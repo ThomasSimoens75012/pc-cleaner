@@ -326,32 +326,11 @@ def delete_folder_contents(folder):
     if not items:
         return 0, 0
 
-    try:
-        res = send_to_recycle_bin(items)
-        moved = res.get("moved", 0)
-        failed = res.get("failed", len(items) - moved)
-        # Approximation : proportion d'éléments déplacés
-        if len(items):
-            freed = int(total_size * (moved / len(items)))
-        else:
-            freed = 0
-        return freed, failed
-    except Exception:
-        # Fallback : suppression directe en cas d'échec du shell
-        freed = 0
-        errors = 0
-        for path_str in items:
-            p = Path(path_str)
-            try:
-                size = get_folder_size(p) if p.is_dir() else p.stat().st_size
-                if p.is_dir():
-                    shutil.rmtree(p, ignore_errors=False)
-                else:
-                    p.unlink()
-                freed += size
-            except (OSError, PermissionError):
-                errors += 1
-        return freed, errors
+    res = send_to_recycle_bin(items)
+    moved = res.get("moved", 0)
+    failed = res.get("failed", len(items) - moved)
+    freed = int(total_size * (moved / len(items))) if items else 0
+    return freed, failed
 
 
 def get_disk_info():
@@ -1956,47 +1935,6 @@ def delete_orphan_folders(paths):
     _, errs = _recycle_many(valid, label="Dossiers orphelins")
     deleted = len(valid) - len(errs)
     return max(deleted, 0), missing + errs
-
-
-def _delete_orphan_folders_legacy(paths):
-    """Ancienne implémentation shutil.rmtree (conservée pour référence)."""
-    import stat
-
-    def _on_rm_error(func, path, exc_info):
-        # Tente de retirer le read-only puis re-essaie l'operation
-        try:
-            os.chmod(path, stat.S_IWRITE)
-            func(path)
-        except Exception:
-            raise  # laisse remonter l'exception originale
-
-    deleted, errors = 0, []
-    for p in paths:
-        try:
-            if not Path(p).exists():
-                errors.append(f"{p}: dossier introuvable")
-                continue
-            shutil.rmtree(p, onerror=_on_rm_error)
-            deleted += 1
-        except PermissionError:
-            errors.append(
-                f"{Path(p).name} : accès refusé (droits administrateur requis)"
-            )
-        except OSError as e:
-            winerr = getattr(e, "winerror", 0)
-            if winerr == 5:  # ACCESS_DENIED
-                errors.append(
-                    f"{Path(p).name} : accès refusé (droits administrateur requis)"
-                )
-            elif winerr == 32:  # SHARING_VIOLATION
-                errors.append(
-                    f"{Path(p).name} : fichier en cours d'utilisation"
-                )
-            else:
-                errors.append(f"{Path(p).name} : {e}")
-        except Exception as e:
-            errors.append(f"{Path(p).name} : {e}")
-    return deleted, errors
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -4764,18 +4702,9 @@ def get_privacy_items():
     """
     items = []
 
-    recent = _recent_files_dir()
-    if recent.exists():
-        files = list(recent.glob("*.lnk"))
-        size  = sum(f.stat().st_size for f in files if f.is_file())
-        items.append({
-            "id":    "recent_files",
-            "label": "Fichiers récents",
-            "desc":  "Raccourcis vers les fichiers ouverts récemment (Explorateur Windows)",
-            "count": len(files),
-            "size":  size,
-            "size_fmt": fmt_size(size),
-        })
+    # Note : les fichiers récents (%APPDATA%\Microsoft\Windows\Recent\*.lnk) sont
+    # nettoyés par task_recent_files dans l'onglet Nettoyage principal — pas
+    # ré-exposés ici pour éviter le doublon UI.
 
     # Jump Lists
     jl_dirs = [
@@ -4855,11 +4784,6 @@ def clean_privacy_items(ids):
     Retourne (cleaned_count, errors).
     """
     cleaned, errors = 0, []
-
-    if "recent_files" in ids:
-        count, _, errs = _purge_recent_shortcuts()
-        cleaned += count
-        errors.extend(errs)
 
     if "jump_lists" in ids:
         jl_dirs = [
