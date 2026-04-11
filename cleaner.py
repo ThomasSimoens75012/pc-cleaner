@@ -109,6 +109,37 @@ def get_folder_size(folder):
     return total
 
 
+def _recycle_many(paths):
+    """Envoie un batch de chemins à la corbeille, retourne (freed_bytes, errors).
+
+    Calcule la taille avant suppression et utilise SHFileOperationW en un seul
+    appel (bien plus rapide qu'un appel par fichier).
+    """
+    if not paths:
+        return 0, []
+    existing = []
+    total = 0
+    for p in paths:
+        path = Path(p)
+        if not path.exists():
+            continue
+        try:
+            size = get_folder_size(path) if path.is_dir() else path.stat().st_size
+        except Exception:
+            size = 0
+        existing.append(str(path))
+        total += size
+    if not existing:
+        return 0, []
+    res = send_to_recycle_bin(existing)
+    moved = res.get("moved", 0)
+    errs = list(res.get("errors", []))
+    if moved < len(existing):
+        errs.append(f"{len(existing) - moved} élément(s) non déplacé(s)")
+    freed = int(total * (moved / len(existing))) if existing else 0
+    return freed, errs
+
+
 def delete_folder_contents(folder):
     """Envoie les enfants directs de `folder` à la corbeille Windows (batch unique).
 
@@ -315,13 +346,12 @@ def get_browser_data_breakdown():
 
 
 def clean_browser_data(selections):
-    """Supprime les catégories sélectionnées par profil.
+    """Envoie à la corbeille les catégories sélectionnées par profil.
 
     selections : list de {path: str, keys: [str]}
     Retourne {deleted_bytes, errors}.
     """
-    import shutil
-    deleted_bytes = 0
+    batch = []
     errors = []
     for sel in selections or []:
         profile_path = Path(sel.get("path", ""))
@@ -336,18 +366,12 @@ def clean_browser_data(selections):
                 continue
             for rel in rels:
                 p = profile_path / rel
-                try:
-                    if p.is_file():
-                        size = p.stat().st_size
-                        p.unlink()
-                        deleted_bytes += size
-                    elif p.is_dir():
-                        size = get_folder_size(str(p))
-                        shutil.rmtree(p, ignore_errors=True)
-                        deleted_bytes += size
-                except Exception as e:
-                    errors.append(f"{p.name}: {e}")
-    return {"deleted_bytes": deleted_bytes, "deleted_fmt": fmt_size(deleted_bytes), "errors": errors}
+                if p.exists():
+                    batch.append(str(p))
+
+    freed, errs = _recycle_many(batch)
+    errors.extend(errs)
+    return {"deleted_bytes": freed, "deleted_fmt": fmt_size(freed), "errors": errors}
 
 
 def _browser_profile_paths():
@@ -458,16 +482,10 @@ def _recent_files_dir():
 
 def _purge_recent_shortcuts():
     """Supprime les raccourcis .lnk du dossier Recent. Retourne (count, freed, errors)."""
-    count, freed, errors = 0, 0, []
-    for f in _recent_files_dir().glob("*.lnk"):
-        try:
-            size = f.stat().st_size
-            f.unlink()
-            count += 1
-            freed += size
-        except Exception as e:
-            errors.append(str(e))
-    return count, freed, errors
+    files = [str(f) for f in _recent_files_dir().glob("*.lnk")]
+    freed, errors = _recycle_many(files)
+    count = len(files) - len(errors)
+    return max(count, 0), freed, errors
 
 
 def estimate_recent_files():
@@ -647,15 +665,11 @@ def task_dns(log):
 
 def task_thumbnails(log):
     d = Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "Windows" / "Explorer"
-    freed = 0
-    if d.exists():
-        for item in d.glob("thumbcache_*.db"):
-            try:
-                size = item.stat().st_size
-                item.unlink()
-                freed += size
-            except (OSError, PermissionError):
-                pass
+    if not d.exists():
+        log("Cache miniatures — déjà propre")
+        return 0
+    items = [str(f) for f in d.glob("thumbcache_*.db")]
+    freed, _ = _recycle_many(items)
     if freed > 0:
         log(f"Cache miniatures — {fmt_size(freed)} libérés")
     else:
@@ -679,21 +693,15 @@ def task_dumps(log):
         Path(os.environ.get("USERPROFILE", "")),
         Path(r"C:\Windows\Minidump"),
     ]
-    total, count = 0, 0
+    batch = []
     for d in search_dirs:
         if not d.exists():
             continue
         for ext in ["*.dmp", "*.mdmp"]:
-            for f in list(d.glob(ext)):
-                try:
-                    size = f.stat().st_size
-                    f.unlink()
-                    total += size
-                    count += 1
-                except (OSError, PermissionError):
-                    pass
+            batch.extend(str(f) for f in d.glob(ext))
+    total, _ = _recycle_many(batch)
     if total > 0:
-        log(f"Fichiers crash — {count} fichier(s) supprimé(s), {fmt_size(total)} libérés")
+        log(f"Fichiers crash — {len(batch)} fichier(s) supprimé(s), {fmt_size(total)} libérés")
     else:
         log("Fichiers crash — aucun trouvé")
     return total
@@ -754,11 +762,8 @@ def task_font_cache(log):
 
     fntcache = Path(r"C:\Windows\System32\FNTCACHE.DAT")
     if fntcache.exists():
-        try:
-            freed += fntcache.stat().st_size
-            fntcache.unlink()
-        except (OSError, PermissionError):
-            pass
+        f, _ = _recycle_many([str(fntcache)])
+        freed += f
 
     subprocess.run(["net", "start", "FontCache"], capture_output=True, timeout=10)
     if freed > 0:
@@ -1189,17 +1194,8 @@ def _strip_copy_suffix(name):
 
 
 def delete_duplicate_files(paths):
-    """Supprime une liste de fichiers (chemins en doublon sélectionnés par l'utilisateur)."""
-    freed = 0
-    errors = []
-    for path in paths:
-        try:
-            p = Path(path)
-            freed += p.stat().st_size
-            p.unlink()
-        except Exception as e:
-            errors.append(str(e))
-    return freed, errors
+    """Envoie les fichiers en doublon à la corbeille Windows."""
+    return _recycle_many(paths)
 
 
 def find_duplicate_folders(folder, log=None):
@@ -1356,29 +1352,8 @@ def find_duplicate_folders(folder, log=None):
 
 
 def delete_duplicate_folders(paths):
-    """Supprime récursivement une liste de dossiers."""
-    import shutil
-    freed = 0
-    errors = []
-    for path in paths:
-        try:
-            p = Path(path)
-            if not p.is_dir():
-                errors.append(f"{path}: n'est pas un dossier")
-                continue
-            # Calcule la taille avant suppression
-            size = 0
-            for r, _dirs, files in os.walk(p):
-                for f in files:
-                    try:
-                        size += (Path(r) / f).stat().st_size
-                    except Exception:
-                        pass
-            shutil.rmtree(p)
-            freed += size
-        except Exception as e:
-            errors.append(f"{path}: {e}")
-    return freed, errors
+    """Envoie les dossiers dupliqués à la corbeille Windows."""
+    return _recycle_many([p for p in paths if Path(p).is_dir()])
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1617,8 +1592,10 @@ def remove_browser_extension(ext_path):
     try:
         p = Path(ext_path)
         if p.exists() and p.is_dir():
-            shutil.rmtree(p)
-            return True, None
+            res = send_to_recycle_bin([str(p)])
+            if res.get("moved"):
+                return True, None
+            return False, (res.get("errors") or ["Échec de la mise en corbeille"])[0]
         return False, "Dossier introuvable"
     except Exception as e:
         return False, str(e)
@@ -1668,15 +1645,10 @@ def scan_shortcuts():
 
 
 def delete_shortcuts(paths):
-    """Supprime les raccourcis .lnk sélectionnés. Retourne (deleted, errors)."""
-    deleted, errors = 0, 0
-    for p in paths:
-        try:
-            Path(p).unlink(missing_ok=True)
-            deleted += 1
-        except Exception:
-            errors += 1
-    return deleted, errors
+    """Envoie les raccourcis .lnk à la corbeille. Retourne (deleted, errors)."""
+    _, errs = _recycle_many(paths)
+    deleted = len(paths) - len(errs)
+    return max(deleted, 0), errs
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1784,23 +1756,12 @@ def find_empty_folders(folder, log=None):
 
 
 def delete_empty_folders(paths):
-    """Supprime les dossiers vides. Retourne (deleted, errors)."""
-    deleted, errors = 0, []
-    # Trie du plus profond au moins profond pour supprimer les enfants d'abord
-    for p in sorted(paths, key=lambda x: x.count(os.sep), reverse=True):
-        try:
-            Path(p).rmdir()
-            deleted += 1
-        except PermissionError:
-            errors.append(f"{p} : accès refusé (droits administrateur requis)")
-        except OSError as e:
-            if getattr(e, "winerror", None) == 145:  # ERROR_DIR_NOT_EMPTY
-                errors.append(f"{p} : dossier non vide")
-            else:
-                errors.append(f"{p} : {e.strerror or e}")
-        except Exception as e:
-            errors.append(f"{p} : {e}")
-    return deleted, errors
+    """Envoie les dossiers vides à la corbeille. Retourne (deleted, errors)."""
+    # Trie du plus profond au moins profond pour respecter la hiérarchie
+    sorted_paths = sorted(paths, key=lambda x: x.count(os.sep), reverse=True)
+    _, errs = _recycle_many(sorted_paths)
+    deleted = len(sorted_paths) - len(errs)
+    return max(deleted, 0), errs
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1923,10 +1884,16 @@ def find_orphan_folders(log=None):
 
 
 def delete_orphan_folders(paths):
-    """Supprime les dossiers orphelins sélectionnés. Retourne (deleted, errors).
+    """Envoie les dossiers orphelins à la corbeille Windows. Retourne (deleted, errors)."""
+    valid = [p for p in paths if Path(p).exists()]
+    missing = [f"{p}: dossier introuvable" for p in paths if not Path(p).exists()]
+    _, errs = _recycle_many(valid)
+    deleted = len(valid) - len(errs)
+    return max(deleted, 0), missing + errs
 
-    Gère les fichiers read-only (courant dans Program Files) en chmod + retry.
-    """
+
+def _delete_orphan_folders_legacy(paths):
+    """Ancienne implémentation shutil.rmtree (conservée pour référence)."""
     import stat
 
     def _on_rm_error(func, path, exc_info):
@@ -3652,24 +3619,19 @@ def _run_rebuild_icon_cache():
         Path(localappdata) / "IconCache.db",
         Path(localappdata) / "Microsoft" / "Windows" / "Explorer",
     ]
+    batch = []
     for t in targets:
         if t.is_file():
-            try:
-                t.unlink()
-                steps.append(f"Supprimé : {t.name}")
-            except Exception as e:
-                steps.append(f"Erreur {t.name} : {e}")
+            batch.append(str(t))
+            steps.append(f"Prévu : {t.name}")
         elif t.is_dir():
-            try:
-                for f in t.glob("iconcache*"):
-                    try: f.unlink()
-                    except: pass
-                for f in t.glob("thumbcache*"):
-                    try: f.unlink()
-                    except: pass
-                steps.append(f"Nettoyé : {t.name}")
-            except Exception as e:
-                steps.append(f"Erreur {t.name} : {e}")
+            batch.extend(str(f) for f in t.glob("iconcache*"))
+            batch.extend(str(f) for f in t.glob("thumbcache*"))
+            steps.append(f"Nettoyé : {t.name}")
+    if batch:
+        _, errs = _recycle_many(batch)
+        if errs:
+            steps.append(f"{len(errs)} erreur(s) corbeille")
     # 3. Relancer explorer
     try:
         subprocess.Popen(["explorer.exe"], creationflags=0x08000000)
@@ -4838,15 +4800,15 @@ def clean_privacy_items(ids):
             Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Recent" / "AutomaticDestinations",
             Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Recent" / "CustomDestinations",
         ]
+        batch = []
         for d in jl_dirs:
             if d.exists():
                 for f in d.iterdir():
                     if f.is_file():
-                        try:
-                            f.unlink()
-                            cleaned += 1
-                        except Exception as e:
-                            errors.append(str(e))
+                        batch.append(str(f))
+        _, errs = _recycle_many(batch)
+        cleaned += len(batch) - len(errs)
+        errors.extend(errs)
 
     if "explorer_searches" in ids:
         try:
@@ -5070,16 +5032,8 @@ def find_old_installers(folder, max_age_days=90, log=None):
 
 
 def delete_installer_files(paths):
-    """Supprime les fichiers sélectionnés. Retourne (freed_bytes, errors)."""
-    freed, errors = 0, []
-    for p in paths:
-        try:
-            size = Path(p).stat().st_size
-            Path(p).unlink()
-            freed += size
-        except Exception as e:
-            errors.append(f"{p}: {e}")
-    return freed, errors
+    """Envoie les anciens installeurs à la corbeille Windows."""
+    return _recycle_many(paths)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
