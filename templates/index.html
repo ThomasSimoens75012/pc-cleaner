@@ -1814,6 +1814,10 @@
       <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       <span id="clock">--:--</span>
     </div>
+    <button class="sb-item" onclick="runSelfCheck()">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Diagnostic
+    </button>
     <button class="sb-item" onclick="openHelp()">
       <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       Aide
@@ -2457,6 +2461,20 @@
   </div>
 </div>
 
+<!-- ── Modal Diagnostic self-check ── -->
+<div id="selfcheck-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeSelfCheck()">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title">Diagnostic OpenCleaner</div>
+    <div id="selfcheck-body" style="font-size:13px;color:var(--text-mid);line-height:1.5">
+      <div class="tool-loading">Analyse en cours…</div>
+    </div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-primary" onclick="runSelfCheck()">Relancer</button>
+      <button class="btn-ghost" onclick="closeSelfCheck()">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Modal Aide ── -->
 <div id="help-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeHelp()">
   <div class="modal" style="max-width:540px">
@@ -2579,6 +2597,9 @@
         <div style="font-size:11px;color:var(--text-dim)">Applique un ensemble de désactivations en un clic. Réversible.</div>
       </div>
       <div id="tweak-presets" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <button class="btn-ghost" onclick="exportTweaksReg()" title="Exporter un fichier .reg avec la config actuelle (importable sur un autre PC sans OpenCleaner)" style="font-size:11px">
+        Exporter .reg
+      </button>
     </div>
   </div>
 </div>
@@ -2691,6 +2712,53 @@
   }
   function closeHelp() {
     document.getElementById("help-overlay").style.display = "none";
+  }
+
+  // ── Self-check / diagnostic ─────────────────────────────────────────────
+  async function runSelfCheck() {
+    const overlay = document.getElementById("selfcheck-overlay");
+    const body    = document.getElementById("selfcheck-body");
+    overlay.style.display = "flex";
+    body.innerHTML = '<div class="tool-loading">Analyse en cours…</div>';
+    try {
+      const res  = await fetch("/api/self-check");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur serveur");
+      renderSelfCheck(data);
+    } catch (e) {
+      body.innerHTML = `<div class="tool-error">Erreur : ${e.message}</div>`;
+    }
+  }
+  function closeSelfCheck() {
+    document.getElementById("selfcheck-overlay").style.display = "none";
+  }
+  function renderSelfCheck(data) {
+    const body = document.getElementById("selfcheck-body");
+    const s = data.summary || {};
+    const iconFor = (status) => {
+      if (status === "ok")    return '<span style="color:var(--green);font-weight:700">✓</span>';
+      if (status === "warn")  return '<span style="color:var(--amber);font-weight:700">!</span>';
+      if (status === "error") return '<span style="color:var(--red);font-weight:700">✗</span>';
+      return '<span>?</span>';
+    };
+    const summary = `
+      <div style="display:flex;gap:16px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;margin-bottom:14px;font-size:12px">
+        <span><strong style="color:var(--green)">${s.ok || 0}</strong> OK</span>
+        <span><strong style="color:var(--amber)">${s.warn || 0}</strong> avertissement${(s.warn||0) > 1 ? 's' : ''}</span>
+        <span><strong style="color:var(--red)">${s.error || 0}</strong> erreur${(s.error||0) > 1 ? 's' : ''}</span>
+        <span style="margin-left:auto;color:var(--text-dim);font-family:'IBM Plex Mono',monospace">${s.total || 0} vérifications</span>
+      </div>
+    `;
+    const items = (data.checks || []).map(c => `
+      <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start">
+        <div style="width:20px;text-align:center;padding-top:1px">${iconFor(c.status)}</div>
+        <div style="flex:1">
+          <div style="font-weight:500;color:var(--text);font-size:13px">${c.label}</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:2px">${c.detail}</div>
+        </div>
+      </div>
+    `).join("");
+    body.innerHTML = summary + items;
   }
 
   // ── Historique ───────────────────────────────────────────────────────────

@@ -44,6 +44,7 @@ from cleaner import (
     get_services_state, set_service_enabled,
     get_scheduled_tasks_state, set_scheduled_task_enabled,
     list_repair_actions, run_repair_action, run_repair_action_stream,
+    run_self_check, export_tweaks_reg,
 )
 
 
@@ -113,6 +114,29 @@ def index():
     downloads = str(Path.home() / "Downloads")
     return render_template("index.html", tasks_json=tasks_json,
                            is_admin=is_admin(), downloads_folder=downloads)
+
+
+@app.route("/api/windows-tweaks/export-reg")
+def api_windows_tweaks_export_reg():
+    try:
+        report = export_tweaks_reg()
+    except Exception as e:
+        app.logger.exception("export-reg error")
+        return jsonify({"error": str(e)}), 500
+    # UTF-16 LE BOM is what .reg files use — encode accordingly
+    content_bytes = ("\ufeff" + report["content"]).encode("utf-16-le")
+    resp = Response(content_bytes, mimetype="application/x-registry; charset=utf-16")
+    resp.headers["Content-Disposition"] = f'attachment; filename="{report["filename"]}"'
+    return resp
+
+
+@app.route("/api/self-check")
+def api_self_check():
+    try:
+        return jsonify(run_self_check())
+    except Exception as e:
+        app.logger.exception("self-check error")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/favicon.ico")

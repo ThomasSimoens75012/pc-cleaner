@@ -2113,6 +2113,173 @@ _TWEAK_GROUPS = [
     ("privacy",    "Vie privée & tâches de fond"),
 ]
 
+def export_tweaks_reg():
+    """Génère un fichier .reg à partir de l'état actuel des tweaks désactivés.
+
+    Retourne {"content": str, "filename": str, "count": int}.
+    """
+    from datetime import datetime
+
+    # Collecte les tweaks actuellement désactivés (valeur off présente)
+    lines = [
+        "Windows Registry Editor Version 5.00",
+        "",
+        f"; Configuration OpenCleaner — exportée le {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        f"; Tweaks désactivés : à appliquer sur n'importe quelle machine Windows",
+        "; Utilisation : double-cliquer sur le fichier → confirmer → redémarrer Windows",
+        "",
+    ]
+
+    # Grouper par chemin de registre (clé)
+    from collections import defaultdict
+    by_path = defaultdict(list)
+    count_off = 0
+
+    for tweak in _WINDOWS_TWEAKS:
+        # Vérifie l'état actuel dans le registre
+        try:
+            k = winreg.OpenKey(winreg.HKEY_CURRENT_USER, tweak["path"])
+            try:
+                val, _ = winreg.QueryValueEx(k, tweak["name"])
+                is_off = (val == tweak["off_val"])
+            except FileNotFoundError:
+                is_off = False
+            k.Close()
+        except FileNotFoundError:
+            is_off = False
+
+        if is_off:
+            by_path[tweak["path"]].append(tweak)
+            count_off += 1
+
+    for path, tweaks in sorted(by_path.items()):
+        lines.append(f"[HKEY_CURRENT_USER\\{path}]")
+        for t in tweaks:
+            lines.append(f'; {t["label"]} — {t["desc"]}')
+            lines.append(f'"{t["name"]}"=dword:{t["off_val"]:08x}')
+        lines.append("")
+
+    if count_off == 0:
+        lines.append("; Aucun tweak désactivé — ce fichier est vide.")
+
+    content = "\r\n".join(lines)
+    filename = f"opencleaner-config-{datetime.now().strftime('%Y%m%d-%H%M')}.reg"
+    return {"content": content, "filename": filename, "count": count_off}
+
+
+def run_self_check():
+    """Exécute un diagnostic rapide de l'état de l'app.
+
+    Retourne une liste de {id, label, status: ok|warn|error, detail}.
+    """
+    from datetime import datetime
+    checks = []
+
+    # 1. Écriture HKCU
+    try:
+        k = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", 0, winreg.KEY_SET_VALUE)
+        winreg.SetValueEx(k, "PCCSelfCheck", 0, winreg.REG_DWORD, 1)
+        winreg.DeleteValue(k, "PCCSelfCheck")
+        k.Close()
+        checks.append({"id": "hkcu", "label": "Écriture HKCU", "status": "ok", "detail": "Le registre utilisateur est accessible en écriture"})
+    except Exception as e:
+        checks.append({"id": "hkcu", "label": "Écriture HKCU", "status": "error", "detail": str(e)})
+
+    # 2. Fichier baseline
+    try:
+        if _BASELINE_PATH.exists():
+            size = _BASELINE_PATH.stat().st_size
+            baseline = _load_tweak_baseline()
+            count = len(baseline)
+            checks.append({"id": "baseline", "label": "Baseline mesures", "status": "ok",
+                           "detail": f"{count} entrée(s) mesurée(s) stockées ({size} octets)"})
+        else:
+            checks.append({"id": "baseline", "label": "Baseline mesures", "status": "warn",
+                           "detail": "Aucune mesure encore collectée (fichier absent)"})
+    except Exception as e:
+        checks.append({"id": "baseline", "label": "Baseline mesures", "status": "error", "detail": str(e)})
+
+    # 3. PowerShell dispo
+    try:
+        r = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", "$PSVersionTable.PSVersion.ToString()"],
+            capture_output=True, timeout=5, creationflags=0x08000000,
+        )
+        if r.returncode == 0:
+            ver = r.stdout.decode("utf-8", errors="replace").strip()
+            checks.append({"id": "ps", "label": "PowerShell", "status": "ok", "detail": f"Version {ver}"})
+        else:
+            checks.append({"id": "ps", "label": "PowerShell", "status": "error", "detail": "powershell.exe a retourné un code non-zéro"})
+    except Exception as e:
+        checks.append({"id": "ps", "label": "PowerShell", "status": "error", "detail": str(e)})
+
+    # 4. psutil (mesures live)
+    try:
+        import psutil
+        cpu = psutil.cpu_percent(interval=0.1)
+        mem = psutil.virtual_memory()
+        checks.append({"id": "psutil", "label": "psutil (mesures)", "status": "ok",
+                       "detail": f"CPU {cpu}%, RAM {mem.percent}% utilisée"})
+    except Exception as e:
+        checks.append({"id": "psutil", "label": "psutil (mesures)", "status": "error", "detail": str(e)})
+
+    # 5. Admin status
+    try:
+        admin = is_admin()
+        checks.append({"id": "admin", "label": "Droits administrateur", "status": "ok" if admin else "warn",
+                       "detail": "Mode administrateur actif" if admin else "Mode standard — services/tâches/réparation admin sont bloqués"})
+    except Exception as e:
+        checks.append({"id": "admin", "label": "Droits administrateur", "status": "error", "detail": str(e)})
+
+    # 6. Version Windows
+    try:
+        v = get_windows_version()
+        status = "ok" if v["major"] >= 10 else "warn"
+        checks.append({"id": "version", "label": "Version Windows", "status": status, "detail": v["caption"]})
+    except Exception as e:
+        checks.append({"id": "version", "label": "Version Windows", "status": "error", "detail": str(e)})
+
+    # 7. Disque système (espace dispo)
+    try:
+        total, used, free = _get_disk_space("C:\\")
+        pct_free = round((free / total) * 100, 1) if total else 0
+        status = "ok" if pct_free > 10 else ("warn" if pct_free > 5 else "error")
+        checks.append({"id": "disk", "label": "Espace disque C:", "status": status,
+                       "detail": f"{pct_free}% libre ({fmt_size(free)} / {fmt_size(total)})"})
+    except Exception as e:
+        checks.append({"id": "disk", "label": "Espace disque C:", "status": "warn", "detail": "non déterminable"})
+
+    # 8. Logs OpenCleaner
+    try:
+        log_dir = Path(__file__).parent / "logs"
+        if log_dir.exists():
+            logs = list(log_dir.glob("*.log"))
+            total_size = sum(f.stat().st_size for f in logs)
+            checks.append({"id": "logs", "label": "Logs OpenCleaner", "status": "ok",
+                           "detail": f"{len(logs)} fichier(s), {fmt_size(total_size)}"})
+        else:
+            checks.append({"id": "logs", "label": "Logs OpenCleaner", "status": "warn", "detail": "Dossier logs/ absent"})
+    except Exception as e:
+        checks.append({"id": "logs", "label": "Logs OpenCleaner", "status": "warn", "detail": str(e)})
+
+    # Résumé
+    ok_count = sum(1 for c in checks if c["status"] == "ok")
+    warn_count = sum(1 for c in checks if c["status"] == "warn")
+    err_count = sum(1 for c in checks if c["status"] == "error")
+    return {
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "checks":    checks,
+        "summary":   {"ok": ok_count, "warn": warn_count, "error": err_count, "total": len(checks)},
+    }
+
+
+def _get_disk_space(path):
+    """Retourne (total, used, free) en octets pour un drive/path."""
+    import shutil as _sh
+    total, used, free = _sh.disk_usage(path)
+    return total, used, free
+
+
 def get_windows_version():
     """Retourne les infos de version Windows via le registre.
 

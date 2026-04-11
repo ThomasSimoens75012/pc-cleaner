@@ -2815,6 +2815,31 @@ async function _loadTweakPresets() {
   } catch (e) {}
 }
 
+async function exportTweaksReg() {
+  try {
+    const res = await fetch("/api/windows-tweaks/export-reg");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || ("HTTP " + res.status));
+    }
+    const disp = res.headers.get("Content-Disposition") || "";
+    const m = disp.match(/filename="([^"]+)"/);
+    const filename = m ? m[1] : "opencleaner-config.reg";
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast("Fichier .reg exporté", `${filename} téléchargé`, "success");
+  } catch (e) {
+    showToast("Export .reg impossible", e.message, "warn");
+  }
+}
+
 async function applyTweakPreset(presetId) {
   const preset = _tweakPresetsCache.find(p => p.id === presetId);
   if (!preset) return;
