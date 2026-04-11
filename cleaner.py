@@ -2447,6 +2447,144 @@ def import_config_snapshot(data, sections=None):
     return {"applied": applied, "skipped": skipped, "errors": errors}
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# Mode Gaming — bascule rapide + snapshot réversible
+# ══════════════════════════════════════════════════════════════════════════════
+
+_GAMING_STATE_PATH = Path(__file__).parent / "gaming_mode.json"
+
+# Services à arrêter pendant une session de jeu (tous whitelistés plus haut)
+_GAMING_SERVICES_TO_STOP = [
+    "SysMain",       # Superfetch — I/O disque
+    "WSearch",       # Windows Search indexer
+    "DiagTrack",     # Telemetry
+    "WerSvc",        # Error Reporting
+    "MapsBroker",    # Downloaded Maps Manager
+    "RetailDemo",    # Retail Demo
+]
+
+# Plan High Performance GUID (constant Windows)
+_POWER_PLAN_HIGH_PERF = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+
+
+def _get_active_power_plan():
+    try:
+        r = subprocess.run(
+            ["powercfg", "/GETACTIVESCHEME"],
+            capture_output=True, timeout=5, creationflags=0x08000000,
+        )
+        out = r.stdout.decode("utf-8", errors="replace")
+        m = re.search(r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})", out, re.I)
+        return m.group(1) if m else None
+    except Exception:
+        return None
+
+
+def _set_active_power_plan(guid):
+    try:
+        subprocess.run(
+            ["powercfg", "/SETACTIVE", guid],
+            capture_output=True, timeout=5, creationflags=0x08000000,
+        )
+        return True
+    except Exception:
+        return False
+
+
+def get_gaming_mode_state():
+    """Retourne {enabled: bool, saved_at: str|None}."""
+    if _GAMING_STATE_PATH.exists():
+        try:
+            with open(_GAMING_STATE_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return {
+                "enabled":  bool(data.get("enabled")),
+                "saved_at": data.get("saved_at"),
+                "services_count": len(data.get("services_prev", {})),
+            }
+        except Exception:
+            pass
+    return {"enabled": False, "saved_at": None, "services_count": 0}
+
+
+def set_gaming_mode(enabled):
+    """Active/désactive le mode gaming.
+
+    Activation :
+        - Capture l'état actuel (services + power plan)
+        - Arrête les services listés
+        - Bascule sur High Performance
+    Désactivation :
+        - Restaure services dans leur état précédent
+        - Restaure le plan d'alimentation
+    """
+    import json as _json
+    from datetime import datetime
+
+    if enabled:
+        services_prev = {}
+        try:
+            states = {s["name"]: s for s in get_services_state()}
+            for name in _GAMING_SERVICES_TO_STOP:
+                st = states.get(name)
+                if st and st.get("enabled") is not None:
+                    services_prev[name] = bool(st.get("enabled"))
+        except Exception:
+            pass
+
+        prev_plan = _get_active_power_plan()
+
+        applied = 0
+        errors = []
+        for name in list(services_prev.keys()):
+            ok, err = set_service_enabled(name, False)
+            if ok:
+                applied += 1
+            elif err:
+                errors.append(f"{name}: {err}")
+
+        _set_active_power_plan(_POWER_PLAN_HIGH_PERF)
+
+        state = {
+            "enabled":       True,
+            "saved_at":      datetime.now().isoformat(),
+            "services_prev": services_prev,
+            "prev_plan":     prev_plan,
+        }
+        with open(_GAMING_STATE_PATH, "w", encoding="utf-8") as f:
+            _json.dump(state, f, indent=2)
+        return {"ok": True, "applied": applied, "errors": errors}
+
+    # Désactivation
+    if not _GAMING_STATE_PATH.exists():
+        return {"ok": False, "error": "Aucun état gaming à restaurer"}
+    try:
+        with open(_GAMING_STATE_PATH, "r", encoding="utf-8") as f:
+            state = _json.load(f)
+    except Exception as e:
+        return {"ok": False, "error": f"Lecture état: {e}"}
+
+    restored = 0
+    errors = []
+    for name, prev_enabled in (state.get("services_prev") or {}).items():
+        ok, err = set_service_enabled(name, bool(prev_enabled))
+        if ok:
+            restored += 1
+        elif err:
+            errors.append(f"{name}: {err}")
+
+    prev_plan = state.get("prev_plan")
+    if prev_plan:
+        _set_active_power_plan(prev_plan)
+
+    try:
+        _GAMING_STATE_PATH.unlink()
+    except Exception:
+        pass
+
+    return {"ok": True, "restored": restored, "errors": errors}
+
+
 def run_self_check():
     """Exécute un diagnostic rapide de l'état de l'app.
 

@@ -47,6 +47,7 @@ from cleaner import (
     run_self_check, export_tweaks_reg,
     get_autorun_entries, set_autorun_enabled,
     export_config_snapshot, import_config_snapshot,
+    get_gaming_mode_state, set_gaming_mode,
 )
 
 
@@ -215,6 +216,35 @@ def api_config_import():
             "errors":  len(result.get("errors", [])),
         },
     )
+    return jsonify(result)
+
+
+@app.route("/api/gaming-mode")
+def api_gaming_mode_get():
+    return jsonify(get_gaming_mode_state())
+
+
+@app.route("/api/gaming-mode", methods=["POST"])
+def api_gaming_mode_set():
+    if not is_admin():
+        return jsonify({"ok": False, "error": "Droits administrateur requis"}), 403
+    data = request.get_json(force=True) or {}
+    try:
+        result = set_gaming_mode(bool(data.get("enabled")))
+    except Exception as e:
+        app.logger.exception("gaming mode error")
+        return jsonify({"ok": False, "error": str(e)}), 500
+    if result.get("ok"):
+        _save_history_entry(
+            0,
+            kind="gaming",
+            label=("Mode gaming activé" if data.get("enabled") else "Mode gaming désactivé"),
+            details={
+                "applied": result.get("applied"),
+                "restored": result.get("restored"),
+                "errors": len(result.get("errors", [])),
+            },
+        )
     return jsonify(result)
 
 

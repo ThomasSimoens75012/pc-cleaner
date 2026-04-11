@@ -2617,6 +2617,24 @@
 <!-- Bandeau de version Windows détectée -->
 <div id="version-banner" class="version-banner" style="display:none"></div>
 
+<!-- Mode Gaming one-click -->
+<div class="card" id="gaming-card" style="margin-bottom:10px">
+  <div class="card-body">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px">
+        <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M8 10v4M15 13h.01M18 11h.01"/></svg>
+          Mode Gaming
+        </div>
+        <div id="gaming-state" style="font-size:11px;color:var(--text-dim);margin-top:2px">
+          Arrête SysMain, WSearch, DiagTrack, WerSvc, MapsBroker, RetailDemo + plan High Performance. Réversible.
+        </div>
+      </div>
+      <button class="btn-primary" id="btn-gaming-toggle" onclick="toggleGamingMode()">Activer</button>
+    </div>
+  </div>
+</div>
+
 <div class="callout callout-blue" style="margin-bottom:14px">
   <div class="callout-icon">
     <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -2932,7 +2950,7 @@
     if (crumb && TAB_LABELS[name]) crumb.textContent = TAB_LABELS[name];
     if (name === "outils")   initTools();
     if (name === "sante")    initHealth();
-    if (name === "perso")    loadWindowsTweaks();
+    if (name === "perso")    { loadWindowsTweaks(); loadGamingMode(); }
   }
 
 </script>

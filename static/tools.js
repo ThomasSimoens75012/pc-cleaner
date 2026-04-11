@@ -2976,6 +2976,69 @@ async function _loadTweakPresets() {
   } catch (e) {}
 }
 
+async function loadGamingMode() {
+  try {
+    const res = await fetch("/api/gaming-mode");
+    const data = await res.json();
+    _renderGamingMode(data);
+  } catch (e) {
+    console.warn("[gaming] load failed:", e);
+  }
+}
+
+function _renderGamingMode(data) {
+  const btn = document.getElementById("btn-gaming-toggle");
+  const stateEl = document.getElementById("gaming-state");
+  if (!btn || !stateEl) return;
+  if (data.enabled) {
+    btn.textContent = "Désactiver";
+    btn.classList.remove("btn-primary");
+    btn.classList.add("btn-ghost");
+    const when = data.saved_at ? new Date(data.saved_at).toLocaleString("fr-FR") : "—";
+    stateEl.textContent = `Mode gaming actif depuis ${when} — ${data.services_count} services arrêtés. Cliquez pour restaurer.`;
+  } else {
+    btn.textContent = "Activer";
+    btn.classList.remove("btn-ghost");
+    btn.classList.add("btn-primary");
+    stateEl.textContent = "Arrête SysMain, WSearch, DiagTrack, WerSvc, MapsBroker, RetailDemo + plan High Performance. Réversible.";
+  }
+}
+
+async function toggleGamingMode() {
+  if (!window.IS_ADMIN) {
+    showToast("Droits administrateur requis", "Relancez OpenCleaner en administrateur.", "warn");
+    return;
+  }
+  const btn = document.getElementById("btn-gaming-toggle");
+  const currentlyOn = btn.textContent.trim() === "Désactiver";
+  const newEnabled = !currentlyOn;
+  btn.disabled = true;
+  const actId = activityPush(
+    newEnabled ? "Activation mode gaming" : "Restauration configuration",
+    "En cours…",
+    { tab: "perso" }
+  );
+  try {
+    const res = await fetch("/api/gaming-mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: newEnabled }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || "Erreur");
+    activityDone(actId, newEnabled
+      ? `${data.applied || 0} services arrêtés`
+      : `${data.restored || 0} services restaurés`);
+    loadGamingMode();
+    if (typeof loadServices === "function") loadServices();
+  } catch (e) {
+    activityDone(actId, "Échec", "error");
+    showToast("Mode gaming", e.message, "warn");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 async function exportConfigSnapshot() {
   try {
     const res = await fetch("/api/config/export");
