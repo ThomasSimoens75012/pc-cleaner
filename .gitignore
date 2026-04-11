@@ -21,4 +21,5 @@ tests/sandbox/
 .DS_Store
 Thumbs.db
 desktop.ini
-.claude/
+.claude/worktrees/
+.claude/cache/
