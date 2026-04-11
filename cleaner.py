@@ -109,11 +109,45 @@ def get_folder_size(folder):
     return total
 
 
-def _recycle_many(paths):
+_RECYCLE_SESSIONS_DIR = Path(__file__).parent / "logs" / "recycle_sessions"
+
+
+def _save_recycle_session(label, paths, freed):
+    """Sauvegarde un manifeste décrivant un batch envoyé à la corbeille.
+
+    Permet la restauration ultérieure via restore_recycle_session(id).
+    """
+    from datetime import datetime
+    import uuid
+    if not paths:
+        return None
+    try:
+        _RECYCLE_SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        return None
+    now = datetime.now()
+    sid = now.strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:6]
+    manifest = {
+        "id":         sid,
+        "timestamp":  now.isoformat(),
+        "label":      label,
+        "count":      len(paths),
+        "freed":      int(freed or 0),
+        "paths":      [str(p) for p in paths],
+    }
+    try:
+        with open(_RECYCLE_SESSIONS_DIR / f"{sid}.json", "w", encoding="utf-8") as f:
+            json.dump(manifest, f, indent=2, ensure_ascii=False)
+    except Exception:
+        return None
+    return sid
+
+
+def _recycle_many(paths, label="Nettoyage"):
     """Envoie un batch de chemins à la corbeille, retourne (freed_bytes, errors).
 
-    Calcule la taille avant suppression et utilise SHFileOperationW en un seul
-    appel (bien plus rapide qu'un appel par fichier).
+    Calcule la taille avant suppression, utilise SHFileOperationW en un seul
+    appel, et sauvegarde un manifeste de session pour restauration ultérieure.
     """
     if not paths:
         return 0, []
@@ -137,7 +171,132 @@ def _recycle_many(paths):
     if moved < len(existing):
         errs.append(f"{len(existing) - moved} élément(s) non déplacé(s)")
     freed = int(total * (moved / len(existing))) if existing else 0
+
+    # Sauvegarde la session (uniquement si au moins un élément a été déplacé)
+    if moved > 0:
+        try:
+            _save_recycle_session(label, existing[:moved] if moved < len(existing) else existing, freed)
+        except Exception:
+            pass
+
     return freed, errs
+
+
+def list_recycle_sessions(limit=50):
+    """Liste les sessions de corbeille disponibles, du plus récent au plus ancien."""
+    if not _RECYCLE_SESSIONS_DIR.exists():
+        return []
+    sessions = []
+    for f in sorted(_RECYCLE_SESSIONS_DIR.glob("*.json"), reverse=True)[:limit]:
+        try:
+            with open(f, "r", encoding="utf-8") as fh:
+                data = json.load(fh)
+            sessions.append({
+                "id":        data.get("id"),
+                "timestamp": data.get("timestamp"),
+                "label":     data.get("label"),
+                "count":     data.get("count"),
+                "freed":     data.get("freed", 0),
+                "freed_fmt": fmt_size(data.get("freed", 0)),
+            })
+        except Exception:
+            continue
+    return sessions
+
+
+def restore_recycle_session(session_id):
+    """Restaure un batch depuis la corbeille via Shell.Application COM.
+
+    Retourne {"restored": int, "not_found": int, "errors": [str]}.
+    """
+    manifest_path = _RECYCLE_SESSIONS_DIR / f"{session_id}.json"
+    if not manifest_path.exists():
+        return {"restored": 0, "not_found": 0, "errors": ["Session introuvable"]}
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+    except Exception as e:
+        return {"restored": 0, "not_found": 0, "errors": [str(e)]}
+
+    targets = [str(p).lower() for p in (manifest.get("paths") or [])]
+    if not targets:
+        return {"restored": 0, "not_found": 0, "errors": ["Aucun chemin dans la session"]}
+
+    # Passe la liste par fichier temporaire (évite les problèmes d'escaping)
+    import tempfile
+    target_file = Path(tempfile.gettempdir()) / f"oc_restore_{session_id}.txt"
+    try:
+        with open(target_file, "w", encoding="utf-8") as f:
+            for t in targets:
+                f.write(t + "\n")
+    except Exception as e:
+        return {"restored": 0, "not_found": 0, "errors": [f"Écriture target list: {e}"]}
+
+    ps_cmd = r"""
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+    $targets = @{}
+    Get-Content -Path '__TARGET_FILE__' -Encoding UTF8 | ForEach-Object {
+      if ($_.Trim()) { $targets[$_.Trim().ToLower()] = $true }
+    }
+    $rb = (New-Object -ComObject Shell.Application).NameSpace(10)
+    $restored = 0
+    $items = @($rb.Items())
+    foreach ($item in $items) {
+      $folder = $rb.GetDetailsOf($item, 1)
+      $name   = $item.Name
+      $full   = (Join-Path $folder $name).ToLower()
+      if ($targets.ContainsKey($full)) {
+        $verb = $item.Verbs() | Where-Object { $_.Name -match 'estaurer|estore|ndelete' } | Select-Object -First 1
+        if ($verb) {
+          try { $verb.DoIt(); $restored++ } catch { }
+        }
+      }
+    }
+    Write-Host ("RESTORED=" + $restored)
+    """.replace("__TARGET_FILE__", str(target_file).replace("'", "''"))
+
+    try:
+        r = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
+            capture_output=True, timeout=60, creationflags=0x08000000,
+        )
+        out = r.stdout.decode("utf-8", errors="replace")
+        err = r.stderr.decode("utf-8", errors="replace")
+    except Exception as e:
+        return {"restored": 0, "not_found": 0, "errors": [str(e)]}
+    finally:
+        try:
+            target_file.unlink()
+        except Exception:
+            pass
+
+    restored = 0
+    m = re.search(r"RESTORED=(\d+)", out)
+    if m:
+        restored = int(m.group(1))
+
+    not_found = len(targets) - restored
+    errors = []
+    if err.strip():
+        errors.append(err.strip())
+
+    # Supprime le manifeste si tout a été restauré
+    if restored == len(targets) and not errors:
+        try:
+            manifest_path.unlink()
+        except Exception:
+            pass
+
+    return {"restored": restored, "not_found": max(not_found, 0), "errors": errors}
+
+
+def delete_recycle_session(session_id):
+    """Supprime le manifeste d'une session sans toucher à la corbeille."""
+    try:
+        (_RECYCLE_SESSIONS_DIR / f"{session_id}.json").unlink()
+        return True, None
+    except Exception as e:
+        return False, str(e)
 
 
 def delete_folder_contents(folder):
@@ -1195,7 +1354,7 @@ def _strip_copy_suffix(name):
 
 def delete_duplicate_files(paths):
     """Envoie les fichiers en doublon à la corbeille Windows."""
-    return _recycle_many(paths)
+    return _recycle_many(paths, label="Fichiers dupliqués")
 
 
 def find_duplicate_folders(folder, log=None):
@@ -1353,7 +1512,7 @@ def find_duplicate_folders(folder, log=None):
 
 def delete_duplicate_folders(paths):
     """Envoie les dossiers dupliqués à la corbeille Windows."""
-    return _recycle_many([p for p in paths if Path(p).is_dir()])
+    return _recycle_many([p for p in paths if Path(p).is_dir()], label="Dossiers dupliqués")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1646,7 +1805,7 @@ def scan_shortcuts():
 
 def delete_shortcuts(paths):
     """Envoie les raccourcis .lnk à la corbeille. Retourne (deleted, errors)."""
-    _, errs = _recycle_many(paths)
+    _, errs = _recycle_many(paths, label="Raccourcis cassés")
     deleted = len(paths) - len(errs)
     return max(deleted, 0), errs
 
@@ -1757,9 +1916,8 @@ def find_empty_folders(folder, log=None):
 
 def delete_empty_folders(paths):
     """Envoie les dossiers vides à la corbeille. Retourne (deleted, errors)."""
-    # Trie du plus profond au moins profond pour respecter la hiérarchie
     sorted_paths = sorted(paths, key=lambda x: x.count(os.sep), reverse=True)
-    _, errs = _recycle_many(sorted_paths)
+    _, errs = _recycle_many(sorted_paths, label="Dossiers vides")
     deleted = len(sorted_paths) - len(errs)
     return max(deleted, 0), errs
 
@@ -1887,7 +2045,7 @@ def delete_orphan_folders(paths):
     """Envoie les dossiers orphelins à la corbeille Windows. Retourne (deleted, errors)."""
     valid = [p for p in paths if Path(p).exists()]
     missing = [f"{p}: dossier introuvable" for p in paths if not Path(p).exists()]
-    _, errs = _recycle_many(valid)
+    _, errs = _recycle_many(valid, label="Dossiers orphelins")
     deleted = len(valid) - len(errs)
     return max(deleted, 0), missing + errs
 
@@ -5033,7 +5191,7 @@ def find_old_installers(folder, max_age_days=90, log=None):
 
 def delete_installer_files(paths):
     """Envoie les anciens installeurs à la corbeille Windows."""
-    return _recycle_many(paths)
+    return _recycle_many(paths, label="Anciens installeurs")
 
 
 # ──────────────────────────────────────────────────────────────────────────────

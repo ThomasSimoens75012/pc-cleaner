@@ -2618,11 +2618,16 @@
 
 <!-- ── Modal Historique ── -->
 <div id="history-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeHistory()">
-  <div class="modal" style="max-width:560px">
+  <div class="modal" style="max-width:640px">
     <div class="modal-title">Historique des nettoyages</div>
+    <div style="display:flex;gap:4px;margin-bottom:10px;border-bottom:1px solid var(--border)">
+      <button class="btn-ghost history-tab active" data-htab="history" onclick="switchHistoryTab('history')" style="border-radius:0;border-bottom:2px solid var(--text)">Historique</button>
+      <button class="btn-ghost history-tab" data-htab="sessions" onclick="switchHistoryTab('sessions')" style="border-radius:0">Sessions restaurables</button>
+    </div>
     <div id="history-list" class="results-scroll"></div>
+    <div id="history-sessions" class="results-scroll" style="display:none"></div>
     <div class="modal-actions" style="margin-top:14px">
-      <button class="btn-ghost" onclick="openRecycleBin()" title="Ouvre la corbeille Windows — les suppressions en mode sécurisé s'y trouvent">
+      <button class="btn-ghost" onclick="openRecycleBin()" title="Ouvre la corbeille Windows">
         Ouvrir la corbeille
       </button>
       <button class="btn-primary" onclick="closeHistory()">Fermer</button>
@@ -2912,11 +2917,91 @@
   }
 
   // ── Historique ───────────────────────────────────────────────────────────
+  function switchHistoryTab(tab) {
+    document.querySelectorAll(".history-tab").forEach(b => {
+      const on = b.dataset.htab === tab;
+      b.classList.toggle("active", on);
+      b.style.borderBottom = on ? "2px solid var(--text)" : "2px solid transparent";
+    });
+    document.getElementById("history-list").style.display     = tab === "history"  ? "" : "none";
+    document.getElementById("history-sessions").style.display = tab === "sessions" ? "" : "none";
+    if (tab === "sessions") loadRecycleSessions();
+  }
+
+  async function loadRecycleSessions() {
+    const el = document.getElementById("history-sessions");
+    el.innerHTML = '<div class="tool-loading">Chargement…</div>';
+    try {
+      const res  = await fetch("/api/recycle-sessions");
+      const data = await res.json();
+      if (!Array.isArray(data) || !data.length) {
+        el.innerHTML = `
+          <div class="empty">
+            <div class="empty-icon">
+              <svg class="icon icon-lg" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </div>
+            <div class="empty-title">Aucune session restaurable</div>
+            <div class="empty-desc">Les suppressions récentes apparaîtront ici et pourront être annulées en un clic.</div>
+          </div>`;
+        return;
+      }
+      el.innerHTML = data.map(s => {
+        const d = new Date(s.timestamp);
+        const when = d.toLocaleString("fr-FR");
+        return `
+          <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600">${s.label || "Session"}</div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:2px">
+                ${when} — ${s.count} élément(s)${s.freed_fmt && s.freed_fmt !== "0 o" ? " · " + s.freed_fmt : ""}
+              </div>
+            </div>
+            <button class="btn-ghost" onclick="restoreRecycleSession('${s.id}')" style="font-size:11px">Restaurer</button>
+            <button class="btn-ghost" onclick="forgetRecycleSession('${s.id}')" title="Oublier cette session" style="font-size:11px">Oublier</button>
+          </div>
+        `;
+      }).join("");
+    } catch (e) {
+      el.innerHTML = `<div class="tool-error">Erreur : ${e.message}</div>`;
+    }
+  }
+
+  async function restoreRecycleSession(id) {
+    if (!confirm("Restaurer tous les fichiers de cette session depuis la corbeille ?")) return;
+    try {
+      const res = await fetch("/api/recycle-sessions/restore", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      showToast(
+        "Restauration terminée",
+        `${data.restored} fichier(s) restauré(s)${data.not_found ? " · " + data.not_found + " introuvable(s)" : ""}`,
+        data.not_found ? "warn" : "success"
+      );
+      loadRecycleSessions();
+    } catch (e) {
+      showToast("Restauration impossible", e.message, "warn");
+    }
+  }
+
+  async function forgetRecycleSession(id) {
+    if (!confirm("Oublier cette session sans restaurer les fichiers ?")) return;
+    try {
+      await fetch(`/api/recycle-sessions/${id}`, { method: "DELETE" });
+      loadRecycleSessions();
+    } catch (e) {
+      showToast("Erreur", e.message, "warn");
+    }
+  }
+
   async function openHistory() {
     const overlay = document.getElementById("history-overlay");
     const list    = document.getElementById("history-list");
     overlay.style.display = "flex";
     list.innerHTML = '<div class="tool-loading">Chargement…</div>';
+    switchHistoryTab("history");
     try {
       const res  = await fetch("/api/history");
       const data = await res.json();

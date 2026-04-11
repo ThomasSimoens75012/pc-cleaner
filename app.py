@@ -52,6 +52,7 @@ from cleaner import (
     get_browser_data_breakdown, clean_browser_data,
     generate_global_report,
     send_to_recycle_bin, open_recycle_bin, get_last_cleanup_info,
+    list_recycle_sessions, restore_recycle_session, delete_recycle_session,
 )
 
 
@@ -236,6 +237,45 @@ def api_config_import():
         },
     )
     return jsonify(result)
+
+
+@app.route("/api/recycle-sessions")
+def api_recycle_sessions():
+    try:
+        return jsonify(list_recycle_sessions())
+    except Exception as e:
+        app.logger.exception("recycle-sessions error")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/recycle-sessions/restore", methods=["POST"])
+def api_recycle_sessions_restore():
+    data = request.get_json(force=True) or {}
+    sid = (data.get("id") or "").strip()
+    if not sid:
+        return jsonify({"error": "id manquant"}), 400
+    try:
+        result = restore_recycle_session(sid)
+    except Exception as e:
+        app.logger.exception("recycle-sessions restore error")
+        return jsonify({"error": str(e)}), 500
+    _save_history_entry(
+        0,
+        kind="restore",
+        label="Restauration corbeille",
+        details={
+            "restored":  result.get("restored", 0),
+            "not_found": result.get("not_found", 0),
+            "errors":    len(result.get("errors", [])),
+        },
+    )
+    return jsonify(result)
+
+
+@app.route("/api/recycle-sessions/<sid>", methods=["DELETE"])
+def api_recycle_sessions_delete(sid):
+    ok, err = delete_recycle_session(sid)
+    return jsonify({"ok": ok, "error": err})
 
 
 @app.route("/api/undo/last")
