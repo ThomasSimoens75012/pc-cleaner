@@ -20,6 +20,7 @@ from flask import Flask, Response, jsonify, redirect, render_template, request, 
 from cleaner import (
     TASKS, fmt_size, get_disk_info,
     get_installed_apps, launch_uninstaller,
+    remove_uninstall_registry_entry, find_app_residuals,
     find_duplicates, delete_duplicate_files,
     find_duplicate_folders, delete_duplicate_folders,
     scan_registry, fix_registry_issues,
@@ -464,20 +465,54 @@ def api_stream(job_id):
 
 @app.route("/api/apps")
 def api_apps():
+    deep = request.args.get("deep", "0") == "1"
     try:
-        return jsonify(get_installed_apps())
+        return jsonify(get_installed_apps(deep=deep))
     except Exception as e:
+        app.logger.exception("apps error")
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/apps/uninstall", methods=["POST"])
 def api_uninstall():
-    data   = request.get_json(force=True) or {}
-    string = data.get("uninstall_string")
-    if not string:
-        return jsonify({"error": "uninstall_string requis"}), 400
-    ok = launch_uninstaller(string)
+    data = request.get_json(force=True) or {}
+    string      = data.get("uninstall_string") or ""
+    silent      = bool(data.get("silent"))
+    winget_id   = data.get("winget_id") or ""
+    quiet_unins = data.get("quiet_uninstall") or ""
+    if not string and not winget_id:
+        return jsonify({"error": "uninstall_string ou winget_id requis"}), 400
+    ok = launch_uninstaller(string, silent=silent, winget_id=winget_id, quiet_uninstall=quiet_unins)
     return jsonify({"ok": ok})
+
+
+@app.route("/api/apps/remove-entry", methods=["POST"])
+def api_apps_remove_entry():
+    if not is_admin():
+        return jsonify({"ok": False, "error": "Droits administrateur requis pour modifier HKLM"}), 403
+    data = request.get_json(force=True) or {}
+    reg_hive = data.get("reg_hive") or ""
+    reg_path = data.get("reg_path") or ""
+    if reg_hive not in ("HKLM", "HKCU") or not reg_path:
+        return jsonify({"ok": False, "error": "reg_hive/reg_path invalides"}), 400
+    ok, err = remove_uninstall_registry_entry(reg_hive, reg_path)
+    return jsonify({"ok": ok, "error": err})
+
+
+@app.route("/api/apps/residuals", methods=["POST"])
+def api_apps_residuals():
+    data = request.get_json(force=True) or {}
+    name = (data.get("name") or "").strip()
+    install_loc = data.get("install_location") or ""
+    if not name:
+        return jsonify({"error": "name requis"}), 400
+    try:
+        items = find_app_residuals(name, install_loc)
+    except Exception as e:
+        app.logger.exception("residuals error")
+        return jsonify({"error": str(e)}), 500
+    total = sum(r["size"] for r in items)
+    return jsonify({"items": items, "total": total, "total_fmt": fmt_size(total)})
 
 
 # ──────────────────────────────────────────────────────────────────────────────

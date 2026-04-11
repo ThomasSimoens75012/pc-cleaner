@@ -945,91 +945,582 @@ def task_windows_update(log):
 # Outils — Applications installées
 # ──────────────────────────────────────────────────────────────────────────────
 
-def get_installed_apps():
-    """Lit la liste des applications installées depuis le registre Windows."""
+# ══════════════════════════════════════════════════════════════════════════════
+# Applications installées — v2 (filtrage système, détection cassées, UserAssist,
+# catégorisation, merge winget/scoop/choco, uninstall silencieuse, résidus)
+# ══════════════════════════════════════════════════════════════════════════════
+
+_APP_CATEGORIES = [
+    # (label, [mots-clés publisher/name — case-insensitive])
+    ("Développement",  ["jetbrains", "microsoft visual", "visual studio code", "git ", "git for windows",
+                        "python", "node", "npm", "docker", "github", "gitlab", "android studio", "cursor",
+                        "sublime", "notepad++", "postman", "insomnia", "wireshark", "openssl", "terminal"]),
+    ("Jeux",           ["steam", "epic", "riot", "ubisoft", "ea app", "origin", "battle.net",
+                        "blizzard", "gog", "roblox", "minecraft", "league of legends", "valorant",
+                        "discord"]),
+    ("Multimédia",     ["spotify", "vlc", "obs", "audacity", "gimp", "inkscape", "blender", "davinci",
+                        "adobe", "netflix", "plex", "kodi", "handbrake", "mkvtoolnix", "paint.net",
+                        "photoshop", "lightroom", "premiere", "after effects"]),
+    ("Productivité",   ["office", "word", "excel", "powerpoint", "outlook", "teams", "slack", "zoom",
+                        "notion", "obsidian", "libreoffice", "onenote", "todoist", "trello",
+                        "1password", "bitwarden", "lastpass", "keepass", "evernote"]),
+    ("Navigateurs",    ["chrome", "firefox", "edge", "brave", "opera", "vivaldi", "tor browser"]),
+    ("Sécurité",       ["antivirus", "defender", "bitdefender", "kaspersky", "norton", "mcafee",
+                        "avast", "avg", "malwarebytes", "avira", "eset"]),
+    ("Système",        ["microsoft corporation", "microsoft .net", "microsoft visual c++",
+                        "windows ", "nvidia", "amd ", "intel(r)", "realtek", "driver", "sdk",
+                        "redistributable", "runtime", "framework"]),
+]
+
+
+def _categorize_app(name, publisher):
+    """Classe une app en catégorie heuristique."""
+    hay = (str(name) + " " + str(publisher)).lower()
+    for label, keywords in _APP_CATEGORIES:
+        for kw in keywords:
+            if kw in hay:
+                return label
+    return "Autres"
+
+
+_USERASSIST_KEY = r"Software\Microsoft\Windows\CurrentVersion\Explorer\UserAssist"
+
+
+def _rot13(s):
+    result = []
+    for c in s:
+        if "a" <= c <= "z":
+            result.append(chr((ord(c) - ord("a") + 13) % 26 + ord("a")))
+        elif "A" <= c <= "Z":
+            result.append(chr((ord(c) - ord("A") + 13) % 26 + ord("A")))
+        else:
+            result.append(c)
+    return "".join(result)
+
+
+def _filetime_to_datetime(filetime_int):
+    """Convertit un FILETIME Windows (100ns depuis 1601) en datetime."""
+    from datetime import datetime, timedelta
+    if filetime_int == 0:
+        return None
+    try:
+        # 11644473600 = secondes entre 1601-01-01 et 1970-01-01
+        epoch_s = (filetime_int / 10_000_000) - 11644473600
+        if epoch_s <= 0 or epoch_s > 4102444800:  # borne 2100
+            return None
+        return datetime.fromtimestamp(epoch_s)
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
+def _parse_userassist_map():
+    """Parse HKCU\\...\\UserAssist et retourne {exe_lowercase: {last_used, launch_count}}.
+
+    Chaque valeur UserAssist contient une structure binaire :
+    - bytes[4:8]   : launch count (uint32 LE)
+    - bytes[60:68] : last run timestamp FILETIME (uint64 LE)
+    Le nom de la valeur est ROT13-encodé et contient souvent un chemin.
+    """
+    import struct
+    result = {}
+    try:
+        parent = winreg.OpenKey(winreg.HKEY_CURRENT_USER, _USERASSIST_KEY)
+    except OSError:
+        return result
+
+    try:
+        i = 0
+        while True:
+            try:
+                guid = winreg.EnumKey(parent, i)
+                i += 1
+            except OSError:
+                break
+            try:
+                count_key = winreg.OpenKey(parent, f"{guid}\\Count")
+            except OSError:
+                continue
+            try:
+                j = 0
+                while True:
+                    try:
+                        name, value, typ = winreg.EnumValue(count_key, j)
+                        j += 1
+                    except OSError:
+                        break
+                    if typ != winreg.REG_BINARY or not value or len(value) < 68:
+                        continue
+                    try:
+                        launch_count = struct.unpack_from("<I", value, 4)[0]
+                        ft = struct.unpack_from("<Q", value, 60)[0]
+                    except struct.error:
+                        continue
+                    decoded = _rot13(name)
+                    dt = _filetime_to_datetime(ft)
+                    if dt is None and launch_count == 0:
+                        continue
+                    # Normaliser les chemins : UserAssist stocke souvent des
+                    # identifiants GUID de dossier en début, on garde la fin
+                    key_path = decoded.lower()
+                    prev = result.get(key_path)
+                    if not prev or (dt and prev.get("last_used") and dt > prev["last_used"]) or \
+                       (dt and not prev.get("last_used")):
+                        result[key_path] = {
+                            "last_used":    dt,
+                            "launch_count": launch_count,
+                        }
+            finally:
+                winreg.CloseKey(count_key)
+    finally:
+        winreg.CloseKey(parent)
+
+    return result
+
+
+def _find_user_assist_match(exe_path, userassist_map):
+    """Cherche une entrée UserAssist correspondant à un exe donné."""
+    if not exe_path or not userassist_map:
+        return None
+    base = Path(exe_path).name.lower()
+    full = str(exe_path).lower()
+    # Match exact sur le nom du fichier
+    for key, meta in userassist_map.items():
+        if key.endswith(base) or full in key or key.endswith(full):
+            return meta
+    return None
+
+
+def _detect_winget_apps():
+    """Retourne un dict {normalized_name: winget_id} via `winget list`.
+
+    Utilisé pour enrichir les entrées registry avec un winget_id exploitable
+    pour une désinstallation silencieuse.
+    """
+    result = {}
+    try:
+        r = subprocess.run(
+            ["winget", "list", "--accept-source-agreements", "--disable-interactivity"],
+            capture_output=True, timeout=30, creationflags=0x08000000,
+        )
+        out = r.stdout.decode("utf-8", errors="replace")
+    except Exception:
+        return result
+
+    lines = out.splitlines()
+    sep_idx = next((i for i, l in enumerate(lines)
+                    if len(l.rstrip()) > 20 and all(c == "-" for c in l.rstrip())), None)
+    if sep_idx is None or sep_idx == 0:
+        return result
+
+    header_raw = lines[sep_idx - 1]
+    header = header_raw.lstrip("\r-\\|/ \x1b")
+    # Trouver les colonnes par position (identique à get_software_updates)
+    cols = []
+    k = 0
+    while k < len(header):
+        if header[k] != " ":
+            j = k
+            while j < len(header) and header[j] != " ":
+                j += 1
+            offset = len(header_raw) - len(header)
+            cols.append(k + offset)
+            k = j
+        else:
+            k += 1
+    col_ranges = [(cols[i], cols[i + 1] if i + 1 < len(cols) else None)
+                  for i in range(len(cols))]
+
+    for line in lines[sep_idx + 1:]:
+        if not line.strip() or all(c in "- " for c in line.strip()):
+            continue
+        parts = []
+        for s, e in col_ranges:
+            chunk = line[s:e].strip() if e else line[s:].strip()
+            parts.append(chunk)
+        if len(parts) < 2:
+            continue
+        name, wid = parts[0], parts[1]
+        if not name or not wid or wid == "…":
+            continue
+        result[name.lower().strip()] = wid
+
+    return result
+
+
+def _detect_scoop_apps():
+    """Détecte les apps installées via Scoop. Retourne un set de noms normalisés."""
+    scoop_dir = Path(os.path.expandvars(r"%USERPROFILE%\scoop\apps"))
+    if not scoop_dir.exists():
+        return set()
+    try:
+        return {p.name.lower() for p in scoop_dir.iterdir() if p.is_dir() and p.name != "scoop"}
+    except OSError:
+        return set()
+
+
+def _detect_choco_apps():
+    """Détecte les apps installées via Chocolatey. Retourne un set de noms normalisés."""
+    choco_dir = Path(os.path.expandvars(r"%ProgramData%\chocolatey\lib"))
+    if not choco_dir.exists():
+        return set()
+    try:
+        return {p.name.lower() for p in choco_dir.iterdir() if p.is_dir()}
+    except OSError:
+        return set()
+
+
+def _exe_exists(uninstall_string):
+    """Extrait le chemin de l'exécutable et vérifie son existence."""
+    if not uninstall_string:
+        return False
+    import shlex
+    try:
+        parts = shlex.split(uninstall_string, posix=False)
+        exe = parts[0].strip('"').strip("'") if parts else ""
+        # msiexec est toujours présent
+        if exe.lower().endswith("msiexec.exe") or exe.lower() == "msiexec":
+            return True
+        return bool(exe) and Path(exe).exists()
+    except Exception:
+        return False
+
+
+def _extract_exe_from_uninstall_string(uninstall_string):
+    if not uninstall_string:
+        return ""
+    import shlex
+    try:
+        parts = shlex.split(uninstall_string, posix=False)
+        return parts[0].strip('"').strip("'") if parts else ""
+    except Exception:
+        return ""
+
+
+def get_installed_apps(deep=False):
+    """Lit la liste des applications installées depuis le registre Windows.
+
+    Version v2 :
+    - filtrage SystemComponent / ParentKeyName / ReleaseType
+    - détection des entrées cassées (exe inexistant)
+    - enrichissement avec UserAssist (dernière utilisation, nombre de lancements)
+    - catégorisation heuristique
+    - merge avec winget/scoop/choco quand disponibles
+    - si `deep=True` : taille réelle calculée depuis InstallLocation (plus lent)
+    """
     apps = []
-    seen = set()
+    seen_keys = set()
 
     uninstall_paths = [
         (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
         (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"),
         (winreg.HKEY_CURRENT_USER,  r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
     ]
+    hive_label = {
+        winreg.HKEY_LOCAL_MACHINE: "HKLM",
+        winreg.HKEY_CURRENT_USER:  "HKCU",
+    }
+
+    # Sources externes (parallélisables mais simples en séquence)
+    userassist = _parse_userassist_map()
+    winget_map = _detect_winget_apps()
+    scoop_set  = _detect_scoop_apps()
+    choco_set  = _detect_choco_apps()
+
+    excluded_release_types = {"Update", "Hotfix", "Security Update", "ServicePack"}
 
     for hive, path in uninstall_paths:
         try:
             key = winreg.OpenKey(hive, path)
-            i = 0
-            while True:
+        except OSError:
+            continue
+
+        i = 0
+        while True:
+            try:
+                sub_name = winreg.EnumKey(key, i)
+                i += 1
+            except OSError:
+                break
+
+            try:
+                sub = winreg.OpenKey(key, sub_name)
+            except OSError:
+                continue
+
+            def _val(k, default=""):
                 try:
-                    sub_name = winreg.EnumKey(key, i)
-                    sub = winreg.OpenKey(key, sub_name)
+                    return winreg.QueryValueEx(sub, k)[0]
+                except Exception:
+                    return default
 
-                    def val(k, default=""):
-                        try:
-                            return str(winreg.QueryValueEx(sub, k)[0])
-                        except Exception:
-                            return default
+            try:
+                name = str(_val("DisplayName") or "").strip()
+                if not name:
+                    continue
 
-                    name = val("DisplayName")
-                    if not name or name in seen:
-                        i += 1
-                        winreg.CloseKey(sub)
-                        continue
+                # Filtres système
+                if int(_val("SystemComponent", 0) or 0) == 1:
+                    continue
+                if _val("ParentKeyName", ""):
+                    continue
+                release_type = str(_val("ReleaseType", "") or "")
+                if release_type in excluded_release_types:
+                    continue
 
-                    # Ignore les entrées système sans désinstalleur
-                    uninstall = val("UninstallString")
-                    if not uninstall and not val("DisplayVersion"):
-                        i += 1
-                        winreg.CloseKey(sub)
-                        continue
+                uninstall     = str(_val("UninstallString") or "")
+                quiet_unins   = str(_val("QuietUninstallString") or "")
+                version       = str(_val("DisplayVersion") or "")
+                publisher     = str(_val("Publisher") or "")
+                install_date  = str(_val("InstallDate") or "")
+                install_loc   = str(_val("InstallLocation") or "")
+                display_icon  = str(_val("DisplayIcon") or "")
+                url_about     = str(_val("URLInfoAbout") or "")
+                url_update    = str(_val("URLUpdateInfo") or "")
+                help_link     = str(_val("HelpLink") or "")
 
-                    seen.add(name)
+                # Ignore les entrées sans aucun signe de vie
+                if not uninstall and not version and not install_loc:
+                    continue
+
+                # Déduplication par clé registre unique (hive + sub_name)
+                dedupe_key = f"{hive_label[hive]}\\{sub_name}"
+                if dedupe_key in seen_keys:
+                    continue
+                seen_keys.add(dedupe_key)
+
+                # Taille estimated (en Ko selon spec registre)
+                try:
+                    size_kb = int(_val("EstimatedSize", 0) or 0)
+                except (TypeError, ValueError):
                     size_kb = 0
+
+                size_bytes = size_kb * 1024
+
+                # Deep scan : taille réelle depuis InstallLocation
+                if deep and install_loc and Path(install_loc).exists():
                     try:
-                        size_kb = int(winreg.QueryValueEx(sub, "EstimatedSize")[0])
+                        real_size = get_folder_size(install_loc)
+                        if real_size > 0:
+                            size_bytes = real_size
                     except Exception:
                         pass
 
-                    apps.append({
-                        "name":             name,
-                        "version":          val("DisplayVersion"),
-                        "publisher":        val("Publisher"),
-                        "install_date":     val("InstallDate"),
-                        "size_kb":          size_kb,
-                        "size_fmt":         fmt_size(size_kb * 1024) if size_kb else "—",
-                        "uninstall_string": uninstall,
-                    })
-                    winreg.CloseKey(sub)
-                    i += 1
-                except OSError:
-                    break
-            winreg.CloseKey(key)
-        except OSError:
-            pass
+                # Détection entrée cassée
+                exe_path = _extract_exe_from_uninstall_string(uninstall)
+                broken = bool(uninstall) and not _exe_exists(uninstall)
 
+                # UserAssist match
+                ua_meta = None
+                last_used_iso = None
+                launch_count = 0
+                if exe_path:
+                    ua_meta = _find_user_assist_match(exe_path, userassist)
+                if ua_meta is None and install_loc:
+                    # Cherche n'importe quelle clé UserAssist contenant ce dossier
+                    inst_lower = install_loc.lower()
+                    for k, m in userassist.items():
+                        if inst_lower in k:
+                            ua_meta = m
+                            break
+                if ua_meta:
+                    launch_count = ua_meta.get("launch_count", 0)
+                    dt = ua_meta.get("last_used")
+                    if dt:
+                        last_used_iso = dt.isoformat()
+
+                # Merge winget
+                winget_id = winget_map.get(name.lower().strip(), "")
+
+                # Merge scoop / choco
+                extra_sources = []
+                name_lower = name.lower()
+                if scoop_set and any(s in name_lower or name_lower in s for s in scoop_set):
+                    extra_sources.append("scoop")
+                if choco_set and any(c in name_lower or name_lower in c for c in choco_set):
+                    extra_sources.append("choco")
+
+                apps.append({
+                    "id":               dedupe_key,
+                    "reg_hive":         hive_label[hive],
+                    "reg_path":         f"{path}\\{sub_name}",
+                    "name":             name,
+                    "version":          version,
+                    "publisher":        publisher,
+                    "install_date":     install_date,
+                    "install_location": install_loc,
+                    "display_icon":     display_icon,
+                    "size_kb":          int(size_bytes / 1024) if size_bytes else 0,
+                    "size_fmt":         fmt_size(size_bytes) if size_bytes else "—",
+                    "size_bytes":       size_bytes,
+                    "size_source":      "real" if (deep and install_loc) else "estimated",
+                    "uninstall_string": uninstall,
+                    "quiet_uninstall":  quiet_unins,
+                    "broken":           broken,
+                    "category":         _categorize_app(name, publisher),
+                    "last_used":        last_used_iso,
+                    "launch_count":     launch_count,
+                    "winget_id":        winget_id,
+                    "extra_sources":    extra_sources,
+                    "url_about":        url_about,
+                    "url_update":       url_update,
+                    "help_link":        help_link,
+                    "exe_path":         exe_path,
+                })
+            finally:
+                winreg.CloseKey(sub)
+
+        winreg.CloseKey(key)
+
+    # Tri par nom (par défaut)
     apps.sort(key=lambda x: x["name"].lower())
     return apps
 
 
-def launch_uninstaller(uninstall_string):
-    """
-    Lance le désinstalleur via ShellExecuteW (déclenche l'UAC si nécessaire).
-    Fallback sur Popen si l'appel COM échoue.
+def launch_uninstaller(uninstall_string, silent=False, winget_id="", quiet_uninstall=""):
+    """Lance le désinstalleur d'une app installée.
+
+    Préférence en mode silent :
+    1. winget uninstall (si winget_id fourni)
+    2. QuietUninstallString (si présent dans le registre)
+    3. UninstallString avec heuristique (/S, /SILENT, /VERYSILENT, /quiet)
+    Fallback : ShellExecuteW normal (GUI).
     """
     import shlex
+
+    if silent and winget_id:
+        try:
+            r = subprocess.run(
+                ["winget", "uninstall", "--id", winget_id, "--silent",
+                 "--accept-source-agreements", "--disable-interactivity"],
+                capture_output=True, timeout=300, creationflags=0x08000000,
+            )
+            if r.returncode == 0:
+                return True
+        except Exception:
+            pass
+
+    if silent and quiet_uninstall:
+        try:
+            subprocess.Popen(quiet_uninstall, shell=True)
+            return True
+        except Exception:
+            pass
+
+    if silent and uninstall_string:
+        # Heuristique : détecter le type d'installeur et ajouter le flag silencieux
+        cmd = uninstall_string.strip()
+        lower = cmd.lower()
+        silent_cmd = None
+        if "msiexec" in lower:
+            # Remplace /i ou /x par /x /quiet /norestart
+            silent_cmd = cmd.replace("/I", "/x").replace("/i", "/x")
+            if "/quiet" not in lower and "/qn" not in lower:
+                silent_cmd += " /quiet /norestart"
+        elif "unins" in lower:  # Inno Setup
+            silent_cmd = cmd + " /VERYSILENT /SUPPRESSMSGBOXES /NORESTART"
+        else:  # NSIS et génériques
+            silent_cmd = cmd + " /S"
+        try:
+            subprocess.Popen(silent_cmd, shell=True)
+            return True
+        except Exception:
+            pass
+
+    # GUI fallback
     try:
         parts = shlex.split(uninstall_string, posix=False)
         exe   = parts[0].strip('"').strip("'")
         args  = " ".join(parts[1:]) if len(parts) > 1 else None
         ret = ctypes.windll.shell32.ShellExecuteW(None, "open", exe, args, None, 1)
-        return int(ret) > 32   # >32 = succès selon l'API Win32
+        return int(ret) > 32
     except Exception:
         try:
             subprocess.Popen(uninstall_string, shell=True)
             return True
         except Exception:
             return False
+
+
+def remove_uninstall_registry_entry(reg_hive, reg_path):
+    """Supprime une entrée orpheline des clés Uninstall (pour les apps 'broken').
+
+    reg_hive : "HKLM" | "HKCU"
+    reg_path : chemin complet sous la hive (ex: SOFTWARE\\...\\Uninstall\\MyApp)
+    """
+    hive = winreg.HKEY_LOCAL_MACHINE if reg_hive == "HKLM" else winreg.HKEY_CURRENT_USER
+    try:
+        winreg.DeleteKey(hive, reg_path)
+        return True, None
+    except PermissionError:
+        return False, "Droits administrateur requis"
+    except FileNotFoundError:
+        return False, "Entrée introuvable"
+    except Exception as e:
+        return False, str(e)
+
+
+def find_app_residuals(app_name, install_location=""):
+    """Cherche les résidus laissés par une app après désinstallation.
+
+    Retourne une liste de {path, size, size_fmt, type}.
+    """
+    residuals = []
+
+    # Variantes du nom pour matcher les dossiers
+    name_variants = set()
+    base = app_name.lower()
+    name_variants.add(base)
+    # Retire version/marquage courants
+    cleaned = re.sub(r"\s*\(.*?\)\s*", "", base).strip()
+    if cleaned and cleaned != base:
+        name_variants.add(cleaned)
+    # Premier mot uniquement (attention aux faux positifs — on filtre plus bas)
+    first_word = base.split()[0] if base.split() else ""
+    if len(first_word) >= 4:
+        name_variants.add(first_word)
+
+    search_roots = [
+        Path(os.environ.get("APPDATA", "")),
+        Path(os.environ.get("LOCALAPPDATA", "")),
+        Path(os.environ.get("PROGRAMDATA", "")),
+    ]
+
+    for root in search_roots:
+        if not root.exists():
+            continue
+        try:
+            for child in root.iterdir():
+                if not child.is_dir():
+                    continue
+                cname = child.name.lower()
+                if cname in name_variants or any(v in cname for v in name_variants if len(v) >= 4):
+                    try:
+                        size = get_folder_size(child)
+                        residuals.append({
+                            "path":     str(child),
+                            "size":     size,
+                            "size_fmt": fmt_size(size),
+                            "type":     "folder",
+                        })
+                    except Exception:
+                        pass
+        except OSError:
+            pass
+
+    # Dossier d'installation s'il existe encore
+    if install_location and Path(install_location).exists():
+        try:
+            size = get_folder_size(install_location)
+            residuals.append({
+                "path":     install_location,
+                "size":     size,
+                "size_fmt": fmt_size(size),
+                "type":     "install_dir",
+            })
+        except Exception:
+            pass
+
+    return residuals
 
 
 # ──────────────────────────────────────────────────────────────────────────────

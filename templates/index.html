@@ -2312,14 +2312,18 @@
     <div class="section-head">
       <div>
         <div class="tool-section-title">Applications installées</div>
-        <div class="tool-section-sub">Liste des logiciels installés sur votre système</div>
+        <div class="tool-section-sub">Catégorisation, dernière utilisation, détection des entrées cassées, désinstallation silencieuse via winget</div>
       </div>
-      <span id="apps-count" class="dim" style="font-size:13px"></span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="apps-count" class="dim" style="font-size:13px"></span>
+        <button class="btn-ghost" onclick="loadApps(true)" title="Calcule la taille réelle de chaque dossier d'installation (plus lent, ~30s)" style="font-size:11px">Scan approfondi</button>
+      </div>
     </div>
     <div class="card">
       <div class="search-wrap">
         <input class="search-input" id="apps-search" placeholder="Rechercher une application…" oninput="filterApps()">
       </div>
+      <div class="tweak-filters" id="apps-filters" style="margin:10px 16px;display:none"></div>
       <div id="apps-list" class="results-scroll">
         <div class="tool-loading">Chargement…</div>
       </div>

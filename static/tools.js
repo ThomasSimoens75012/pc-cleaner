@@ -313,147 +313,313 @@ async function toggleStartup(entry, swEl) {
   }
 }
 
-// ── Applications installées ───────────────────────────────────────────────────
+// ── Applications installées v2 ───────────────────────────────────────────────
 
-let allApps    = [];
-let appSortKey = "size_kb";
-let appSortDir = -1; // -1 desc, 1 asc
+let allApps     = [];
+let appSortKey  = "size_bytes";
+let appSortDir  = -1;
+let _appFilter  = "all";   // all | broken | unused | big | category:X | source:winget/scoop/choco
+let _appDeep    = false;
 
-async function loadApps() {
+async function loadApps(deep = false) {
+  _appDeep = deep;
   const el = document.getElementById("apps-list");
   el.innerHTML = _skeleton(6, true);
+  const url = deep ? "/api/apps?deep=1" : "/api/apps";
+  const actId = deep ? activityPush("Scan approfondi apps", "Calcul des tailles réelles…") : null;
   try {
-    const res = await fetch("/api/apps");
+    const res = await fetch(url);
     allApps = await res.json();
-    renderApps(allApps);
+    if (allApps.error) throw new Error(allApps.error);
+    _renderAppFilters();
+    renderApps();
+    if (actId) activityDone(actId, `${allApps.length} apps scannées`);
   } catch (e) {
     el.innerHTML = `<div class="tool-error">Erreur de chargement.</div>`;
+    if (actId) activityDone(actId, "Échec", "error");
   }
+}
+
+function _monthsAgo(iso) {
+  if (!iso) return null;
+  const now = new Date();
+  const then = new Date(iso);
+  const ms = now - then;
+  return ms / (1000 * 60 * 60 * 24 * 30);
+}
+
+function _appsMatchingFilter(filter) {
+  if (filter === "all")     return allApps;
+  if (filter === "broken")  return allApps.filter(a => a.broken);
+  if (filter === "unused")  return allApps.filter(a => {
+    const m = _monthsAgo(a.last_used);
+    return m !== null && m >= 6;
+  });
+  if (filter === "big")     return allApps.filter(a => a.size_bytes >= 1024 * 1024 * 1024);
+  if (filter === "no_pub")  return allApps.filter(a => !a.publisher);
+  if (filter === "winget")  return allApps.filter(a => a.winget_id);
+  if (filter.startsWith("category:")) {
+    const cat = filter.slice(9);
+    return allApps.filter(a => a.category === cat);
+  }
+  return allApps;
+}
+
+function _renderAppFilters() {
+  const el = document.getElementById("apps-filters");
+  if (!el) return;
+  const cats = [...new Set(allApps.map(a => a.category))].sort();
+  const broken = allApps.filter(a => a.broken).length;
+  const unused = allApps.filter(a => { const m = _monthsAgo(a.last_used); return m !== null && m >= 6; }).length;
+  const big    = allApps.filter(a => a.size_bytes >= 1024 * 1024 * 1024).length;
+  const winget = allApps.filter(a => a.winget_id).length;
+
+  const btn = (f, label, count) => `
+    <button class="tweak-filter-btn${_appFilter === f ? " active" : ""}" onclick="setAppFilter('${f}')">
+      ${label}${count != null ? ` <span class="c">${count}</span>` : ""}
+    </button>`;
+
+  let html = btn("all", "Tout", allApps.length);
+  if (broken) html += btn("broken", "Cassées", broken);
+  if (unused) html += btn("unused", "Inutilisées > 6 mois", unused);
+  if (big)    html += btn("big",    "> 1 Go",  big);
+  if (winget) html += btn("winget", "Winget",  winget);
+  cats.forEach(c => {
+    const n = allApps.filter(a => a.category === c).length;
+    html += btn("category:" + c, c, n);
+  });
+  el.innerHTML = html;
+  el.style.display = "flex";
+}
+
+function setAppFilter(f) {
+  _appFilter = f;
+  _renderAppFilters();
+  renderApps();
 }
 
 function sortApps(key) {
   if (appSortKey === key) { appSortDir *= -1; }
-  else { appSortKey = key; appSortDir = key === "size_kb" ? -1 : 1; }
-  const q = document.getElementById("apps-search")?.value.toLowerCase() || "";
-  renderApps(q ? allApps.filter(a =>
-    a.name.toLowerCase().includes(q) || (a.publisher || "").toLowerCase().includes(q)
-  ) : allApps);
+  else { appSortKey = key; appSortDir = (key === "size_bytes" || key === "launch_count") ? -1 : 1; }
+  renderApps();
 }
 
-function renderApps(apps) {
+function renderApps() {
   const el = document.getElementById("apps-list");
-  if (!apps.length) {
+  const q = (document.getElementById("apps-search")?.value || "").toLowerCase();
+  let list = _appsMatchingFilter(_appFilter);
+  if (q) {
+    list = list.filter(a =>
+      a.name.toLowerCase().includes(q) ||
+      (a.publisher || "").toLowerCase().includes(q));
+  }
+  if (!list.length) {
     el.innerHTML = `<div class="tool-empty">Aucun résultat.</div>`;
+    document.getElementById("apps-count").textContent = `0 sur ${allApps.length}`;
     return;
   }
-  el.innerHTML = "";
 
-  // Tri
-  const sorted = [...apps].sort((a, b) => {
+  const sorted = [...list].sort((a, b) => {
     const av = a[appSortKey] ?? "";
     const bv = b[appSortKey] ?? "";
-    if (typeof av === "string") return appSortDir * av.localeCompare(bv);
-    return appSortDir * (bv - av);
+    if (typeof av === "string") return appSortDir * av.localeCompare(bv || "");
+    return appSortDir * ((bv || 0) - (av || 0));
   });
 
-  // Header cliquable
+  el.innerHTML = "";
   const cols = [
-    { key: "name",      label: "Nom",     style: "flex:1;min-width:0" },
-    { key: "publisher", label: "Éditeur", style: "min-width:100px;text-align:right" },
-    { key: "size_kb",   label: "Taille",  style: "min-width:80px;text-align:right" },
-    { key: "version",   label: "Version", style: "min-width:80px;text-align:right" },
+    { key: "name",         label: "Nom",         style: "flex:1;min-width:0" },
+    { key: "publisher",    label: "Éditeur",     style: "min-width:100px;text-align:right" },
+    { key: "size_bytes",   label: "Taille",      style: "min-width:80px;text-align:right" },
+    { key: "last_used",    label: "Dern. util.", style: "min-width:90px;text-align:right" },
   ];
   const header = document.createElement("div");
   header.className = "tool-row tool-header";
   header.innerHTML = cols.map(c => `
     <div style="${c.style};cursor:pointer;user-select:none" onclick="sortApps('${c.key}')">
       <strong>${c.label}</strong>${appSortKey === c.key ? (appSortDir === -1 ? " ↓" : " ↑") : ""}
-    </div>`).join("") + `<div style="width:90px"></div>`;
+    </div>`).join("") + `<div style="width:110px"></div>`;
   el.appendChild(header);
 
   sorted.forEach(app => {
     const row = document.createElement("div");
     row.className = "tool-row";
-    const bigApp = app.size_kb > 500 * 1024;
+
+    const bigApp = app.size_bytes >= 1024 * 1024 * 1024;
+    const monthsAgo = _monthsAgo(app.last_used);
+    const unused = monthsAgo !== null && monthsAgo >= 6;
+
+    const badges = [];
+    if (app.broken)     badges.push('<span style="font-size:9px;background:var(--red-bg);color:var(--red);padding:1px 5px;border-radius:3px;font-weight:600">CASSÉE</span>');
+    if (unused)         badges.push(`<span style="font-size:9px;background:var(--amber-bg);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:600">${Math.round(monthsAgo)} mois</span>`);
+    if (app.winget_id)  badges.push('<span style="font-size:9px;background:var(--bg3);color:var(--text-dim);padding:1px 5px;border-radius:3px">winget</span>');
+    (app.extra_sources || []).forEach(s => badges.push(`<span style="font-size:9px;background:var(--bg3);color:var(--text-dim);padding:1px 5px;border-radius:3px">${s}</span>`));
 
     const nameDiv = document.createElement("div");
     nameDiv.className = "tool-info";
-    nameDiv.innerHTML = `<div class="tool-name">${app.name}${app.size_kb > 1024*1024 ? ' <span style="font-size:10px;color:var(--amber);font-weight:600">●</span>' : ''}</div>`;
+    nameDiv.innerHTML = `
+      <div class="tool-name" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        ${app.name}${bigApp ? ' <span style="font-size:10px;color:var(--amber);font-weight:600">●</span>' : ''}
+        ${badges.join(" ")}
+      </div>
+      <div class="tool-sub" style="font-size:10px;color:var(--text-dim)">${app.category}${app.version ? " · v" + app.version : ""}${app.launch_count ? " · " + app.launch_count + " lancements" : ""}</div>`;
 
     const pubDiv = document.createElement("div");
     pubDiv.className = "tool-meta dim";
-    pubDiv.style.cssText = "min-width:100px;text-align:right";
+    pubDiv.style.cssText = "min-width:100px;text-align:right;font-size:11px";
     pubDiv.textContent = app.publisher || "—";
 
     const sizeDiv = document.createElement("div");
     sizeDiv.className = "tool-meta";
-    sizeDiv.style.cssText = `min-width:80px;text-align:right;font-weight:${bigApp ? "700" : "400"};color:${bigApp ? "var(--amber)" : "inherit"}`;
+    sizeDiv.style.cssText = `min-width:80px;text-align:right;font-weight:${bigApp ? "700" : "400"};color:${bigApp ? "var(--amber)" : "inherit"};font-variant-numeric:tabular-nums`;
     sizeDiv.textContent = app.size_fmt;
+    if (app.size_source === "real") sizeDiv.title = "Taille réelle mesurée depuis InstallLocation";
 
-    const verDiv = document.createElement("div");
-    verDiv.className = "tool-meta dim";
-    verDiv.style.cssText = "min-width:80px;text-align:right";
-    verDiv.textContent = app.version || "—";
+    const luDiv = document.createElement("div");
+    luDiv.className = "tool-meta dim";
+    luDiv.style.cssText = "min-width:90px;text-align:right;font-size:11px";
+    if (app.last_used) {
+      const d = new Date(app.last_used);
+      luDiv.textContent = d.toLocaleDateString("fr-FR", { month: "short", year: "numeric" });
+    } else {
+      luDiv.textContent = "—";
+    }
 
     const actDiv = document.createElement("div");
-    actDiv.style.cssText = "width:90px;text-align:right;flex-shrink:0";
+    actDiv.style.cssText = "width:110px;text-align:right;flex-shrink:0;display:flex;flex-direction:column;gap:3px;align-items:flex-end";
 
-    if (app.uninstall_string) {
+    if (app.broken) {
+      const rm = document.createElement("button");
+      rm.className = "btn-ghost";
+      rm.textContent = "Supprimer entrée";
+      rm.style.cssText = "font-size:10px;padding:3px 8px";
+      rm.title = "Supprime l'entrée orpheline du registre (l'exe n'existe plus)";
+      rm.addEventListener("click", () => removeBrokenEntry(app, rm));
+      actDiv.appendChild(rm);
+    } else if (app.uninstall_string || app.winget_id) {
       const btn = document.createElement("button");
       btn.className = "btn-uninstall";
       btn.textContent = "Désinstaller";
-      btn.addEventListener("click", () => uninstallApp(app.uninstall_string, app.name, btn));
+      btn.addEventListener("click", () => uninstallApp(app, btn, false));
       actDiv.appendChild(btn);
+
+      if (app.winget_id || app.quiet_uninstall) {
+        const silent = document.createElement("button");
+        silent.className = "btn-ghost";
+        silent.textContent = "Silencieux";
+        silent.style.cssText = "font-size:10px;padding:2px 8px";
+        silent.title = "Désinstallation sans popup (winget ou QuietUninstallString)";
+        silent.addEventListener("click", () => uninstallApp(app, silent, true));
+        actDiv.appendChild(silent);
+      }
     } else {
       actDiv.innerHTML = `<span class="dim" style="font-size:12px">—</span>`;
     }
 
-    row.append(nameDiv, pubDiv, sizeDiv, verDiv, actDiv);
+    row.append(nameDiv, pubDiv, sizeDiv, luDiv, actDiv);
     el.appendChild(row);
   });
 
-  document.getElementById("apps-count").textContent = `${sorted.length} applications`;
+  document.getElementById("apps-count").textContent =
+    `${sorted.length} sur ${allApps.length}${_appDeep ? " (tailles réelles)" : ""}`;
 }
 
 function filterApps() {
-  const q = document.getElementById("apps-search").value.toLowerCase();
-  renderApps(q ? allApps.filter(a =>
-    a.name.toLowerCase().includes(q) ||
-    (a.publisher || "").toLowerCase().includes(q)
-  ) : allApps);
+  renderApps();
 }
 
-async function uninstallApp(uninstallString, name, btn) {
+async function uninstallApp(app, btn, silent) {
+  const msg = silent
+    ? `Désinstaller "${app.name}" en mode silencieux ? Aucune popup ne s'affichera.`
+    : `Désinstaller "${app.name}" ? Windows ouvrira le programme de désinstallation.`;
   showConfirm(
-    `Désinstaller "${name}" ?`,
-    "Windows ouvrira le programme de désinstallation. L'application sera retirée de votre système.",
+    `Désinstaller "${app.name}" ?`,
+    msg,
     async () => {
       if (btn) { btn.disabled = true; btn.textContent = "En cours…"; }
+      const actId = activityPush("Désinstallation", app.name, { tab: "outils" });
       try {
         const res  = await fetch("/api/apps/uninstall", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ uninstall_string: uninstallString }),
+          body: JSON.stringify({
+            uninstall_string: app.uninstall_string,
+            winget_id:        app.winget_id,
+            quiet_uninstall:  app.quiet_uninstall,
+            silent:           silent,
+          }),
         });
         const data = await res.json();
         if (!res.ok || !data.ok) {
+          activityDone(actId, "Échec", "error");
           showToast("Erreur", data.error || "Impossible de lancer la désinstallation.", "warn");
-          if (btn) { btn.disabled = false; btn.textContent = "Désinstaller"; }
+          if (btn) { btn.disabled = false; btn.textContent = silent ? "Silencieux" : "Désinstaller"; }
         } else {
-          showToast("Désinstallation lancée", `Windows a ouvert le programme de désinstallation de « ${name} »`, "success");
-          if (btn) {
-            btn.textContent = "Retirer de la liste";
-            btn.className = "btn-ghost";
-            btn.style.cssText = "font-size:11px;padding:4px 10px;color:var(--text-mid)";
-            btn.onclick = () => btn.closest(".tool-row")?.remove();
+          activityDone(actId, silent ? "Désinstallation silencieuse lancée" : "Désinstalleur ouvert");
+          if (!silent) {
+            showToast("Désinstallation lancée", `« ${app.name} »`, "success");
           }
+          // Proposer le scan de résidus
+          setTimeout(() => checkResiduals(app), 2000);
         }
       } catch (e) {
+        activityDone(actId, "Échec", "error");
         showToast("Erreur", e.message, "warn");
-        if (btn) { btn.disabled = false; btn.textContent = "Désinstaller"; }
+        if (btn) { btn.disabled = false; btn.textContent = silent ? "Silencieux" : "Désinstaller"; }
       }
     }
   );
+}
+
+async function removeBrokenEntry(app, btn) {
+  if (!window.IS_ADMIN && app.reg_hive === "HKLM") {
+    showToast("Droits admin requis", "Relancez en administrateur pour modifier HKLM.", "warn");
+    return;
+  }
+  showConfirm(
+    "Supprimer l'entrée registre ?",
+    `Cette action retire "${app.name}" de la liste "Programmes et fonctionnalités" de Windows. Elle ne désinstalle rien (l'exe est déjà manquant).`,
+    async () => {
+      btn.disabled = true;
+      try {
+        const res = await fetch("/api/apps/remove-entry", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reg_hive: app.reg_hive, reg_path: app.reg_path }),
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "Erreur");
+        showToast("Entrée supprimée", app.name, "success");
+        btn.closest(".tool-row")?.remove();
+        allApps = allApps.filter(a => a.id !== app.id);
+        _renderAppFilters();
+      } catch (e) {
+        showToast("Erreur", e.message, "warn");
+        btn.disabled = false;
+      }
+    }
+  );
+}
+
+async function checkResiduals(app) {
+  try {
+    const res = await fetch("/api/apps/residuals", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: app.name, install_location: app.install_location }),
+    });
+    const data = await res.json();
+    if (!data.items || !data.items.length) return;
+    const paths = data.items.map(r => r.path).join("\n");
+    if (confirm(`Résidus trouvés pour "${app.name}" (${data.total_fmt}) :\n\n${paths}\n\nEnvoyer à la corbeille ?`)) {
+      const r = await fetch("/api/recycle-bin/send", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paths: data.items.map(i => i.path) }),
+      });
+      const rd = await r.json();
+      if (rd.moved) {
+        showToast("Résidus nettoyés", `${rd.moved} dossier(s) envoyés à la corbeille`, "success");
+      }
+    }
+  } catch (e) {}
 }
 
 function openSettingsUri(uri) {
