@@ -1480,7 +1480,7 @@ async function _deleteSelected(opts) {
       try {
         const res  = await fetch(opts.endpoint, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paths, safe: isSafeDeleteEnabled() }),
+          body: JSON.stringify({ paths }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Erreur serveur");
@@ -1754,34 +1754,6 @@ async function removeExtension(path, name, btn) {
 }
 
 // ── Mises à jour logicielles ──────────────────────────────────────────────────
-
-function isSafeDeleteEnabled() {
-  try {
-    return localStorage.getItem("safeDelete") === "1";
-  } catch {
-    return false;
-  }
-}
-
-function toggleSafeDelete() {
-  const cb = document.getElementById("safe-delete-toggle");
-  if (!cb) return;
-  try {
-    localStorage.setItem("safeDelete", cb.checked ? "1" : "0");
-  } catch {}
-  showToast(
-    cb.checked ? "Mode sécurisé activé" : "Mode sécurisé désactivé",
-    cb.checked
-      ? "Les suppressions seront envoyées à la corbeille Windows."
-      : "Les suppressions seront définitives.",
-    "success"
-  );
-}
-
-function _initSafeDeleteToggle() {
-  const cb = document.getElementById("safe-delete-toggle");
-  if (cb) cb.checked = isSafeDeleteEnabled();
-}
 
 async function openRecycleBin() {
   try {

@@ -55,23 +55,19 @@ from cleaner import (
 )
 
 
-def _safe_delete_or(paths, normal_fn):
-    """Si `safe` est dans le body JSON, envoie à la corbeille au lieu d'appeler normal_fn.
+def _safe_delete_or(paths, _normal_fn):
+    """Envoie les chemins à la corbeille Windows (toujours — comportement par défaut).
 
-    normal_fn(paths) doit renvoyer (freed_bytes, errors_list).
     Retourne (freed_bytes, errors_list).
     """
-    data = request.get_json(silent=True) or {}
-    if data.get("safe"):
-        total = 0
-        for p in paths:
-            try:
-                total += Path(p).stat().st_size if Path(p).is_file() else 0
-            except Exception:
-                pass
-        res = send_to_recycle_bin(paths)
-        return total, res.get("errors", [])
-    return normal_fn(paths)
+    total = 0
+    for p in paths:
+        try:
+            total += Path(p).stat().st_size if Path(p).is_file() else 0
+        except Exception:
+            pass
+    res = send_to_recycle_bin(paths)
+    return total, res.get("errors", [])
 
 
 def _log_delete(op, summary, errors):
@@ -610,11 +606,8 @@ def api_shortcuts_delete():
     rejected = _reject_if_admin_paths(paths)
     if rejected:
         return rejected
-    if (data.get("safe")):
-        r = send_to_recycle_bin(paths)
-        deleted, errors = r["moved"], r["errors"]
-    else:
-        deleted, errors = delete_shortcuts(paths)
+    r = send_to_recycle_bin(paths)
+    deleted, errors = r["moved"], r["errors"]
     _log_delete("shortcuts/delete", f"{deleted} supprimé(s)", errors)
     _save_history_entry(0, kind="delete", label="Raccourcis cassés", details={"count": deleted, "errors": len(errors or [])})
     return jsonify({"deleted": deleted, "errors": errors})
@@ -678,11 +671,8 @@ def api_empty_folders_delete():
     rejected = _reject_if_admin_paths(paths)
     if rejected:
         return rejected
-    if data.get("safe"):
-        r = send_to_recycle_bin(paths)
-        deleted, errors = r["moved"], r["errors"]
-    else:
-        deleted, errors = delete_empty_folders(paths)
+    r = send_to_recycle_bin(paths)
+    deleted, errors = r["moved"], r["errors"]
     _log_delete("empty-folders/delete", f"{deleted} supprimé(s)", errors)
     _save_history_entry(0, kind="delete", label="Dossiers vides", details={"count": deleted, "errors": len(errors or [])})
     return jsonify({"ok": deleted > 0, "deleted": deleted, "errors": errors})
@@ -720,11 +710,8 @@ def api_orphan_folders_delete():
     paths = data.get("paths", [])
     if not paths:
         return jsonify({"error": "Aucun chemin fourni."}), 400
-    if data.get("safe"):
-        r = send_to_recycle_bin(paths)
-        deleted, errors = r["moved"], r["errors"]
-    else:
-        deleted, errors = delete_orphan_folders(paths)
+    r = send_to_recycle_bin(paths)
+    deleted, errors = r["moved"], r["errors"]
     _log_delete("orphan-folders/delete", f"{deleted} supprimé(s)", errors)
     _save_history_entry(0, kind="delete", label="Dossiers orphelins", details={"count": deleted, "errors": len(errors or [])})
     return jsonify({"ok": deleted > 0, "deleted": deleted, "errors": errors})

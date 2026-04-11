@@ -1878,13 +1878,9 @@
 
   <div class="sb-section-title">Récents</div>
   <button class="sb-item" onclick="openHistory()">
-    <svg class="icon" viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
-    Dernier scan
-    <span class="badge" id="sb-last-scan">…</span>
-  </button>
-  <button class="sb-item" onclick="openHistory()">
     <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     Historique
+    <span class="badge" id="sb-last-scan">…</span>
   </button>
 
   <div class="sb-spacer"></div>
@@ -1908,11 +1904,6 @@
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Rapport HTML
     </button>
-    <label class="sb-item" style="cursor:pointer" title="Routes les suppressions vers la corbeille Windows (annulables)">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-      <span style="flex:1">Mode sécurisé</span>
-      <input type="checkbox" id="safe-delete-toggle" onchange="toggleSafeDelete()" style="margin-left:6px">
-    </label>
     <button class="sb-item" onclick="openHelp()">
       <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       Aide
@@ -3034,8 +3025,6 @@
     if (name === "sante")    initHealth();
     if (name === "perso")    { loadWindowsTweaks(); loadGamingMode(); }
   }
-
-  if (typeof _initSafeDeleteToggle === "function") _initSafeDeleteToggle();
 
 </script>
 </body>
