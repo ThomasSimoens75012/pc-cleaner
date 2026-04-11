@@ -1931,6 +1931,65 @@ async function openRecycleBin() {
   }
 }
 
+async function loadInstallerCache() {
+  const btn = document.getElementById("btn-scan-wic");
+  const container = document.getElementById("wic-container");
+  _btnScan(btn, "Scan…");
+  container.innerHTML = `<div class="tool-loading">Analyse de C:\\Windows\\Installer…</div>`;
+  try {
+    const res = await fetch("/api/windows-installer-cache");
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    document.getElementById("btn-cleanmgr").style.display = "";
+
+    let html = `
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:18px;font-weight:700;color:${data.total > 5*1024*1024*1024 ? 'var(--amber)' : 'var(--text)'};font-variant-numeric:tabular-nums">
+          ${data.total_fmt}
+        </div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px">${data.count} fichiers MSI/MSP</div>
+      </div>
+      <div class="callout callout-yellow" style="margin:12px 16px">
+        <div class="callout-icon">
+          <svg class="icon icon-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="callout-content">
+          <strong>Pourquoi pas de bouton supprimer ?</strong> Ces fichiers sont utilisés par Windows pour réparer Office, Adobe, et autres apps lors de mises à jour. Les supprimer manuellement peut casser ces réparations. <strong>Utilisez « Nettoyage de disque »</strong> (cleanmgr) — l'outil Microsoft qui sait identifier et supprimer uniquement les packages vraiment obsolètes.
+        </div>
+      </div>`;
+
+    if (data.items && data.items.length) {
+      html += `<div style="padding:0 16px 14px"><div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Top ${data.items.length} fichiers</div>`;
+      data.items.forEach(it => {
+        html += `
+          <div style="display:flex;align-items:center;gap:10px;padding:5px 0;font-size:12px;border-bottom:1px solid var(--border)">
+            <div style="flex:1;font-family:'IBM Plex Mono',monospace;color:var(--text-dim)">${it.name}</div>
+            <div style="font-variant-numeric:tabular-nums">${it.size_fmt}</div>
+            <span style="font-size:9px;background:var(--bg3);color:var(--text-dim);padding:1px 5px;border-radius:3px">${it.type}</span>
+          </div>`;
+      });
+      html += `</div>`;
+    }
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = `<div class="tool-error">Erreur : ${e.message}</div>`;
+  } finally {
+    _btnReset(btn);
+  }
+}
+
+async function openDiskCleanup() {
+  try {
+    const res = await fetch("/api/disk-cleanup", { method: "POST" });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Erreur");
+    showToast("Nettoyage de disque", "L'outil Microsoft a été lancé. Cochez « Fichiers Windows Installer » pour nettoyer ce cache.", "success");
+  } catch (e) {
+    showToast("Erreur", e.message, "warn");
+  }
+}
+
 async function downloadGlobalReport() {
   const actId = activityPush("Rapport global", "Génération…");
   try {

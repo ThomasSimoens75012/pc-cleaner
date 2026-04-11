@@ -5517,6 +5517,68 @@ def delete_installer_files(paths):
     return _recycle_many(paths, label="Anciens installeurs")
 
 
+def scan_windows_installer_cache():
+    """Mesure la taille du cache Windows Installer (C:\\Windows\\Installer\\*.msi/.msp).
+
+    Ce dossier stocke les packages MSI/MSP utilisés par Windows pour les
+    réparations/mises à jour. Il peut atteindre 10-30 Go chez les gros
+    utilisateurs d'Office/Adobe. Sa suppression manuelle est RISQUÉE car
+    elle peut casser les futures réparations/mises à jour — on se contente
+    de mesurer et rediriger vers Nettoyage de disque (cleanmgr.exe) qui
+    sait identifier les packages vraiment obsolètes.
+
+    Retourne {items (top 30), total, total_fmt, count, error}.
+    """
+    cache = Path(r"C:\Windows\Installer")
+    if not cache.exists():
+        return {"items": [], "total": 0, "count": 0, "error": "Dossier introuvable"}
+
+    items = []
+    total = 0
+    count = 0
+    try:
+        for entry in cache.iterdir():
+            if not entry.is_file():
+                continue
+            suffix = entry.suffix.lower()
+            if suffix not in (".msi", ".msp"):
+                continue
+            try:
+                size = entry.stat().st_size
+            except OSError:
+                continue
+            total += size
+            count += 1
+            items.append({
+                "path":     str(entry),
+                "name":     entry.name,
+                "size":     size,
+                "size_fmt": fmt_size(size),
+                "type":     suffix[1:],
+            })
+    except OSError as e:
+        return {"items": [], "total": 0, "count": 0, "error": str(e)}
+
+    items.sort(key=lambda x: x["size"], reverse=True)
+    return {
+        "items":     items[:30],  # top 30 pour l'affichage
+        "total":     total,
+        "total_fmt": fmt_size(total),
+        "count":     count,
+        "error":     None,
+    }
+
+
+def launch_disk_cleanup():
+    """Lance cleanmgr.exe (Nettoyage de disque Windows) qui sait nettoyer
+    le cache Windows Installer de façon sûre via l'API Microsoft."""
+    try:
+        subprocess.Popen(["cleanmgr.exe"], creationflags=0x08000000)
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Bilan de santé
 # ──────────────────────────────────────────────────────────────────────────────

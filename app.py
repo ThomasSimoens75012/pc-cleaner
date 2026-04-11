@@ -37,6 +37,7 @@ from cleaner import (
     scan_disk_level,
     get_windows_old_info, delete_windows_old,
     find_old_installers, delete_installer_files,
+    scan_windows_installer_cache, launch_disk_cleanup,
     is_admin, is_admin_path,
     get_drivers, export_drivers_report, scan_windows_update_drivers,
     get_windows_tweaks, set_windows_tweak, get_tweak_presets,
@@ -881,6 +882,21 @@ def api_old_installers_delete():
     _save_history_entry(freed, kind="delete", label="Anciens installers", details={"count": len(paths), "errors": len(errors or [])})
     return jsonify({"ok": freed > 0 or not errors, "freed": freed,
                     "freed_fmt": fmt_size(freed), "errors": errors})
+
+
+@app.route("/api/windows-installer-cache")
+def api_windows_installer_cache():
+    try:
+        return jsonify(scan_windows_installer_cache())
+    except Exception as e:
+        app.logger.exception("windows-installer-cache error")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/disk-cleanup", methods=["POST"])
+def api_disk_cleanup():
+    ok, err = launch_disk_cleanup()
+    return jsonify({"ok": ok, "error": err})
 
 
 @app.route("/api/windows-tweaks")

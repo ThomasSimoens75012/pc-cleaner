@@ -2214,6 +2214,23 @@
     </div>
   </div>
 
+  <!-- Cache Windows Installer -->
+  <div>
+    <div class="section-head">
+      <div>
+        <div class="tool-section-title">Cache Windows Installer</div>
+        <div class="tool-section-sub">C:\Windows\Installer — MSI/MSP utilisés pour les réparations et mises à jour. Nettoyer via l'outil Microsoft uniquement (risqué sinon).</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-primary" id="btn-scan-wic" onclick="loadInstallerCache()">Analyser</button>
+        <button class="btn-ghost" id="btn-cleanmgr" onclick="openDiskCleanup()" style="display:none" title="Ouvre l'outil Microsoft Nettoyage de disque qui sait supprimer ce cache en toute sécurité">Nettoyage de disque…</button>
+      </div>
+    </div>
+    <div class="card">
+      <div id="wic-container"><div class="tool-empty">Cliquez sur « Analyser » pour mesurer ce cache.</div></div>
+    </div>
+  </div>
+
   <!-- Dossiers vides -->
   <div>
     <div class="section-head">
