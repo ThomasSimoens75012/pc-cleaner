@@ -2116,6 +2116,7 @@ _TWEAK_GROUPS = [
 # Catégories d'effet (orthogonales aux groupes d'affichage)
 _TWEAK_TAGS = [
     ("performance", "Performance"),
+    ("telemetry",   "Télémétrie"),
     ("privacy",     "Confidentialité"),
     ("ads",         "Publicités"),
     ("cosmetic",    "Cosmétique"),
@@ -2235,10 +2236,10 @@ _TWEAK_IMPACTS = {
     "edge_background":             (150, 0, ["performance"]),
     "edge_hub_sidebar":            (0,   0, ["privacy"]),
     "edge_shopping":               (0,   0, ["privacy", "ads"]),
-    "edge_personalization_reporting": (0, 0, ["privacy"]),
-    "ad_id":                       (0,   0, ["privacy"]),
-    "tailored_experiences":        (0,   0, ["privacy"]),
-    "app_launch_tracking":         (0,   0, ["privacy"]),
+    "edge_personalization_reporting": (0, 0, ["telemetry"]),
+    "ad_id":                       (0,   0, ["telemetry"]),
+    "tailored_experiences":        (0,   0, ["telemetry"]),
+    "app_launch_tracking":         (0,   0, ["telemetry"]),
     "notepad_ai":                  (0,   0, ["privacy"]),
 
     # Taskbar — cosmétique
@@ -2285,10 +2286,10 @@ _TWEAK_IMPACTS = {
     "launch_to_home":              (0,   0, ["cosmetic"]),
 
     # Vie privée & tâches de fond — Game Bar/DVR = vrais process
-    "activity_history":            (5,   0, ["privacy"]),
+    "activity_history":            (5,   0, ["telemetry"]),
     "cloud_clipboard":             (10,  0, ["privacy"]),
-    "inking_typing":               (0,   0, ["privacy"]),
-    "online_speech":               (0,   0, ["privacy"]),
+    "inking_typing":               (0,   0, ["telemetry"]),
+    "online_speech":               (0,   0, ["telemetry"]),
     "game_dvr":                    (80,  1, ["performance", "privacy"]),
     "game_bar":                    (100, 1, ["performance"]),
 }

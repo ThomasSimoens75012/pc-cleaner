@@ -580,9 +580,44 @@ function renderDuplicates(groups, totalFmt) {
 
 let duplicateFolderGroups = [];
 
+// ── Helper : filter pills pour services/tasks ──────────────────────────────
+
+const _SERVICE_CATEGORY_LABELS = {
+  "all":        "Tout voir",
+  "telemetry":  "Télémétrie",
+  "gaming":     "Gaming",
+  "legacy":     "Legacy",
+  "cloud_sync": "Cloud sync",
+  "privacy":    "Confidentialité",
+};
+
+function _renderCategoryFilters(filterElId, items, currentFilter, onFilter) {
+  const el = document.getElementById(filterElId);
+  if (!el) return;
+  el.style.display = items.length ? "flex" : "none";
+  const counts = { all: items.length };
+  for (const it of items) {
+    const c = it.category || "legacy";
+    counts[c] = (counts[c] || 0) + 1;
+  }
+  const order = ["all", "telemetry", "gaming", "legacy", "cloud_sync", "privacy"];
+  el.innerHTML = order
+    .filter(t => t === "all" || counts[t])
+    .map(t => {
+      const label = _SERVICE_CATEGORY_LABELS[t] || t;
+      const cls = t === currentFilter ? "active" : "";
+      return `<button class="tweak-filter-btn ${cls}" data-filter="${t}">${label} <span class="c">${counts[t] || 0}</span></button>`;
+    }).join("");
+  // Bind clicks
+  el.querySelectorAll(".tweak-filter-btn").forEach(b => {
+    b.addEventListener("click", () => onFilter(b.dataset.filter));
+  });
+}
+
 // ── Services Windows (admin) ─────────────────────────────────────────────────
 
 let _services = [];
+let _servicesFilter = "all";
 
 async function loadServices() {
   const btn = document.getElementById("btn-load-services");
@@ -593,6 +628,7 @@ async function loadServices() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Erreur serveur");
     _services = data.services || [];
+    _servicesFilter = "all";
     _renderServices(data.is_admin);
     _btnReset(btn);
   } catch (e) {
@@ -606,11 +642,22 @@ function _renderServices(isAdmin) {
   const visible = _services.filter(s => s.exists);
   if (!visible.length) {
     el.innerHTML = `<div class="tool-empty" style="padding:20px">Aucun service détecté (tous déjà désactivés ou absents de cette version de Windows).</div>`;
+    document.getElementById("services-filters").style.display = "none";
     return;
   }
 
+  // Filter pills
+  _renderCategoryFilters("services-filters", visible, _servicesFilter, (tag) => {
+    _servicesFilter = tag;
+    _renderServices(isAdmin);
+  });
+
+  const filtered = _servicesFilter === "all"
+    ? visible
+    : visible.filter(s => s.category === _servicesFilter);
+
   const bucket = { telemetry: [], gaming: [], legacy: [], cloud_sync: [], privacy: [] };
-  visible.forEach(s => { (bucket[s.category] || bucket.legacy).push(s); });
+  filtered.forEach(s => { (bucket[s.category] || bucket.legacy).push(s); });
   const order = [
     ["telemetry",  "Télémétrie"],
     ["gaming",     "Gaming (si pas gamer)"],
@@ -683,6 +730,7 @@ async function toggleService(name, checkbox) {
 // ── Tâches planifiées (admin) ────────────────────────────────────────────────
 
 let _scheduledTasks = [];
+let _tasksFilter = "all";
 
 async function loadScheduledTasks() {
   const btn = document.getElementById("btn-load-tasks");
@@ -693,6 +741,7 @@ async function loadScheduledTasks() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Erreur serveur");
     _scheduledTasks = data.tasks || [];
+    _tasksFilter = "all";
     _renderScheduledTasks(data.is_admin);
     _btnReset(btn);
   } catch (e) {
@@ -706,11 +755,21 @@ function _renderScheduledTasks(isAdmin) {
   const visible = _scheduledTasks.filter(t => t.exists);
   if (!visible.length) {
     el.innerHTML = `<div class="tool-empty" style="padding:20px">Aucune tâche détectée (toutes déjà désactivées ou absentes).</div>`;
+    document.getElementById("tasks-filters").style.display = "none";
     return;
   }
 
+  _renderCategoryFilters("tasks-filters", visible, _tasksFilter, (tag) => {
+    _tasksFilter = tag;
+    _renderScheduledTasks(isAdmin);
+  });
+
+  const filtered = _tasksFilter === "all"
+    ? visible
+    : visible.filter(t => t.category === _tasksFilter);
+
   const bucket = { telemetry: [], legacy: [], privacy: [] };
-  visible.forEach(t => { (bucket[t.category] || bucket.legacy).push(t); });
+  filtered.forEach(t => { (bucket[t.category] || bucket.legacy).push(t); });
   const order = [
     ["telemetry", "Télémétrie"],
     ["legacy",    "Fonctions legacy"],
@@ -2488,6 +2547,7 @@ let _tweakFilter  = "all";
 const _TWEAK_TAG_LABELS = {
   "all":         "Tout voir",
   "performance": "Performance",
+  "telemetry":   "Télémétrie",
   "privacy":     "Confidentialité",
   "ads":         "Publicités",
   "cosmetic":    "Cosmétique",
@@ -2654,7 +2714,7 @@ function _escapeHtml(s) {
 function _renderTweakFilters() {
   const el = document.getElementById("tweak-filters");
   if (!el) return;
-  const tags = ["all", "performance", "privacy", "ads", "cosmetic", "security"];
+  const tags = ["all", "performance", "telemetry", "privacy", "ads", "cosmetic", "security"];
   const counts = {};
   for (const t of tags) counts[t] = 0;
   for (const it of _tweakItems) {
