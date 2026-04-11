@@ -110,22 +110,58 @@ def get_folder_size(folder):
 
 
 def delete_folder_contents(folder):
-    freed = 0
-    errors = 0
+    """Envoie les enfants directs de `folder` à la corbeille Windows (batch unique).
+
+    Retourne (freed_bytes, errors_count). Le batching via SHFileOperation est
+    beaucoup plus rapide qu'un appel par fichier et permet la restauration
+    manuelle depuis la corbeille.
+    """
     folder = Path(folder)
     if not folder.exists():
         return 0, 0
-    for item in folder.iterdir():
-        try:
-            size = get_folder_size(item) if item.is_dir() else item.stat().st_size
-            if item.is_dir():
-                shutil.rmtree(item, ignore_errors=False)
-            else:
-                item.unlink()
-            freed += size
-        except (OSError, PermissionError):
-            errors += 1
-    return freed, errors
+
+    items = []
+    total_size = 0
+    try:
+        for item in folder.iterdir():
+            try:
+                size = get_folder_size(item) if item.is_dir() else item.stat().st_size
+                items.append(str(item))
+                total_size += size
+            except (OSError, PermissionError):
+                pass
+    except (OSError, PermissionError):
+        return 0, 0
+
+    if not items:
+        return 0, 0
+
+    try:
+        res = send_to_recycle_bin(items)
+        moved = res.get("moved", 0)
+        failed = res.get("failed", len(items) - moved)
+        # Approximation : proportion d'éléments déplacés
+        if len(items):
+            freed = int(total_size * (moved / len(items)))
+        else:
+            freed = 0
+        return freed, failed
+    except Exception:
+        # Fallback : suppression directe en cas d'échec du shell
+        freed = 0
+        errors = 0
+        for path_str in items:
+            p = Path(path_str)
+            try:
+                size = get_folder_size(p) if p.is_dir() else p.stat().st_size
+                if p.is_dir():
+                    shutil.rmtree(p, ignore_errors=False)
+                else:
+                    p.unlink()
+                freed += size
+            except (OSError, PermissionError):
+                errors += 1
+        return freed, errors
 
 
 def get_disk_info():
