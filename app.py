@@ -19,7 +19,6 @@ from flask import Flask, Response, jsonify, redirect, render_template, request, 
 
 from cleaner import (
     TASKS, fmt_size, get_disk_info,
-    get_startup_entries, set_startup_entry,
     get_installed_apps, launch_uninstaller,
     find_duplicates, delete_duplicate_files,
     find_duplicate_folders, delete_duplicate_folders,
@@ -472,30 +471,6 @@ def api_stream(job_id):
 
     return Response(generate(), mimetype="text/event-stream",
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Outils — Démarrage
-# ──────────────────────────────────────────────────────────────────────────────
-
-@app.route("/api/startup")
-def api_startup():
-    try:
-        return jsonify(get_startup_entries())
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/startup/toggle", methods=["POST"])
-def api_startup_toggle():
-    data    = request.get_json(force=True) or {}
-    name    = data.get("name")
-    source  = data.get("source")
-    enabled = bool(data.get("enabled"))
-    if not name or not source:
-        return jsonify({"error": "name et source requis"}), 400
-    ok = set_startup_entry(name, source, enabled)
-    return jsonify({"ok": ok})
 
 
 # ──────────────────────────────────────────────────────────────────────────────

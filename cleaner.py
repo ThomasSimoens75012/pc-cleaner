@@ -963,98 +963,6 @@ def task_windows_update(log):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Outils — Programmes au démarrage
-# ──────────────────────────────────────────────────────────────────────────────
-
-def get_startup_entries():
-    """
-    Retourne la liste des programmes au démarrage depuis le registre.
-    Lit aussi l'état activé/désactivé depuis StartupApproved.
-    """
-    entries = []
-
-    run_keys = [
-        (winreg.HKEY_CURRENT_USER,  r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",      "HKCU"),
-        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",      "HKLM"),
-        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run", "HKLM32"),
-    ]
-    approved_keys = {
-        "HKCU":   (winreg.HKEY_CURRENT_USER,
-                   r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"),
-        "HKLM":   (winreg.HKEY_LOCAL_MACHINE,
-                   r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"),
-        "HKLM32": (winreg.HKEY_LOCAL_MACHINE,
-                   r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run32"),
-    }
-
-    # Pré-charge les états approuvés
-    approved = {}
-    for source, (hive, subkey) in approved_keys.items():
-        try:
-            key = winreg.OpenKey(hive, subkey, 0, winreg.KEY_READ)
-            i = 0
-            while True:
-                try:
-                    name, data, _ = winreg.EnumValue(key, i)
-                    # Premier octet: 0x02 = activé, 0x03 = désactivé
-                    approved[(source, name)] = (data[0] == 0x02) if data else True
-                    i += 1
-                except OSError:
-                    break
-            winreg.CloseKey(key)
-        except OSError:
-            pass
-
-    for hive, subkey, source in run_keys:
-        try:
-            key = winreg.OpenKey(hive, subkey, 0, winreg.KEY_READ)
-            i = 0
-            while True:
-                try:
-                    name, value, _ = winreg.EnumValue(key, i)
-                    enabled = approved.get((source, name), True)
-                    entries.append({
-                        "name":     name,
-                        "command":  value,
-                        "source":   source,
-                        "key_path": subkey,
-                        "enabled":  enabled,
-                    })
-                    i += 1
-                except OSError:
-                    break
-            winreg.CloseKey(key)
-        except OSError:
-            pass
-
-    return sorted(entries, key=lambda e: e["name"].lower())
-
-
-def set_startup_entry(name, source, enabled):
-    """Active ou désactive un programme au démarrage via StartupApproved."""
-    approved_map = {
-        "HKCU":   (winreg.HKEY_CURRENT_USER,
-                   r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"),
-        "HKLM":   (winreg.HKEY_LOCAL_MACHINE,
-                   r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"),
-        "HKLM32": (winreg.HKEY_LOCAL_MACHINE,
-                   r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run32"),
-    }
-    if source not in approved_map:
-        return False
-    hive, subkey = approved_map[source]
-    try:
-        key = winreg.OpenKey(hive, subkey, 0, winreg.KEY_SET_VALUE)
-        # 12 octets : premier octet 0x02=activé, 0x03=désactivé, reste = zeros
-        data = bytes([0x02 if enabled else 0x03]) + b"\x00" * 11
-        winreg.SetValueEx(key, name, 0, winreg.REG_BINARY, data)
-        winreg.CloseKey(key)
-        return True
-    except OSError:
-        return False
-
-
-# ──────────────────────────────────────────────────────────────────────────────
 # Outils — Applications installées
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -5254,8 +5162,8 @@ def get_health_data():
 
     # Programmes au démarrage (20 pts)
     try:
-        entries = get_startup_entries()
-        n = len([e for e in entries if e["enabled"]])
+        entries = get_autorun_entries()
+        n = len([e for e in entries if e.get("enabled")])
         if n <= 5:    pts, st = 20, "good"
         elif n <= 15: pts, st = 10, "warn"
         else:         pts, st = 5,  "bad"
