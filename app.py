@@ -696,6 +696,31 @@ def api_services_set():
     return jsonify({"ok": False, "error": err}), 500
 
 
+@app.route("/api/services/set-batch", methods=["POST"])
+def api_services_set_batch():
+    if not is_admin():
+        return jsonify({"ok": False, "error": "Droits administrateur requis"}), 403
+    data    = request.get_json(force=True) or {}
+    changes = data.get("changes") or []
+    results = []
+    ok_count, fail_count = 0, 0
+    for change in changes:
+        name    = change.get("name")
+        enabled = bool(change.get("enabled"))
+        if not name:
+            results.append({"name": name, "ok": False, "error": "name manquant"})
+            fail_count += 1
+            continue
+        ok, err = set_service_enabled(name, enabled)
+        results.append({"name": name, "ok": ok, "error": err, "enabled": enabled})
+        if ok:
+            ok_count += 1
+        else:
+            fail_count += 1
+    app.logger.info("services/set-batch — %d ok, %d échec(s)", ok_count, fail_count)
+    return jsonify({"ok": fail_count == 0, "results": results, "ok_count": ok_count, "fail_count": fail_count})
+
+
 @app.route("/api/scheduled-tasks")
 def api_scheduled_tasks_list():
     try:
@@ -720,6 +745,31 @@ def api_scheduled_tasks_set():
         return jsonify({"ok": True})
     app.logger.warning("scheduled-tasks/set — %s failed: %s", path, err)
     return jsonify({"ok": False, "error": err}), 500
+
+
+@app.route("/api/scheduled-tasks/set-batch", methods=["POST"])
+def api_scheduled_tasks_set_batch():
+    if not is_admin():
+        return jsonify({"ok": False, "error": "Droits administrateur requis"}), 403
+    data    = request.get_json(force=True) or {}
+    changes = data.get("changes") or []
+    results = []
+    ok_count, fail_count = 0, 0
+    for change in changes:
+        path    = change.get("path")
+        enabled = bool(change.get("enabled"))
+        if not path:
+            results.append({"path": path, "ok": False, "error": "path manquant"})
+            fail_count += 1
+            continue
+        ok, err = set_scheduled_task_enabled(path, enabled)
+        results.append({"path": path, "ok": ok, "error": err, "enabled": enabled})
+        if ok:
+            ok_count += 1
+        else:
+            fail_count += 1
+    app.logger.info("scheduled-tasks/set-batch — %d ok, %d échec(s)", ok_count, fail_count)
+    return jsonify({"ok": fail_count == 0, "results": results, "ok_count": ok_count, "fail_count": fail_count})
 
 
 @app.route("/api/repair/list")

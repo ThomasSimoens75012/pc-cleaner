@@ -670,11 +670,58 @@ function _renderServices(isAdmin) {
   el.innerHTML = order.map(([cat, label]) => {
     const items = bucket[cat] || [];
     if (!items.length) return "";
+    const bulkHtml = isAdmin
+      ? `<span class="bulk">
+          <button onclick="bulkToggleServicesCategory('${cat}', false)">tout désactiver</button>
+          <span class="sep">·</span>
+          <button onclick="bulkToggleServicesCategory('${cat}', true)">tout activer</button>
+        </span>`
+      : "";
     return `
-      <div class="tweak-group-title" style="padding:14px 16px 6px">${label}</div>
+      <div class="tweak-group-title" style="padding:14px 16px 6px" data-svc-cat="${cat}">
+        <span>${label}</span>
+        ${bulkHtml}
+      </div>
       ${items.map(s => _serviceRowHtml(s, isAdmin)).join("")}
     `;
   }).join("");
+}
+
+async function bulkToggleServicesCategory(category, targetEnabled) {
+  const changes = _services
+    .filter(s => s.exists && s.category === category && s.active !== targetEnabled)
+    .map(s => ({ name: s.name, enabled: targetEnabled }));
+  if (!changes.length) return;
+
+  const btns = document.querySelectorAll(`.tweak-group-title[data-svc-cat="${category}"] .bulk button`);
+  btns.forEach(b => b.disabled = true);
+
+  try {
+    const res  = await fetch("/api/services/set-batch", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ changes }),
+    });
+    const data = await res.json();
+    (data.results || []).forEach(r => {
+      if (!r.ok) return;
+      const svc = _services.find(s => s.name === r.name);
+      if (svc) svc.active = r.enabled;
+      const row = document.querySelector(`#services-list .tweak-row[data-service="${r.name}"]`);
+      if (row) {
+        const cb = row.querySelector("input[type=checkbox]");
+        if (cb) cb.checked = !!r.enabled;
+        row.classList.add("tweak-ok");
+        setTimeout(() => row.classList.remove("tweak-ok"), 600);
+      }
+    });
+    if (data.fail_count > 0) {
+      showToast("Bulk services partiel", `${data.ok_count} appliqué(s), ${data.fail_count} échec(s)`, "warn");
+    }
+  } catch (e) {
+    showToast("Erreur batch services", e.message, "warn");
+  } finally {
+    btns.forEach(b => b.disabled = false);
+  }
 }
 
 function _serviceRowHtml(svc, isAdmin) {
@@ -781,11 +828,53 @@ function _renderScheduledTasks(isAdmin) {
   el.innerHTML = order.map(([cat, label]) => {
     const items = bucket[cat] || [];
     if (!items.length) return "";
+    const bulkHtml = isAdmin
+      ? `<span class="bulk">
+          <button onclick="bulkToggleTasksCategory('${cat}', false)">tout désactiver</button>
+          <span class="sep">·</span>
+          <button onclick="bulkToggleTasksCategory('${cat}', true)">tout activer</button>
+        </span>`
+      : "";
     return `
-      <div class="tweak-group-title" style="padding:14px 16px 6px">${label}</div>
+      <div class="tweak-group-title" style="padding:14px 16px 6px" data-task-cat="${cat}">
+        <span>${label}</span>
+        ${bulkHtml}
+      </div>
       ${items.map(t => _scheduledTaskRowHtml(t, isAdmin)).join("")}
     `;
   }).join("");
+}
+
+async function bulkToggleTasksCategory(category, targetEnabled) {
+  const changes = _scheduledTasks
+    .filter(t => t.exists && t.category === category && t.active !== targetEnabled)
+    .map(t => ({ path: t.path, enabled: targetEnabled }));
+  if (!changes.length) return;
+
+  const btns = document.querySelectorAll(`.tweak-group-title[data-task-cat="${category}"] .bulk button`);
+  btns.forEach(b => b.disabled = true);
+
+  try {
+    const res  = await fetch("/api/scheduled-tasks/set-batch", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ changes }),
+    });
+    const data = await res.json();
+    (data.results || []).forEach(r => {
+      if (!r.ok) return;
+      const t = _scheduledTasks.find(x => x.path === r.path);
+      if (t) t.active = r.enabled;
+    });
+    // Re-render pour refléter les checkboxes (les tasks n'ont pas de data-attr sur les rows)
+    _renderScheduledTasks(true);
+    if (data.fail_count > 0) {
+      showToast("Bulk tâches partiel", `${data.ok_count} appliqué(s), ${data.fail_count} échec(s)`, "warn");
+    }
+  } catch (e) {
+    showToast("Erreur batch tâches", e.message, "warn");
+  } finally {
+    btns.forEach(b => b.disabled = false);
+  }
 }
 
 function _scheduledTaskRowHtml(task, isAdmin) {
