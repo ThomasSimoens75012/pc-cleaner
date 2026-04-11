@@ -4159,6 +4159,76 @@ def export_drivers_report(fmt="html"):
     }
 
 
+def scan_windows_updates_system():
+    """Recherche les mises à jour Windows qualité/sécurité via COM.
+
+    Retourne {"updates": [...], "error": str|None}.
+    """
+    ps_cmd = r"""
+    $ErrorActionPreference = 'Stop'
+    try {
+      $s = New-Object -ComObject Microsoft.Update.Session
+      $searcher = $s.CreateUpdateSearcher()
+      $result = $searcher.Search("IsInstalled=0 and Type='Software' and IsHidden=0")
+      $out = @()
+      foreach ($u in $result.Updates) {
+        $out += [PSCustomObject]@{
+          title        = $u.Title
+          description  = $u.Description
+          severity     = $u.MsrcSeverity
+          kbIds        = @($u.KBArticleIDs)
+          sizeBytes    = [int64]$u.MaxDownloadSize
+          isSecurity   = ($u.Categories | Where-Object { $_.Name -match 'Security|Sécurité' }) -ne $null
+        }
+      }
+      @{ updates = @($out); error = $null } | ConvertTo-Json -Depth 4 -Compress
+    } catch {
+      @{ updates = @(); error = $_.Exception.Message } | ConvertTo-Json -Depth 4 -Compress
+    }
+    """
+    try:
+        r = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command",
+             "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; " + ps_cmd],
+            capture_output=True, timeout=180, creationflags=0x08000000,
+        )
+        raw = r.stdout.decode("utf-8", errors="replace").strip()
+        if not raw:
+            return {"updates": [], "error": "Réponse vide du service Windows Update."}
+        data = json.loads(raw)
+        data["updates"] = data.get("updates") or []
+        return data
+    except subprocess.TimeoutExpired:
+        return {"updates": [], "error": "La recherche a dépassé 3 minutes."}
+    except Exception as e:
+        return {"updates": [], "error": str(e)}
+
+
+def get_update_center():
+    """Agrège toutes les sources de mises à jour en une seule vue.
+
+    Retourne {"windows": {...}, "drivers": {...}, "software": {...}, "total": int}.
+    """
+    wu = scan_windows_updates_system()
+    dr = scan_windows_update_drivers()
+    sw = get_software_updates()
+
+    def _count(d):
+        return len((d or {}).get("updates") or [])
+
+    return {
+        "windows":  wu,
+        "drivers":  dr,
+        "software": sw,
+        "counts": {
+            "windows":  _count(wu),
+            "drivers":  _count(dr),
+            "software": _count(sw),
+        },
+        "total": _count(wu) + _count(dr) + _count(sw),
+    }
+
+
 def scan_windows_update_drivers():
     """Recherche les mises à jour de pilotes via l'API COM Windows Update.
 

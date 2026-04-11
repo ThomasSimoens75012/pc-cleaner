@@ -1755,6 +1755,120 @@ async function removeExtension(path, name, btn) {
 
 // ── Mises à jour logicielles ──────────────────────────────────────────────────
 
+async function loadUpdateCenter() {
+  const btn = document.getElementById("btn-uc-scan");
+  const container = document.getElementById("uc-container");
+  const summary = document.getElementById("uc-summary");
+  _btnScan(btn, "Scan…");
+  container.innerHTML = `<div class="tool-loading">Analyse Windows + pilotes + logiciels… (peut prendre 1–3 min)</div>`;
+  const actId = activityPush("Centre de mises à jour", "Recherche en cours…", { tab: "outils" });
+  try {
+    const res = await fetch("/api/update-center");
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    _renderUpdateCenter(data);
+    summary.style.display = "flex";
+    activityDone(actId, `${data.total} mise(s) à jour trouvée(s)`);
+  } catch (e) {
+    container.innerHTML = `<div class="tool-error">Erreur : ${e.message}</div>`;
+    activityDone(actId, "Échec", "error");
+  } finally {
+    _btnReset(btn);
+  }
+}
+
+function _renderUpdateCenter(data) {
+  const container = document.getElementById("uc-container");
+  const summary = document.getElementById("uc-summary");
+
+  const setTile = (kind, block) => {
+    const tile = summary.querySelector(`.uc-tile[data-kind="${kind}"]`);
+    if (!tile) return;
+    const countEl = tile.querySelector(".uc-count");
+    tile.classList.remove("uc-has-updates", "uc-error");
+    if (block && block.error) {
+      tile.classList.add("uc-error");
+      countEl.textContent = "Erreur";
+      tile.title = block.error;
+    } else {
+      const n = (block && block.updates) ? block.updates.length : 0;
+      countEl.textContent = n;
+      if (n > 0) tile.classList.add("uc-has-updates");
+      tile.title = `${n} mise(s) à jour`;
+    }
+  };
+  setTile("windows",  data.windows);
+  setTile("drivers",  data.drivers);
+  setTile("software", data.software);
+
+  container.innerHTML = "";
+  const renderGroup = (title, block, fmt) => {
+    if (!block) return;
+    const group = document.createElement("div");
+    group.className = "uc-group";
+    const titleEl = document.createElement("div");
+    titleEl.className = "uc-group-title";
+    titleEl.textContent = title;
+    group.appendChild(titleEl);
+
+    if (block.error) {
+      const err = document.createElement("div");
+      err.className = "tool-error";
+      err.textContent = block.error;
+      group.appendChild(err);
+    } else if (!block.updates || !block.updates.length) {
+      const ok = document.createElement("div");
+      ok.className = "tool-empty";
+      ok.textContent = "Aucune mise à jour disponible.";
+      group.appendChild(ok);
+    } else {
+      block.updates.slice(0, 50).forEach(u => {
+        const row = document.createElement("div");
+        row.className = "uc-item";
+        const t = document.createElement("div");
+        t.className = "uc-item-title";
+        t.textContent = fmt.title(u);
+        const s = document.createElement("div");
+        s.className = "uc-item-sub";
+        s.textContent = fmt.sub(u);
+        row.append(t, s);
+        group.appendChild(row);
+      });
+      if (block.updates.length > 50) {
+        const more = document.createElement("div");
+        more.className = "uc-item-sub";
+        more.textContent = `+ ${block.updates.length - 50} autres…`;
+        group.appendChild(more);
+      }
+    }
+    container.appendChild(group);
+  };
+
+  renderGroup("Windows", data.windows, {
+    title: u => u.title || "Mise à jour",
+    sub:   u => {
+      const size = u.sizeBytes ? fmtBytesTools(u.sizeBytes) : "";
+      const sev  = u.severity || "";
+      return [sev, size].filter(Boolean).join(" — ");
+    },
+  });
+  renderGroup("Pilotes", data.drivers, {
+    title: u => u.title || u.driverModel || "Pilote",
+    sub:   u => {
+      const size = u.sizeBytes ? fmtBytesTools(u.sizeBytes) : "";
+      return [u.driverClass, u.driverDate, size].filter(Boolean).join(" — ");
+    },
+  });
+  renderGroup("Logiciels", data.software, {
+    title: u => u.name || u.id || "Logiciel",
+    sub:   u => {
+      const from = u.version || "";
+      const to   = u.available || "";
+      return from && to ? `${from} → ${to}` : (from || to);
+    },
+  });
+}
+
 async function loadUpdates() {
   const el    = document.getElementById("updates-container");
   const btnEl = document.getElementById("btn-check-updates");

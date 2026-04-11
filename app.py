@@ -48,6 +48,7 @@ from cleaner import (
     get_autorun_entries, set_autorun_enabled,
     export_config_snapshot, import_config_snapshot,
     get_gaming_mode_state, set_gaming_mode,
+    get_update_center,
 )
 
 
@@ -217,6 +218,15 @@ def api_config_import():
         },
     )
     return jsonify(result)
+
+
+@app.route("/api/update-center")
+def api_update_center():
+    try:
+        return jsonify(get_update_center())
+    except Exception as e:
+        app.logger.exception("update-center error")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/gaming-mode")
