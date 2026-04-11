@@ -630,6 +630,7 @@ async function loadServices() {
     _services = data.services || [];
     _servicesFilter = "all";
     _renderServices(data.is_admin);
+    _renderTweakFilters();  // update count on main filter bar
     _btnReset(btn);
   } catch (e) {
     el.innerHTML = `<div class="tool-error" style="padding:20px">Erreur : ${e.message}</div>`;
@@ -743,6 +744,7 @@ async function loadScheduledTasks() {
     _scheduledTasks = data.tasks || [];
     _tasksFilter = "all";
     _renderScheduledTasks(data.is_admin);
+    _renderTweakFilters();  // update count on main filter bar
     _btnReset(btn);
   } catch (e) {
     el.innerHTML = `<div class="tool-error" style="padding:20px">Erreur : ${e.message}</div>`;
@@ -2545,13 +2547,15 @@ let _tweakGroups  = [];
 let _tweakFilter  = "all";
 
 const _TWEAK_TAG_LABELS = {
-  "all":         "Tout voir",
-  "performance": "Performance",
-  "telemetry":   "Télémétrie",
-  "privacy":     "Confidentialité",
-  "ads":         "Publicités",
-  "cosmetic":    "Cosmétique",
-  "security":    "Sécurité",
+  "all":             "Tout voir",
+  "performance":     "Performance",
+  "telemetry":       "Télémétrie",
+  "privacy":         "Confidentialité",
+  "ads":             "Publicités",
+  "cosmetic":        "Cosmétique",
+  "security":        "Sécurité",
+  "services":        "Services",
+  "scheduled_tasks": "Tâches planifiées",
 };
 
 async function loadWindowsTweaks() {
@@ -2714,7 +2718,7 @@ function _escapeHtml(s) {
 function _renderTweakFilters() {
   const el = document.getElementById("tweak-filters");
   if (!el) return;
-  const tags = ["all", "performance", "telemetry", "privacy", "ads", "cosmetic", "security"];
+  const tags = ["all", "performance", "telemetry", "privacy", "ads", "cosmetic", "security", "services", "scheduled_tasks"];
   const counts = {};
   for (const t of tags) counts[t] = 0;
   for (const it of _tweakItems) {
@@ -2723,10 +2727,21 @@ function _renderTweakFilters() {
       if (tag in counts) counts[tag]++;
     }
   }
+  // Services et tâches : compte dépendant du chargement lazy
+  const svcCount  = (typeof _services       !== "undefined") ? _services.filter(s => s.exists).length       : 0;
+  const taskCount = (typeof _scheduledTasks !== "undefined") ? _scheduledTasks.filter(t => t.exists).length : 0;
+  counts["services"]        = svcCount;
+  counts["scheduled_tasks"] = taskCount;
+  counts["all"] += svcCount + taskCount;
+
   el.innerHTML = tags.map(t => {
     const label = _TWEAK_TAG_LABELS[t] || t;
     const cls = t === _tweakFilter ? "active" : "";
-    return `<button class="tweak-filter-btn ${cls}" data-filter="${t}" onclick="setTweakFilter('${t}')">${label} <span class="c">${counts[t]}</span></button>`;
+    const c = counts[t];
+    const countHtml = (t === "services" || t === "scheduled_tasks") && c === 0
+      ? ""  // pas de count si pas encore chargé
+      : `<span class="c">${c}</span>`;
+    return `<button class="tweak-filter-btn ${cls}" data-filter="${t}" onclick="setTweakFilter('${t}')">${label} ${countHtml}</button>`;
   }).join("");
 }
 
@@ -2739,16 +2754,46 @@ function setTweakFilter(tag) {
 }
 
 function _applyTweakFilter() {
+  const filter = _tweakFilter;
+  const isServicesFilter = filter === "services";
+  const isTasksFilter    = filter === "scheduled_tasks";
+  const isSectionFilter  = isServicesFilter || isTasksFilter;
+
+  // Cards à masquer/montrer selon le filtre
+  const presetsCard    = document.querySelector('#tab-perso .card:has(#tweak-presets)');
+  const chartCard      = document.querySelector('#tab-perso .card:has(#tweak-chart)');
+  const tweaksListCard = document.querySelector('#tab-perso .card:has(#tweaks-list)');
+  const servicesCard   = document.querySelector('#tab-perso .card:has(#services-list)');
+  const tasksCard      = document.querySelector('#tab-perso .card:has(#tasks-list)');
+  const show = el => { if (el) el.style.display = ""; };
+  const hide = el => { if (el) el.style.display = "none"; };
+
+  if (isServicesFilter) {
+    hide(presetsCard); hide(chartCard); hide(tweaksListCard); hide(tasksCard);
+    show(servicesCard);
+    servicesCard?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  if (isTasksFilter) {
+    hide(presetsCard); hide(chartCard); hide(tweaksListCard); hide(servicesCard);
+    show(tasksCard);
+    tasksCard?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+
+  // Filtre tag classique : restaure tout, puis applique par tag sur les tweak-rows
+  show(presetsCard); show(chartCard); show(tweaksListCard); show(servicesCard); show(tasksCard);
+
   const rows = document.querySelectorAll("#tweaks-list .tweak-row");
   rows.forEach(r => {
-    if (_tweakFilter === "all") {
+    if (filter === "all") {
       r.classList.remove("tweak-hidden");
       return;
     }
     const tags = (r.dataset.tags || "").split(",");
-    r.classList.toggle("tweak-hidden", !tags.includes(_tweakFilter));
+    r.classList.toggle("tweak-hidden", !tags.includes(filter));
   });
-  // Masquer les titres de groupe qui n'ont plus d'items visibles
+  // Masquer les titres de groupe sans items visibles
   document.querySelectorAll(".tweak-group-title").forEach(gh => {
     const groupId = gh.dataset.group;
     if (!groupId) return;
