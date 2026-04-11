@@ -50,6 +50,7 @@ from cleaner import (
     get_gaming_mode_state, set_gaming_mode,
     get_update_center,
     get_browser_data_breakdown, clean_browser_data,
+    generate_global_report,
 )
 
 
@@ -219,6 +220,18 @@ def api_config_import():
         },
     )
     return jsonify(result)
+
+
+@app.route("/api/report")
+def api_report():
+    try:
+        report = generate_global_report()
+    except Exception as e:
+        app.logger.exception("report error")
+        return jsonify({"error": str(e)}), 500
+    resp = Response(report["html"], mimetype="text/html; charset=utf-8")
+    resp.headers["Content-Disposition"] = f'attachment; filename="{report["filename"]}"'
+    return resp
 
 
 @app.route("/api/browser-data")

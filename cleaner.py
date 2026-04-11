@@ -2696,6 +2696,150 @@ def set_gaming_mode(enabled):
     return {"ok": True, "restored": restored, "errors": errors}
 
 
+def generate_global_report():
+    """Génère un rapport HTML autonome résumant l'état du PC.
+
+    Inclut : health, disques, tweaks Personnalisation, services, tâches,
+    autoruns, navigateurs, mises à jour (sans scanner Windows Update qui est lent).
+    """
+    import platform
+    from datetime import datetime
+    from html import escape
+
+    def _safe(fn, default=None):
+        try:
+            return fn()
+        except Exception as e:
+            return {"_error": str(e)} if default is None else default
+
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    hostname = platform.node()
+    win_info = _safe(get_windows_version, {}) or {}
+    disk = _safe(get_disk_info, [])
+    health = _safe(get_health_data, {}) or {}
+    tweaks = _safe(get_windows_tweaks, {"items": []})
+    tweak_items = tweaks.get("items", []) if isinstance(tweaks, dict) else []
+    services = _safe(get_services_state, [])
+    tasks = _safe(get_scheduled_tasks_state, [])
+    autoruns = _safe(get_autorun_entries, [])
+    browsers = _safe(get_browser_data_breakdown, [])
+
+    def _h(v):
+        return escape(str(v)) if v is not None else ""
+
+    def _section(title, body_html):
+        return f'<section><h2>{_h(title)}</h2>{body_html}</section>'
+
+    def _table(headers, rows):
+        th = "".join(f"<th>{_h(h)}</th>" for h in headers)
+        trs = "".join(
+            "<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>"
+            for r in rows
+        )
+        return f'<table><thead><tr>{th}</tr></thead><tbody>{trs}</tbody></table>'
+
+    # Disques
+    disk_rows = [
+        [_h(d.get("mountpoint")), _h(d.get("total_fmt")), _h(d.get("used_fmt")),
+         _h(d.get("free_fmt")), f"{d.get('percent', 0):.0f}%"]
+        for d in (disk or [])
+    ]
+    disk_html = _table(["Volume", "Total", "Utilisé", "Libre", "%"], disk_rows) if disk_rows else "<p>Aucun volume détecté.</p>"
+
+    # Tweaks — actifs vs inactifs
+    tw_active = sum(1 for t in tweak_items if not t.get("active"))
+    tw_total = len(tweak_items)
+    tweak_html = f"<p><strong>{tw_active}</strong> tweaks désactivés sur <strong>{tw_total}</strong>.</p>"
+    tweak_rows = [
+        [_h(t.get("label")), _h(t.get("group")),
+         "✓ Désactivé" if not t.get("active") else "— Actif"]
+        for t in tweak_items[:100]
+    ]
+    if tweak_rows:
+        tweak_html += _table(["Tweak", "Groupe", "État"], tweak_rows)
+
+    # Services
+    svc_rows = [
+        [_h(s.get("display_name") or s.get("name")),
+         "✓ Activé" if s.get("enabled") else "✗ Désactivé"]
+        for s in (services or [])
+    ]
+    svc_html = _table(["Service", "État"], svc_rows) if svc_rows else "<p>Pas de données services.</p>"
+
+    # Autoruns
+    ar_enabled = sum(1 for a in autoruns if a.get("enabled"))
+    ar_html = f"<p><strong>{len(autoruns)}</strong> entrées, <strong>{ar_enabled}</strong> actives.</p>"
+    ar_rows = [
+        [_h(a.get("name")), _h(a.get("source")),
+         "✓ Actif" if a.get("enabled") else "✗ Désactivé"]
+        for a in (autoruns or [])
+    ]
+    if ar_rows:
+        ar_html += _table(["Nom", "Source", "État"], ar_rows)
+
+    # Browsers
+    br_rows = [
+        [_h(b.get("browser")), _h(b.get("profile")),
+         fmt_size(sum((i.get("size") or 0) for i in (b.get("items") or [])))]
+        for b in (browsers or [])
+    ]
+    br_html = _table(["Navigateur", "Profil", "Données"], br_rows) if br_rows else "<p>Aucun profil détecté.</p>"
+
+    # Santé — extraction light
+    cpu = health.get("cpu_percent") if isinstance(health, dict) else None
+    ram = health.get("ram_percent") if isinstance(health, dict) else None
+    top_procs = (health.get("top_processes") or [])[:10] if isinstance(health, dict) else []
+    health_html = ""
+    if cpu is not None or ram is not None:
+        health_html += f"<p>CPU : <strong>{_h(cpu)}%</strong> — RAM : <strong>{_h(ram)}%</strong></p>"
+    if top_procs:
+        tp_rows = [[_h(p.get("name")), _h(p.get("cpu")), _h(p.get("memory_mb"))] for p in top_procs]
+        health_html += _table(["Processus", "CPU %", "RAM (MB)"], tp_rows)
+
+    style = """
+    body { font-family: 'IBM Plex Sans', -apple-system, sans-serif; max-width: 980px; margin: 30px auto; padding: 0 20px; color: #37352f; background: #fff; }
+    h1 { font-size: 24px; border-bottom: 2px solid #e9e9e7; padding-bottom: 10px; }
+    h2 { font-size: 16px; margin-top: 28px; color: #37352f; border-bottom: 1px solid #e9e9e7; padding-bottom: 6px; }
+    .meta { color: #787774; font-size: 12px; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+    th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #f1f1ef; }
+    th { background: #f7f6f3; font-weight: 600; color: #787774; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+    tbody tr:hover { background: #f7f6f3; }
+    .summary { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+    .summary .card { flex: 1; min-width: 140px; padding: 12px 16px; background: #f7f6f3; border-radius: 6px; border: 1px solid #e9e9e7; }
+    .summary .v { font-size: 20px; font-weight: 700; }
+    .summary .l { font-size: 10px; color: #787774; text-transform: uppercase; letter-spacing: 0.5px; }
+    @media print { body { margin: 0; } }
+    """
+
+    summary_cards = f'''
+    <div class="summary">
+      <div class="card"><div class="v">{_h(win_info.get("edition") or win_info.get("name") or "Windows")}</div><div class="l">Version</div></div>
+      <div class="card"><div class="v">{tw_active}/{tw_total}</div><div class="l">Tweaks désactivés</div></div>
+      <div class="card"><div class="v">{len(autoruns)}</div><div class="l">Autoruns</div></div>
+      <div class="card"><div class="v">{len(browsers)}</div><div class="l">Profils nav.</div></div>
+    </div>
+    '''
+
+    body = f"""
+    <h1>Rapport OpenCleaner</h1>
+    <div class="meta">Généré le {_h(now_str)} — Hôte : <strong>{_h(hostname)}</strong></div>
+    {summary_cards}
+    {_section("Disques", disk_html)}
+    {_section("Santé système", health_html or "<p>Pas de données santé.</p>")}
+    {_section("Personnalisation Windows", tweak_html)}
+    {_section("Services", svc_html)}
+    {_section("Démarrage (autoruns)", ar_html)}
+    {_section("Navigateurs", br_html)}
+    """
+
+    html = f"<!DOCTYPE html><html lang='fr'><head><meta charset='utf-8'><title>Rapport OpenCleaner — {_h(hostname)}</title><style>{style}</style></head><body>{body}</body></html>"
+    return {
+        "html":     html,
+        "filename": f"opencleaner-report-{datetime.now().strftime('%Y%m%d-%H%M%S')}.html",
+    }
+
+
 def run_self_check():
     """Exécute un diagnostic rapide de l'état de l'app.
 

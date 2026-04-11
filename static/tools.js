@@ -1755,6 +1755,33 @@ async function removeExtension(path, name, btn) {
 
 // ── Mises à jour logicielles ──────────────────────────────────────────────────
 
+async function downloadGlobalReport() {
+  const actId = activityPush("Rapport global", "Génération…");
+  try {
+    const res = await fetch("/api/report");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || ("HTTP " + res.status));
+    }
+    const disp = res.headers.get("Content-Disposition") || "";
+    const m = disp.match(/filename="([^"]+)"/);
+    const filename = m ? m[1] : "opencleaner-report.html";
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    activityDone(actId, `${filename} téléchargé`);
+  } catch (e) {
+    activityDone(actId, "Échec", "error");
+    showToast("Rapport", e.message, "warn");
+  }
+}
+
 let _bdData = [];
 
 async function loadBrowserData() {
