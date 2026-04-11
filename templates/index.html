@@ -2814,7 +2814,11 @@
       <div class="tool-section-title">Services en arrière-plan</div>
       <div class="tool-section-sub">Services non essentiels (télémétrie, Xbox, legacy). <strong>Nécessite les droits administrateur.</strong></div>
     </div>
-    <button class="btn-primary" id="btn-load-services" data-activity="Services Windows" onclick="loadServices()">Analyser</button>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn-ghost svc-mode-btn active" data-mode="curated" onclick="loadServices('curated')" style="font-size:11px" title="Liste curée — services non essentiels recommandés">Curé</button>
+      <button class="btn-ghost svc-mode-btn" data-mode="all" onclick="loadServices('all')" style="font-size:11px" title="Tous les services Windows (mode expert, soyez prudent)">Tous (expert)</button>
+      <button class="btn-primary" id="btn-load-services" data-activity="Services Windows" onclick="loadServices()">Analyser</button>
+    </div>
   </div>
   <div class="tweak-filters" id="services-filters" style="margin:0 16px 10px;display:none"></div>
   <div id="services-list"><div class="tool-empty" style="padding:20px">Cliquez sur « Analyser » pour lister les services détectés.</div></div>
@@ -2827,7 +2831,11 @@
       <div class="tool-section-title">Tâches planifiées</div>
       <div class="tool-section-sub">Tâches Windows récurrentes (télémétrie, CEIP, maps). <strong>Nécessite les droits administrateur.</strong></div>
     </div>
-    <button class="btn-primary" id="btn-load-tasks" data-activity="Tâches planifiées" onclick="loadScheduledTasks()">Analyser</button>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn-ghost task-mode-btn active" data-mode="curated" onclick="loadScheduledTasks('curated')" style="font-size:11px" title="Liste curée — tâches non essentielles recommandées">Curé</button>
+      <button class="btn-ghost task-mode-btn" data-mode="all" onclick="loadScheduledTasks('all')" style="font-size:11px" title="Toutes les tâches planifiées (mode expert)">Toutes (expert)</button>
+      <button class="btn-primary" id="btn-load-tasks" data-activity="Tâches planifiées" onclick="loadScheduledTasks()">Analyser</button>
+    </div>
   </div>
   <div class="tweak-filters" id="tasks-filters" style="margin:0 16px 10px;display:none"></div>
   <div id="tasks-list"><div class="tool-empty" style="padding:20px">Cliquez sur « Analyser » pour lister les tâches planifiées.</div></div>

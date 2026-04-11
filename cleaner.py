@@ -4378,14 +4378,126 @@ def get_services_state():
     return result
 
 
+# Services qu'on REFUSE absolument de toucher (sécurité de base de Windows)
+_SERVICES_PROTECTED = {
+    "RpcSs", "RpcEptMapper", "DcomLaunch",  # RPC core
+    "PlugPlay", "Power", "Schedule",          # PnP, alimentation, scheduler
+    "Themes", "AudioSrv", "AudioEndpointBuilder",
+    "EventLog", "EventSystem",
+    "Dnscache", "Dhcp", "NlaSvc", "netprofm", "iphlpsvc",  # réseau
+    "BFE", "MpsSvc",                          # firewall
+    "wscsvc", "WinDefend", "SecurityHealthService", "Sense",  # sécurité
+    "BITS", "wuauserv", "TrustedInstaller", "msiserver",       # MAJ Windows
+    "LSM", "Winmgmt",                         # WMI/session
+    "ProfSvc", "UserManager", "UmRdpService", "TermService",
+    "CryptSvc", "KeyIso",                     # cryptographie
+    "Spooler",                                # impression (pas critique mais user attend)
+}
+
+
+def _classify_service(name, display_name, description):
+    """Classifie un service pour aide à la décision utilisateur."""
+    if name in _SERVICES_PROTECTED:
+        return "protected"
+    if name in {s["name"] for s in _WINDOWS_SERVICES_TO_DISABLE}:
+        return "curated_disable"
+    desc = (description or "").lower()
+    disp = (display_name or "").lower()
+    if name.startswith("Microsoft") or "microsoft" in disp:
+        return "microsoft_optional"
+    # Heuristique : services dont le path contient 'system32' ou 'Microsoft'
+    return "third_party"
+
+
+def get_all_services_dynamic():
+    """Retourne TOUS les services Windows avec classification.
+
+    Plus exhaustif que get_services_state() qui se limite à la liste curée.
+    Utilisé pour le mode "expert".
+    """
+    ps_cmd = (
+        "Get-Service | ForEach-Object { "
+        "  $svc = $_; "
+        "  try { "
+        "    $wmi = Get-CimInstance Win32_Service -Filter \"Name='$($svc.Name)'\" -ErrorAction Stop; "
+        "    [PSCustomObject]@{ "
+        "      Name = $svc.Name; "
+        "      DisplayName = $svc.DisplayName; "
+        "      Status = $svc.Status.ToString(); "
+        "      StartType = $svc.StartType.ToString(); "
+        "      Description = $wmi.Description; "
+        "      PathName = $wmi.PathName "
+        "    } "
+        "  } catch { "
+        "    [PSCustomObject]@{ "
+        "      Name = $svc.Name; "
+        "      DisplayName = $svc.DisplayName; "
+        "      Status = $svc.Status.ToString(); "
+        "      StartType = $svc.StartType.ToString(); "
+        "      Description = $null; "
+        "      PathName = $null "
+        "    } "
+        "  } "
+        "} | ConvertTo-Json -Compress -Depth 3"
+    )
+    try:
+        r = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command",
+             "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; " + ps_cmd],
+            capture_output=True, timeout=60, creationflags=0x08000000,
+        )
+        raw = r.stdout.decode("utf-8", errors="replace").strip()
+        data = json.loads(raw) if raw and raw != "null" else []
+        if isinstance(data, dict):
+            data = [data]
+    except Exception as e:
+        return {"items": [], "error": str(e)}
+
+    curated_set = {s["name"] for s in _WINDOWS_SERVICES_TO_DISABLE}
+    curated_meta = {s["name"]: s for s in _WINDOWS_SERVICES_TO_DISABLE}
+
+    items = []
+    for svc in data:
+        name = svc.get("Name") or ""
+        display = svc.get("DisplayName") or name
+        desc = svc.get("Description") or ""
+        start = (svc.get("StartType") or "").lower()
+        status = (svc.get("Status") or "").lower()
+        category = _classify_service(name, display, desc)
+        meta = curated_meta.get(name, {})
+        items.append({
+            "name":         name,
+            "label":        display,
+            "desc":         meta.get("desc") or desc,
+            "category":     category,
+            "curated":      name in curated_set,
+            "status":       status,
+            "start_type":   start,
+            "active":       start != "disabled",
+            "exists":       True,
+            "risk":         meta.get("risk") or ("low" if category == "third_party" else "medium"),
+            "needs_admin":  True,
+            "impact":       {"ram_mb": meta.get("ram_mb", 0)},
+        })
+
+    items.sort(key=lambda x: (
+        {"protected": 0, "curated_disable": 1, "microsoft_optional": 2, "third_party": 3}.get(x["category"], 4),
+        x["label"].lower(),
+    ))
+    return {"items": items, "error": None}
+
+
 def set_service_enabled(service_name, enabled):
     """Active ou désactive un service. Nécessite admin.
 
     enabled=True  → StartupType Manual (safe default, ne force pas Automatic)
     enabled=False → StartupType Disabled
+
+    Bloque les services dans _SERVICES_PROTECTED. Le reste est autorisé
+    (incluant les services hors whitelist via le mode dynamique).
     """
-    if service_name not in {s["name"] for s in _WINDOWS_SERVICES_TO_DISABLE}:
-        return False, "Service non whitelisté"
+    if service_name in _SERVICES_PROTECTED:
+        return False, "Service protégé : modification refusée"
     target = "Manual" if enabled else "Disabled"
     ps_cmd = f"Set-Service -Name '{service_name}' -StartupType {target} -ErrorAction Stop"
     try:
@@ -4436,10 +4548,116 @@ def get_scheduled_tasks_state():
     return result
 
 
+# Préfixes de tâches planifiées qu'on REFUSE de toucher
+_TASKS_PROTECTED_PREFIXES = (
+    "\\Microsoft\\Windows\\Defrag\\",
+    "\\Microsoft\\Windows\\Servicing\\",
+    "\\Microsoft\\Windows\\WindowsUpdate\\",
+    "\\Microsoft\\Windows\\TPM\\",
+    "\\Microsoft\\Windows\\BitLocker",
+    "\\Microsoft\\Windows\\Time Synchronization\\",
+    "\\Microsoft\\Windows\\TaskScheduler\\",
+    "\\Microsoft\\Windows\\Plug and Play\\",
+)
+
+
+def get_all_scheduled_tasks_dynamic():
+    """Retourne toutes les tâches planifiées via schtasks /Query /FO CSV /V.
+
+    Plus exhaustif que get_scheduled_tasks_state() qui se limite à la liste curée.
+    """
+    try:
+        r = subprocess.run(
+            ["schtasks", "/Query", "/FO", "CSV", "/V"],
+            capture_output=True, timeout=30, creationflags=0x08000000,
+        )
+        if r.returncode != 0:
+            return {"items": [], "error": r.stderr.decode("utf-8", errors="replace")}
+        out = r.stdout.decode("utf-8", errors="replace")
+    except Exception as e:
+        return {"items": [], "error": str(e)}
+
+    import csv
+    import io
+    items = []
+    curated_set = {t["path"] for t in _SCHEDULED_TASKS_TO_DISABLE}
+    curated_meta = {t["path"]: t for t in _SCHEDULED_TASKS_TO_DISABLE}
+
+    # Parse CSV en index par position (les headers sont localisés FR/EN)
+    # Colonnes /V (verbose) :
+    #  0 HostName, 1 TaskName, 2 Next Run, 3 Status, 4 Logon Mode, 5 Last Run,
+    #  6 Last Result, 7 Author, 8 Task To Run, 9 Start In, 10 Comment,
+    #  11 Scheduled Task State, ..., 14 Run As User
+    reader = csv.reader(io.StringIO(out))
+    rows = list(reader)
+    if not rows:
+        return {"items": [], "error": "Sortie vide"}
+
+    seen_paths = set()
+    for row in rows[1:]:  # skip header
+        if len(row) < 12:
+            continue
+        path = (row[1] or "").strip()
+        if not path or path.startswith("Nom") or path == "TaskName":
+            continue
+        if path in seen_paths:
+            continue
+        seen_paths.add(path)
+
+        status         = (row[3] or "").strip().lower()
+        last_run       = (row[5] or "").strip()
+        author         = (row[7] or "").strip()
+        comment        = (row[10] or "").strip() if len(row) > 10 else ""
+        scheduled_type = (row[11] or "").strip().lower() if len(row) > 11 else ""
+        run_as         = (row[14] or "").strip() if len(row) > 14 else ""
+
+        # État : "disabled" si le scheduled state contient "disabled" ou équivalent FR.
+        # Le décodage UTF-8 peut introduire des U+FFFD à la place du é, donc on
+        # matche sur "sactiv" (commun à "Désactivée" / "Désactivé") sans le préfixe.
+        st_norm = scheduled_type.replace("\ufffd", "").lower()
+        is_disabled = "disable" in st_norm or "sactiv" in st_norm
+
+        # Catégorisation
+        if any(path.startswith(p) for p in _TASKS_PROTECTED_PREFIXES):
+            category = "protected"
+        elif path in curated_set:
+            category = "curated_disable"
+        elif path.startswith("\\Microsoft\\"):
+            category = "microsoft_optional"
+        else:
+            category = "third_party"
+
+        meta = curated_meta.get(path, {})
+        items.append({
+            "path":         path,
+            "label":        meta.get("label") or path.split("\\")[-1] or path,
+            "desc":         meta.get("desc") or comment or "",
+            "author":       author,
+            "run_as":       run_as,
+            "last_run":     last_run,
+            "category":     category,
+            "curated":      path in curated_set,
+            "exists":       True,
+            "active":       not is_disabled,
+            "state":        "disabled" if is_disabled else "enabled",
+            "risk":         meta.get("risk") or "low",
+            "needs_admin":  True,
+        })
+
+    items.sort(key=lambda x: (
+        {"protected": 0, "curated_disable": 1, "microsoft_optional": 2, "third_party": 3}.get(x["category"], 4),
+        x["path"].lower(),
+    ))
+    return {"items": items, "error": None}
+
+
 def set_scheduled_task_enabled(task_path, enabled):
-    """Active ou désactive une tâche planifiée. Nécessite admin pour les tâches système."""
-    if task_path not in {t["path"] for t in _SCHEDULED_TASKS_TO_DISABLE}:
-        return False, "Tâche non whitelistée"
+    """Active ou désactive une tâche planifiée. Nécessite admin pour les tâches système.
+
+    Bloque les tâches dans les préfixes protégés. Le reste est autorisé.
+    """
+    if any(task_path.startswith(p) for p in _TASKS_PROTECTED_PREFIXES):
+        return False, "Tâche protégée : modification refusée"
     action = "/ENABLE" if enabled else "/DISABLE"
     try:
         r = subprocess.run(

@@ -42,8 +42,8 @@ from cleaner import (
     get_drivers, export_drivers_report, scan_windows_update_drivers,
     get_windows_tweaks, set_windows_tweak, get_tweak_presets,
     list_uwp_apps, remove_uwp_apps,
-    get_services_state, set_service_enabled,
-    get_scheduled_tasks_state, set_scheduled_task_enabled,
+    get_services_state, set_service_enabled, get_all_services_dynamic,
+    get_scheduled_tasks_state, set_scheduled_task_enabled, get_all_scheduled_tasks_dynamic,
     list_repair_actions, run_repair_action, run_repair_action_stream,
     run_self_check, export_tweaks_reg,
     get_autorun_entries, set_autorun_enabled,
@@ -956,8 +956,21 @@ def api_windows_tweaks_set_batch():
 
 @app.route("/api/services")
 def api_services_list():
+    mode = request.args.get("mode", "curated")
     try:
-        return jsonify({"services": get_services_state(), "is_admin": is_admin()})
+        if mode == "all":
+            data = get_all_services_dynamic()
+            return jsonify({
+                "services": data.get("items", []),
+                "is_admin": is_admin(),
+                "mode":     "all",
+                "error":    data.get("error"),
+            })
+        return jsonify({
+            "services": get_services_state(),
+            "is_admin": is_admin(),
+            "mode":     "curated",
+        })
     except Exception as e:
         app.logger.exception("services list error")
         return jsonify({"error": str(e)}), 500
@@ -1007,8 +1020,21 @@ def api_services_set_batch():
 
 @app.route("/api/scheduled-tasks")
 def api_scheduled_tasks_list():
+    mode = request.args.get("mode", "curated")
     try:
-        return jsonify({"tasks": get_scheduled_tasks_state(), "is_admin": is_admin()})
+        if mode == "all":
+            data = get_all_scheduled_tasks_dynamic()
+            return jsonify({
+                "tasks":    data.get("items", []),
+                "is_admin": is_admin(),
+                "mode":     "all",
+                "error":    data.get("error"),
+            })
+        return jsonify({
+            "tasks":    get_scheduled_tasks_state(),
+            "is_admin": is_admin(),
+            "mode":     "curated",
+        })
     except Exception as e:
         app.logger.exception("scheduled-tasks list error")
         return jsonify({"error": str(e)}), 500

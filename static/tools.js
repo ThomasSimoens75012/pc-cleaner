@@ -804,20 +804,27 @@ let _services = [];
 let _servicesFilter = "all";
 let _servicesIsAdmin = false;
 
-async function loadServices() {
+let _servicesMode = "curated";  // "curated" | "all"
+
+async function loadServices(mode) {
+  if (mode) _servicesMode = mode;
   const btn = document.getElementById("btn-load-services");
   const el  = document.getElementById("services-list");
   _btnScan(btn, "Chargement…");
   try {
-    const res  = await fetch("/api/services");
+    const res  = await fetch("/api/services?mode=" + encodeURIComponent(_servicesMode));
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Erreur serveur");
     _services = data.services || [];
     _servicesFilter = "all";
     _servicesIsAdmin = !!data.is_admin;
     _renderServices(data.is_admin);
-    _renderTweakFilters();  // update count on main filter bar
-    _renderTweakChart();    // include services in impact chart
+    _renderTweakFilters();
+    _renderTweakChart();
+    // Met à jour les boutons de mode
+    document.querySelectorAll(".svc-mode-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.mode === _servicesMode);
+    });
     _btnReset(btn);
   } catch (e) {
     el.innerHTML = `<div class="tool-error" style="padding:20px">Erreur : ${e.message}</div>`;
@@ -970,20 +977,26 @@ let _scheduledTasks = [];
 let _tasksFilter = "all";
 let _tasksIsAdmin = false;
 
-async function loadScheduledTasks() {
+let _tasksMode = "curated";
+
+async function loadScheduledTasks(mode) {
+  if (mode) _tasksMode = mode;
   const btn = document.getElementById("btn-load-tasks");
   const el  = document.getElementById("tasks-list");
   _btnScan(btn, "Chargement…");
   try {
-    const res  = await fetch("/api/scheduled-tasks");
+    const res  = await fetch("/api/scheduled-tasks?mode=" + encodeURIComponent(_tasksMode));
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Erreur serveur");
     _scheduledTasks = data.tasks || [];
     _tasksFilter = "all";
     _tasksIsAdmin = !!data.is_admin;
     _renderScheduledTasks(data.is_admin);
-    _renderTweakFilters();  // update count on main filter bar
-    _renderTweakChart();    // update chart counters
+    _renderTweakFilters();
+    _renderTweakChart();
+    document.querySelectorAll(".task-mode-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.mode === _tasksMode);
+    });
     _btnReset(btn);
   } catch (e) {
     el.innerHTML = `<div class="tool-error" style="padding:20px">Erreur : ${e.message}</div>`;
