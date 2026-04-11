@@ -2370,6 +2370,23 @@
     </div>
   </div>
 
+  <!-- Données navigateurs (granulaire) -->
+  <div>
+    <div class="section-head">
+      <div>
+        <div class="tool-section-title">Données navigateurs — gestion granulaire</div>
+        <div class="tool-section-sub">Cache, cookies, historique, sessions, mots de passe… par profil. Choisissez ce que vous gardez.</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-primary" id="btn-bd-scan" onclick="loadBrowserData()">Analyser</button>
+        <button class="btn-ghost" id="btn-bd-clean" onclick="cleanBrowserData()" style="display:none">Nettoyer la sélection</button>
+      </div>
+    </div>
+    <div class="card">
+      <div id="bd-container"><div class="tool-empty">Cliquez sur « Analyser » pour lister les données par profil.</div></div>
+    </div>
+  </div>
+
   <!-- Démarrage -->
   <div>
     <div class="section-head">

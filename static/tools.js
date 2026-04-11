@@ -1755,6 +1755,123 @@ async function removeExtension(path, name, btn) {
 
 // ── Mises à jour logicielles ──────────────────────────────────────────────────
 
+let _bdData = [];
+
+async function loadBrowserData() {
+  const btn = document.getElementById("btn-bd-scan");
+  const container = document.getElementById("bd-container");
+  _btnScan(btn, "Scan…");
+  container.innerHTML = `<div class="tool-loading">Analyse des profils…</div>`;
+  try {
+    const res = await fetch("/api/browser-data");
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    _bdData = data;
+    _renderBrowserData();
+  } catch (e) {
+    container.innerHTML = `<div class="tool-error">Erreur : ${e.message}</div>`;
+  } finally {
+    _btnReset(btn);
+  }
+}
+
+function _renderBrowserData() {
+  const container = document.getElementById("bd-container");
+  const cleanBtn  = document.getElementById("btn-bd-clean");
+  if (!_bdData.length) {
+    container.innerHTML = `<div class="tool-empty">Aucun profil navigateur détecté.</div>`;
+    cleanBtn.style.display = "none";
+    return;
+  }
+  container.innerHTML = "";
+  _bdData.forEach((prof, pi) => {
+    const block = document.createElement("div");
+    block.className = "bd-profile";
+    block.style.cssText = "padding:12px 16px;border-bottom:1px solid var(--border)";
+
+    const head = document.createElement("div");
+    head.style.cssText = "display:flex;align-items:center;gap:10px;margin-bottom:8px";
+    const title = document.createElement("div");
+    title.style.cssText = "flex:1;font-size:13px;font-weight:600";
+    const totalSize = prof.items.reduce((s, i) => s + i.size, 0);
+    title.textContent = `${prof.browser} — ${prof.profile}`;
+    const sizeEl = document.createElement("div");
+    sizeEl.style.cssText = "font-size:11px;color:var(--text-dim);font-variant-numeric:tabular-nums";
+    sizeEl.textContent = fmtBytesTools(totalSize);
+    head.append(title, sizeEl);
+    block.appendChild(head);
+
+    prof.items.forEach((it, ii) => {
+      if (it.size === 0) return;
+      const row = document.createElement("label");
+      row.style.cssText = "display:flex;align-items:center;gap:10px;padding:5px 0;font-size:12px;cursor:pointer";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.dataset.pi = pi;
+      cb.dataset.key = it.key;
+      cb.onchange = _updateBdCleanBtn;
+      if (!it.sensitive) cb.checked = it.key === "cache";
+
+      const label = document.createElement("div");
+      label.style.flex = "1";
+      label.innerHTML = `<strong>${it.label}</strong> <span style="color:var(--text-dim);font-size:11px">— ${it.desc}</span>`;
+      if (it.sensitive) {
+        label.innerHTML += ` <span style="color:var(--red);font-size:10px;font-weight:600">SENSIBLE</span>`;
+      }
+      const s = document.createElement("div");
+      s.style.cssText = "font-size:11px;color:var(--text-dim);font-variant-numeric:tabular-nums;min-width:60px;text-align:right";
+      s.textContent = it.size_fmt;
+      row.append(cb, label, s);
+      block.appendChild(row);
+    });
+    container.appendChild(block);
+  });
+  cleanBtn.style.display = "";
+  _updateBdCleanBtn();
+}
+
+function _updateBdCleanBtn() {
+  const btn = document.getElementById("btn-bd-clean");
+  const checked = document.querySelectorAll("#bd-container input[type=checkbox]:checked");
+  btn.textContent = checked.length ? `Nettoyer ${checked.length} élément(s)` : "Nettoyer la sélection";
+  btn.disabled = checked.length === 0;
+}
+
+async function cleanBrowserData() {
+  const checked = Array.from(document.querySelectorAll("#bd-container input[type=checkbox]:checked"));
+  if (!checked.length) return;
+  const byProfile = new Map();
+  checked.forEach(cb => {
+    const pi = +cb.dataset.pi;
+    const prof = _bdData[pi];
+    if (!prof) return;
+    if (!byProfile.has(pi)) byProfile.set(pi, { path: prof.path, keys: [] });
+    byProfile.get(pi).keys.push(cb.dataset.key);
+  });
+  const selections = Array.from(byProfile.values());
+  const hasSensitive = checked.some(cb => ["passwords", "autofill"].includes(cb.dataset.key));
+  const msg = hasSensitive
+    ? "Vous allez supprimer des données SENSIBLES (mots de passe / auto-remplissage). Cette action est irréversible. Continuer ?"
+    : "Supprimer les données sélectionnées ?";
+  if (!confirm(msg)) return;
+
+  const actId = activityPush("Nettoyage navigateurs", "Suppression…", { tab: "outils" });
+  try {
+    const res = await fetch("/api/browser-data/clean", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ selections }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    activityDone(actId, `${data.deleted_fmt} libérés`);
+    loadBrowserData();
+  } catch (e) {
+    activityDone(actId, "Échec", "error");
+    showToast("Nettoyage navigateurs", e.message, "warn");
+  }
+}
+
 async function loadUpdateCenter() {
   const btn = document.getElementById("btn-uc-scan");
   const container = document.getElementById("uc-container");

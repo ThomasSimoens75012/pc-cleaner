@@ -49,6 +49,7 @@ from cleaner import (
     export_config_snapshot, import_config_snapshot,
     get_gaming_mode_state, set_gaming_mode,
     get_update_center,
+    get_browser_data_breakdown, clean_browser_data,
 )
 
 
@@ -215,6 +216,38 @@ def api_config_import():
             "applied": result.get("applied", 0),
             "skipped": result.get("skipped", 0),
             "errors":  len(result.get("errors", [])),
+        },
+    )
+    return jsonify(result)
+
+
+@app.route("/api/browser-data")
+def api_browser_data():
+    try:
+        return jsonify(get_browser_data_breakdown())
+    except Exception as e:
+        app.logger.exception("browser-data error")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/browser-data/clean", methods=["POST"])
+def api_browser_data_clean():
+    data = request.get_json(force=True) or {}
+    selections = data.get("selections") or []
+    if not selections:
+        return jsonify({"error": "Aucune sélection"}), 400
+    try:
+        result = clean_browser_data(selections)
+    except Exception as e:
+        app.logger.exception("browser-data clean error")
+        return jsonify({"error": str(e)}), 500
+    _save_history_entry(
+        result.get("deleted_bytes", 0),
+        kind="clean",
+        label="Nettoyage navigateurs (granulaire)",
+        details={
+            "profiles": len(selections),
+            "errors":   len(result.get("errors", [])),
         },
     )
     return jsonify(result)

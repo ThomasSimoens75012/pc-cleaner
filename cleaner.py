@@ -203,6 +203,117 @@ def _sqlite_clean(db_path, queries, log):
             pass
 
 
+_BROWSER_DATA_TYPES_CHROMIUM = [
+    # (key, label, [relative paths/glob], description)
+    ("cache",      "Cache",        ["Cache", "Code Cache", "GPUCache", "ShaderCache"], "Fichiers temporaires web"),
+    ("cookies",    "Cookies",      ["Network/Cookies", "Network/Cookies-journal"],     "Sessions et préférences de sites"),
+    ("history",    "Historique",   ["History", "History-journal", "Top Sites", "Visited Links"], "Historique de navigation"),
+    ("downloads",  "Téléchargements", ["History"], "Liste des téléchargements (partagé avec History)"),
+    ("sessions",   "Sessions",     ["Sessions", "Session Storage", "Current Session", "Current Tabs", "Last Session", "Last Tabs"], "Onglets restaurables"),
+    ("passwords",  "Mots de passe", ["Login Data", "Login Data-journal", "Login Data For Account", "Login Data For Account-journal"], "Identifiants enregistrés (DANGER)"),
+    ("autofill",   "Auto-remplissage", ["Web Data", "Web Data-journal"], "Formulaires, cartes, adresses"),
+    ("local_storage", "Local Storage", ["Local Storage"], "Données de sites (localStorage/IndexedDB)"),
+    ("service_workers", "Service Workers", ["Service Worker"], "Scripts offline des sites"),
+]
+
+_BROWSER_DATA_TYPES_FIREFOX = [
+    ("cache",      "Cache",        ["cache2"],  "Fichiers temporaires web"),
+    ("cookies",    "Cookies",      ["cookies.sqlite", "cookies.sqlite-wal"], "Sessions et préférences"),
+    ("history",    "Historique",   ["places.sqlite", "places.sqlite-wal"],   "Historique et favoris"),
+    ("sessions",   "Sessions",     ["sessionstore.jsonlz4", "sessionstore-backups"], "Onglets restaurables"),
+    ("passwords",  "Mots de passe", ["logins.json", "key4.db"], "Identifiants enregistrés (DANGER)"),
+    ("autofill",   "Auto-remplissage", ["formhistory.sqlite"], "Données de formulaires"),
+    ("local_storage", "Storage", ["storage"], "Données de sites"),
+]
+
+
+def _browser_path_size(profile, rel):
+    p = profile / rel
+    if p.is_file():
+        try:
+            return p.stat().st_size
+        except OSError:
+            return 0
+    if p.is_dir():
+        return get_folder_size(str(p))
+    return 0
+
+
+def get_browser_data_breakdown():
+    """Détaille les données navigateur par profil et catégorie.
+
+    Retourne une liste de {browser, profile, path, items: [{key, label, desc, size, size_fmt}]}.
+    """
+    out = []
+    for kind, profile in _browser_profile_paths():
+        types = _BROWSER_DATA_TYPES_CHROMIUM if kind == "chromium" else _BROWSER_DATA_TYPES_FIREFOX
+        # Nom affichable : Chrome / Edge / Brave / Firefox + nom de profil
+        parent_name = profile.parent.parent.name if kind == "chromium" else "Firefox"
+        display_browser = parent_name
+        if "Chrome" in str(profile):       display_browser = "Chrome"
+        elif "Edge" in str(profile):       display_browser = "Edge"
+        elif "Brave" in str(profile):      display_browser = "Brave"
+        elif "Firefox" in str(profile):    display_browser = "Firefox"
+
+        items = []
+        for key, label, rels, desc in types:
+            size = 0
+            for rel in rels:
+                size += _browser_path_size(profile, rel)
+            items.append({
+                "key":      key,
+                "label":    label,
+                "desc":     desc,
+                "size":     size,
+                "size_fmt": fmt_size(size),
+                "sensitive": key in ("passwords", "autofill"),
+            })
+        out.append({
+            "browser":  display_browser,
+            "profile":  profile.name,
+            "path":     str(profile),
+            "kind":     kind,
+            "items":    items,
+        })
+    return out
+
+
+def clean_browser_data(selections):
+    """Supprime les catégories sélectionnées par profil.
+
+    selections : list de {path: str, keys: [str]}
+    Retourne {deleted_bytes, errors}.
+    """
+    import shutil
+    deleted_bytes = 0
+    errors = []
+    for sel in selections or []:
+        profile_path = Path(sel.get("path", ""))
+        keys = set(sel.get("keys") or [])
+        if not profile_path.exists():
+            errors.append(f"Profil introuvable: {profile_path}")
+            continue
+        kind = "firefox" if "Firefox" in str(profile_path) else "chromium"
+        types = _BROWSER_DATA_TYPES_CHROMIUM if kind == "chromium" else _BROWSER_DATA_TYPES_FIREFOX
+        for key, _label, rels, _desc in types:
+            if key not in keys:
+                continue
+            for rel in rels:
+                p = profile_path / rel
+                try:
+                    if p.is_file():
+                        size = p.stat().st_size
+                        p.unlink()
+                        deleted_bytes += size
+                    elif p.is_dir():
+                        size = get_folder_size(str(p))
+                        shutil.rmtree(p, ignore_errors=True)
+                        deleted_bytes += size
+                except Exception as e:
+                    errors.append(f"{p.name}: {e}")
+    return {"deleted_bytes": deleted_bytes, "deleted_fmt": fmt_size(deleted_bytes), "errors": errors}
+
+
 def _browser_profile_paths():
     """Retourne les chemins de profils pour Chrome, Edge et Firefox."""
     local   = Path(os.environ.get("LOCALAPPDATA", ""))
