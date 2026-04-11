@@ -40,7 +40,6 @@ from cleaner import (
     is_admin, is_admin_path,
     get_drivers, export_drivers_report, scan_windows_update_drivers,
     get_windows_tweaks, set_windows_tweak, get_tweak_presets,
-    capture_benchmark,
     list_uwp_apps, remove_uwp_apps,
     get_services_state, set_service_enabled,
     get_scheduled_tasks_state, set_scheduled_task_enabled,
@@ -119,15 +118,6 @@ def index():
 @app.route("/favicon.ico")
 def favicon():
     return redirect(url_for("static", filename="favicon.svg"))
-
-
-@app.route("/api/benchmark/snapshot", methods=["GET"])
-def api_benchmark_snapshot():
-    try:
-        return jsonify(capture_benchmark())
-    except Exception as e:
-        app.logger.exception("benchmark snapshot error")
-        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/open-settings", methods=["POST"])

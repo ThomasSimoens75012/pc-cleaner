@@ -618,6 +618,7 @@ function _renderCategoryFilters(filterElId, items, currentFilter, onFilter) {
 
 let _services = [];
 let _servicesFilter = "all";
+let _servicesIsAdmin = false;
 
 async function loadServices() {
   const btn = document.getElementById("btn-load-services");
@@ -629,8 +630,10 @@ async function loadServices() {
     if (!res.ok) throw new Error(data.error || "Erreur serveur");
     _services = data.services || [];
     _servicesFilter = "all";
+    _servicesIsAdmin = !!data.is_admin;
     _renderServices(data.is_admin);
     _renderTweakFilters();  // update count on main filter bar
+    _renderTweakChart();    // include services in impact chart
     _btnReset(btn);
   } catch (e) {
     el.innerHTML = `<div class="tool-error" style="padding:20px">Erreur : ${e.message}</div>`;
@@ -714,6 +717,7 @@ async function bulkToggleServicesCategory(category, targetEnabled) {
         setTimeout(() => row.classList.remove("tweak-ok"), 600);
       }
     });
+    _renderTweakChart();
     if (data.fail_count > 0) {
       showToast("Bulk services partiel", `${data.ok_count} appliqué(s), ${data.fail_count} échec(s)`, "warn");
     }
@@ -759,6 +763,7 @@ async function toggleService(name, checkbox) {
     if (svc) svc.active = enabled;
     row.classList.add("tweak-ok");
     setTimeout(() => row.classList.remove("tweak-ok"), 600);
+    if (typeof _renderTweakChart === "function") _renderTweakChart();
   } catch (e) {
     checkbox.checked = !checkbox.checked;
     row.classList.add("tweak-error");
@@ -779,6 +784,7 @@ async function toggleService(name, checkbox) {
 
 let _scheduledTasks = [];
 let _tasksFilter = "all";
+let _tasksIsAdmin = false;
 
 async function loadScheduledTasks() {
   const btn = document.getElementById("btn-load-tasks");
@@ -790,8 +796,10 @@ async function loadScheduledTasks() {
     if (!res.ok) throw new Error(data.error || "Erreur serveur");
     _scheduledTasks = data.tasks || [];
     _tasksFilter = "all";
+    _tasksIsAdmin = !!data.is_admin;
     _renderScheduledTasks(data.is_admin);
     _renderTweakFilters();  // update count on main filter bar
+    _renderTweakChart();    // update chart counters
     _btnReset(btn);
   } catch (e) {
     el.innerHTML = `<div class="tool-error" style="padding:20px">Erreur : ${e.message}</div>`;
@@ -864,9 +872,15 @@ async function bulkToggleTasksCategory(category, targetEnabled) {
       if (!r.ok) return;
       const t = _scheduledTasks.find(x => x.path === r.path);
       if (t) t.active = r.enabled;
+      // Update in-place via data-task-path
+      const row = document.querySelector(`#tasks-list .tweak-row[data-task-path="${CSS.escape(r.path)}"]`);
+      if (row) {
+        const cb = row.querySelector("input[type=checkbox]");
+        if (cb) cb.checked = !!r.enabled;
+        row.classList.add("tweak-ok");
+        setTimeout(() => row.classList.remove("tweak-ok"), 600);
+      }
     });
-    // Re-render pour refléter les checkboxes (les tasks n'ont pas de data-attr sur les rows)
-    _renderScheduledTasks(true);
     if (data.fail_count > 0) {
       showToast("Bulk tâches partiel", `${data.ok_count} appliqué(s), ${data.fail_count} échec(s)`, "warn");
     }
@@ -879,15 +893,16 @@ async function bulkToggleTasksCategory(category, targetEnabled) {
 
 function _scheduledTaskRowHtml(task, isAdmin) {
   const locked = !isAdmin;
-  const pathSafe = task.path.replace(/"/g, '&quot;').replace(/'/g, "\\'");
+  const pathAttr = task.path.replace(/"/g, '&quot;');
+  const pathJs   = task.path.replace(/"/g, '&quot;').replace(/'/g, "\\'");
   return `
-    <div class="tweak-row${locked ? ' row-locked' : ''}" style="padding:10px 16px">
+    <div class="tweak-row${locked ? ' row-locked' : ''}" style="padding:10px 16px" data-task-path="${pathAttr}">
       <div class="tweak-info">
         <div class="tweak-label">${_escapeHtml(task.label)}${locked ? ' <span class="admin-badge">Admin requis</span>' : ''}</div>
         <div class="tweak-desc">${_escapeHtml(task.desc)}</div>
       </div>
       <label class="sw">
-        <input type="checkbox" ${task.active ? "checked" : ""} ${locked ? "disabled" : ""} onchange="toggleScheduledTask('${pathSafe}', this)">
+        <input type="checkbox" ${task.active ? "checked" : ""} ${locked ? "disabled" : ""} onchange="toggleScheduledTask('${pathJs}', this)">
         <span class="slider"></span>
       </label>
     </div>
@@ -994,7 +1009,19 @@ async function runRepairAction(actionId, isStreaming) {
   const originalText = btn ? btn.textContent : "";
   if (btn) { btn.disabled = true; btn.textContent = "En cours…"; }
 
+  // Push activité avec target = bouton pour que goto/relance fonctionnent
+  const activityId = (typeof activityPush === "function")
+    ? activityPush(`Réparation — ${label}`, "run", "en cours…", btn)
+    : null;
+
   _logAppend("repair-log", `▶ ${label}`);
+
+  const finish = (status, meta) => {
+    if (activityId != null && typeof activityDone === "function") {
+      activityDone(activityId, meta, status);
+    }
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+  };
 
   if (isStreaming) {
     // SSE pour SFC / DISM
@@ -1006,23 +1033,21 @@ async function runRepairAction(actionId, isStreaming) {
         else if (item.type === "done") {
           _logAppend("repair-log", "✓ " + item.msg);
           es.close();
-          if (btn) { btn.disabled = false; btn.textContent = originalText; }
-          showToast(label, item.msg, "success");
+          finish("done", "terminé");
         } else if (item.type === "error") {
           _logAppend("repair-log", "✗ " + item.msg);
           es.close();
-          if (btn) { btn.disabled = false; btn.textContent = originalText; }
-          showToast(label, item.msg, "warn");
+          finish("fail", item.msg);
         }
       };
       es.onerror = () => {
         es.close();
-        if (btn) { btn.disabled = false; btn.textContent = originalText; }
         _logAppend("repair-log", "✗ Connexion SSE perdue");
+        finish("fail", "connexion perdue");
       };
     } catch (e) {
       _logAppend("repair-log", "✗ " + e.message);
-      if (btn) { btn.disabled = false; btn.textContent = originalText; }
+      finish("fail", e.message);
     }
   } else {
     // Action simple
@@ -1037,16 +1062,14 @@ async function runRepairAction(actionId, isStreaming) {
           if (line.trim()) _logAppend("repair-log", "  " + line);
         });
         _logAppend("repair-log", "✓ Terminé");
-        showToast(label, "Action terminée avec succès.", "success");
+        finish("done", "terminé");
       } else {
         _logAppend("repair-log", "✗ " + (data.error || data.output || "Échec"));
-        showToast(label, data.error || "Échec", "warn");
+        finish("fail", data.error || "échec");
       }
     } catch (e) {
       _logAppend("repair-log", "✗ " + e.message);
-      showToast("Erreur", e.message, "warn");
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = originalText; }
+      finish("fail", e.message);
     }
   }
 }
@@ -1054,6 +1077,13 @@ async function runRepairAction(actionId, isStreaming) {
 // ── Apps UWP pré-installées (debloat) ────────────────────────────────────────
 
 let _uwpApps = [];
+let _uwpFilter = "all";
+
+const _UWP_FILTER_LABELS = {
+  "all":    "Tout voir",
+  "safe":   "Safe — aucun regret",
+  "review": "À examiner",
+};
 
 async function startUwpScan() {
   const resultEl = document.getElementById("uwp-results");
@@ -1077,9 +1107,37 @@ async function startUwpScan() {
 
 function renderUwpApps(apps) {
   _uwpApps = apps;
-  const installed = apps.filter(a => a.installed);
+  _uwpFilter = "all";
+  _renderUwpList();
+}
+
+function _renderUwpFilters(installed) {
+  const el = document.getElementById("uwp-filters");
+  if (!el) return;
+  el.style.display = installed.length ? "flex" : "none";
+  const counts = {
+    all:    installed.length,
+    safe:   installed.filter(a => a.risk === "safe").length,
+    review: installed.filter(a => a.risk === "review").length,
+  };
+  const tags = ["all", "safe", "review"];
+  el.innerHTML = tags.map(t => {
+    const cls = t === _uwpFilter ? "active" : "";
+    return `<button class="tweak-filter-btn ${cls}" data-filter="${t}" onclick="setUwpFilter('${t}')">${_UWP_FILTER_LABELS[t]} <span class="c">${counts[t]}</span></button>`;
+  }).join("");
+}
+
+function setUwpFilter(tag) {
+  _uwpFilter = tag;
+  _renderUwpList();
+}
+
+function _renderUwpList() {
+  const installed = _uwpApps.filter(a => a.installed);
   const safe      = installed.filter(a => a.risk === "safe").length;
   const review    = installed.filter(a => a.risk === "review").length;
+
+  _renderUwpFilters(installed);
 
   const el = document.getElementById("uwp-results");
   if (!installed.length) {
@@ -1087,20 +1145,27 @@ function renderUwpApps(apps) {
     _logAppend("uwp-log", "Aucune app bloat détectée.");
     return;
   }
-  _logAppend("uwp-log", `${installed.length} app(s) bloat détectée(s) — ${safe} safe + ${review} à examiner.`);
+
+  const filtered = _uwpFilter === "all"
+    ? installed
+    : installed.filter(a => a.risk === _uwpFilter);
+
+  if (!el.querySelector(".sel-header")) {
+    _logAppend("uwp-log", `${installed.length} app(s) bloat détectée(s) — ${safe} safe + ${review} à examiner.`);
+  }
 
   el.innerHTML = "";
   el.appendChild(_makeSelHeader(el, {
-    countText: `${installed.length} app(s) — cochées par défaut : niveau « safe »`,
+    countText: `${filtered.length} app(s) affichée(s) — cochées par défaut : niveau « safe »`,
     deleteId:  "btn-delete-uwp",
     deleteFn:  deleteSelectedUwp,
   }));
   _watchSelSize(el, document.getElementById("btn-delete-uwp"));
 
-  // Groupe par risk
+  // Groupe par risk, seulement les items qui passent le filtre
   const groups = [
-    { id: "safe",   label: "Safe — bloat pur, aucun regret",              items: installed.filter(a => a.risk === "safe") },
-    { id: "review", label: "À examiner — peut être utile selon les cas",  items: installed.filter(a => a.risk === "review") },
+    { id: "safe",   label: "Safe — bloat pur, aucun regret",              items: filtered.filter(a => a.risk === "safe") },
+    { id: "review", label: "À examiner — peut être utile selon les cas",  items: filtered.filter(a => a.risk === "review") },
   ];
 
   for (const g of groups) {
@@ -2667,61 +2732,163 @@ async function loadWindowsTweaks() {
   }
 }
 
+let _tweakPresetsCache = [];
+
 async function _loadTweakPresets() {
   try {
     const res  = await fetch("/api/windows-tweaks/presets");
     const data = await res.json();
     const el   = document.getElementById("tweak-presets");
     if (!el || !data.presets) return;
+    _tweakPresetsCache = data.presets;
     el.innerHTML = data.presets.map(p => `
       <button class="btn-ghost tweak-preset-btn"
               title="${_escapeHtml(p.desc)}"
-              onclick="applyTweakPreset('${p.id}', ${JSON.stringify(p.tweaks_off).replace(/"/g, '&quot;')})">
+              onclick="applyTweakPreset('${p.id}')">
         ${_escapeHtml(p.label)} <span style="color:var(--text-dim);font-size:11px;margin-left:4px">${p.count}</span>
       </button>
     `).join("");
   } catch (e) {}
 }
 
-async function applyTweakPreset(presetId, tweaksOff) {
-  // Confirmation avant application
+async function applyTweakPreset(presetId) {
+  const preset = _tweakPresetsCache.find(p => p.id === presetId);
+  if (!preset) return;
+
+  const tweaksOff   = preset.tweaks_off   || [];
+  const servicesOff = preset.services_off || [];
+  const tasksOff    = preset.tasks_off    || [];
+  const totalCount  = tweaksOff.length + servicesOff.length + tasksOff.length;
+
+  const needsAdmin = (servicesOff.length > 0 || tasksOff.length > 0);
+  const adminNote = needsAdmin
+    ? `\n\n⚠ Les services (${servicesOff.length}) et tâches planifiées (${tasksOff.length}) nécessitent les droits administrateur. Si tu n'es pas admin, seules les ${tweaksOff.length} tweaks seront appliqués.`
+    : "";
+
   showConfirm(
-    `Appliquer le preset « ${presetId} » ?`,
-    `${tweaksOff.length} fonctionnalité(s) vont être désactivées. Tu peux les réactiver individuellement ensuite.`,
+    `Appliquer le preset « ${preset.label} » ?`,
+    `${totalCount} fonctionnalité(s) vont être désactivées au total : ${tweaksOff.length} tweaks, ${servicesOff.length} services, ${tasksOff.length} tâches planifiées.${adminNote}`,
     async () => {
-      const changes = tweaksOff
+      let okCount = 0;
+      let failCount = 0;
+
+      // 1. Tweaks (toujours tenté)
+      const tweakChanges = tweaksOff
         .map(id => ({ id, active: false }))
         .filter(c => {
-          // Ne pousser que si pas déjà off
           const item = _tweakItems.find(i => i.id === c.id);
           return item && item.active;
         });
-      if (!changes.length) {
-        showToast("Rien à faire", "Toutes les fonctionnalités de ce preset sont déjà désactivées.", "info");
-        return;
+      if (tweakChanges.length) {
+        try {
+          const res  = await fetch("/api/windows-tweaks/set-batch", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ changes: tweakChanges }),
+          });
+          const data = await res.json();
+          (data.results || []).forEach(r => {
+            if (!r.ok) { failCount++; return; }
+            okCount++;
+            const item = _tweakItems.find(i => i.id === r.id);
+            if (item) item.active = false;
+            const row = document.querySelector(`#tweaks-list .tweak-row[data-id="${r.id}"]`);
+            if (row) {
+              const cb = row.querySelector("input[type=checkbox]");
+              if (cb) cb.checked = false;
+              row.classList.add("tweak-ok");
+              setTimeout(() => row.classList.remove("tweak-ok"), 600);
+            }
+          });
+        } catch (e) {
+          failCount += tweakChanges.length;
+        }
       }
-      try {
-        const res  = await fetch("/api/windows-tweaks/set-batch", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ changes }),
-        });
-        const data = await res.json();
-        (data.results || []).forEach(r => {
-          if (!r.ok) return;
-          const item = _tweakItems.find(i => i.id === r.id);
-          if (item) item.active = false;
-          const row = document.querySelector(`#tweaks-list .tweak-row[data-id="${r.id}"]`);
-          if (row) {
-            const cb = row.querySelector("input[type=checkbox]");
-            if (cb) cb.checked = false;
-            row.classList.add("tweak-ok");
-            setTimeout(() => row.classList.remove("tweak-ok"), 600);
+
+      // 2. Services (skip si non chargé ou non-admin)
+      if (servicesOff.length && typeof _services !== "undefined" && _services.length) {
+        const svcChanges = servicesOff
+          .map(name => ({ name, enabled: false }))
+          .filter(c => {
+            const s = _services.find(x => x.name === c.name);
+            return s && s.exists && s.active;
+          });
+        if (svcChanges.length) {
+          try {
+            const res  = await fetch("/api/services/set-batch", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ changes: svcChanges }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+              (data.results || []).forEach(r => {
+                if (!r.ok) { failCount++; return; }
+                okCount++;
+                const svc = _services.find(s => s.name === r.name);
+                if (svc) svc.active = false;
+                const row = document.querySelector(`#services-list .tweak-row[data-service="${r.name}"]`);
+                if (row) {
+                  const cb = row.querySelector("input[type=checkbox]");
+                  if (cb) cb.checked = false;
+                  row.classList.add("tweak-ok");
+                  setTimeout(() => row.classList.remove("tweak-ok"), 600);
+                }
+              });
+            } else {
+              // 403 non-admin probable
+              failCount += svcChanges.length;
+            }
+          } catch (e) {
+            failCount += svcChanges.length;
           }
-        });
-        _renderTweakChart();
-        showToast("Preset appliqué", `${data.ok_count} fonctionnalité(s) désactivée(s)${data.fail_count ? `, ${data.fail_count} échec(s)` : ""}.`, "success");
-      } catch (e) {
-        showToast("Erreur preset", e.message, "warn");
+        }
+      }
+
+      // 3. Tâches planifiées
+      if (tasksOff.length && typeof _scheduledTasks !== "undefined" && _scheduledTasks.length) {
+        const taskChanges = tasksOff
+          .map(path => ({ path, enabled: false }))
+          .filter(c => {
+            const t = _scheduledTasks.find(x => x.path === c.path);
+            return t && t.exists && t.active;
+          });
+        if (taskChanges.length) {
+          try {
+            const res  = await fetch("/api/scheduled-tasks/set-batch", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ changes: taskChanges }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+              (data.results || []).forEach(r => {
+                if (!r.ok) { failCount++; return; }
+                okCount++;
+                const t = _scheduledTasks.find(x => x.path === r.path);
+                if (t) t.active = false;
+                const row = document.querySelector(`#tasks-list .tweak-row[data-task-path="${CSS.escape(r.path)}"]`);
+                if (row) {
+                  const cb = row.querySelector("input[type=checkbox]");
+                  if (cb) cb.checked = false;
+                  row.classList.add("tweak-ok");
+                  setTimeout(() => row.classList.remove("tweak-ok"), 600);
+                }
+              });
+            } else {
+              failCount += taskChanges.length;
+            }
+          } catch (e) {
+            failCount += taskChanges.length;
+          }
+        }
+      }
+
+      _renderTweakChart();
+
+      if (okCount === 0 && failCount === 0) {
+        showToast("Rien à faire", "Toutes les fonctionnalités de ce preset sont déjà dans l'état cible.", "info");
+      } else if (failCount === 0) {
+        showToast("Preset appliqué", `${okCount} fonctionnalité(s) désactivée(s).`, "success");
+      } else {
+        showToast("Preset partiel", `${okCount} appliqué(s), ${failCount} échec(s) (admin requis pour services/tâches ?).`, "warn");
       }
     },
   );
@@ -2842,11 +3009,21 @@ function setTweakFilter(tag) {
   _applyTweakFilter();
 }
 
+// Mapping : un tag du main filter bar → catégorie dans services/tasks.
+// Les catégories services/tasks sont : telemetry, gaming, legacy, cloud_sync, privacy.
+// Les tags tweak sont : performance, telemetry, privacy, ads, cosmetic, security.
+// Seuls telemetry et privacy matchent directement. Les autres tags tweak
+// n'ont pas d'équivalent côté services → on affiche tout (filter = all).
+function _tweakTagToServiceCategory(tweakTag) {
+  if (tweakTag === "telemetry") return "telemetry";
+  if (tweakTag === "privacy")   return "privacy";
+  return "all";
+}
+
 function _applyTweakFilter() {
   const filter = _tweakFilter;
   const isServicesFilter = filter === "services";
   const isTasksFilter    = filter === "scheduled_tasks";
-  const isSectionFilter  = isServicesFilter || isTasksFilter;
 
   // Cards à masquer/montrer selon le filtre
   const presetsCard    = document.querySelector('#tab-perso .card:has(#tweak-presets)');
@@ -2860,12 +3037,16 @@ function _applyTweakFilter() {
   if (isServicesFilter) {
     hide(presetsCard); hide(chartCard); hide(tweaksListCard); hide(tasksCard);
     show(servicesCard);
+    _servicesFilter = "all";
+    if (typeof _renderServices === "function" && _services.length) _renderServices(_servicesIsAdmin);
     servicesCard?.scrollIntoView({ behavior: "smooth", block: "start" });
     return;
   }
   if (isTasksFilter) {
     hide(presetsCard); hide(chartCard); hide(tweaksListCard); hide(servicesCard);
     show(tasksCard);
+    _tasksFilter = "all";
+    if (typeof _renderScheduledTasks === "function" && _scheduledTasks.length) _renderScheduledTasks(_tasksIsAdmin);
     tasksCard?.scrollIntoView({ behavior: "smooth", block: "start" });
     return;
   }
@@ -2890,6 +3071,17 @@ function _applyTweakFilter() {
       .some(r => !r.classList.contains("tweak-hidden"));
     gh.classList.toggle("tweak-hidden", !hasVisible);
   });
+
+  // Propager le filtre aux sections services/tasks si les catégories matchent
+  const targetCategory = _tweakTagToServiceCategory(filter);
+  if (typeof _services !== "undefined" && _services.length) {
+    _servicesFilter = targetCategory;
+    _renderServices(_servicesIsAdmin);
+  }
+  if (typeof _scheduledTasks !== "undefined" && _scheduledTasks.length) {
+    _tasksFilter = targetCategory;
+    _renderScheduledTasks(_tasksIsAdmin);
+  }
 }
 
 function _renderTweakChart() {
@@ -2900,6 +3092,8 @@ function _renderTweakChart() {
   // Baseline = "tout activé" (Windows stock)
   // Projection = "configuration actuelle" (ce qui est encore actif)
   // Les barres diminuent quand l'utilisateur désactive des features.
+  // Inclut les tweaks + services (si chargés). Les tâches planifiées n'ont
+  // pas d'impact RAM direct (elles ne tournent que périodiquement).
   let baseRam = 0, baseProc = 0, projRam = 0, projProc = 0;
   for (const it of _tweakItems) {
     const ram  = (it.impact && it.impact.ram_mb)    || 0;
@@ -2912,8 +3106,28 @@ function _renderTweakChart() {
     }
   }
 
-  const totalCount   = _tweakItems.length;
-  const activeCount  = _tweakItems.filter(i => i.active).length;
+  // Services (peut être vide si pas encore chargé)
+  const svcList = (typeof _services !== "undefined") ? _services.filter(s => s.exists) : [];
+  for (const s of svcList) {
+    const ram = (s.impact && s.impact.ram_mb) || 0;
+    baseRam += ram;
+    baseProc += 1;  // chaque service = 1 process potentiel
+    if (s.active) {
+      projRam += ram;
+      projProc += 1;
+    }
+  }
+
+  const tweakTotalCount  = _tweakItems.length;
+  const tweakActiveCount = _tweakItems.filter(i => i.active).length;
+  const svcTotalCount    = svcList.length;
+  const svcActiveCount   = svcList.filter(s => s.active).length;
+  const taskList = (typeof _scheduledTasks !== "undefined") ? _scheduledTasks.filter(t => t.exists) : [];
+  const taskTotalCount   = taskList.length;
+  const taskActiveCount  = taskList.filter(t => t.active).length;
+
+  const totalCount  = tweakTotalCount + svcTotalCount + taskTotalCount;
+  const activeCount = tweakActiveCount + svcActiveCount + taskActiveCount;
   const savedRam     = baseRam  - projRam;
   const savedProc    = baseProc - projProc;
   const savedCount   = totalCount - activeCount;

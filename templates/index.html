@@ -1981,7 +1981,7 @@
         <div class="dupe-scan-bar">
           <input class="dupe-folder-input" id="da-folder" value="C:\">
           <button class="btn-ghost" onclick="browseFolder('da-folder')">Parcourir…</button>
-          <button class="btn-primary" id="btn-scan-da" onclick="startDiskAnalysis()">Analyser</button>
+          <button class="btn-primary" id="btn-scan-da" data-activity="Analyse de l'espace disque" onclick="startDiskAnalysis()">Analyser</button>
         </div>
       </div>
       <div id="da-breadcrumb" style="font-size:12px;color:var(--text-dim);display:none;padding:8px 0"></div>
@@ -2004,7 +2004,7 @@
           <button class="btn-ghost" onclick="browseFolder('lf-folder')">Parcourir…</button>
           <input class="dupe-size-input" id="lf-minsize" type="number" value="0.5" step="0.1" min="0.1" title="Taille minimale en Go">
           <span style="font-size:12px;color:var(--text-dim);white-space:nowrap">Go min.</span>
-          <button class="btn-primary" id="btn-scan-lf" data-log-target="lf-log" onclick="startLargeFileScan()">Analyser</button>
+          <button class="btn-primary" id="btn-scan-lf" data-activity="Gros fichiers" data-log-target="lf-log" onclick="startLargeFileScan()">Analyser</button>
         </div>
       </div>
       <div class="log-body" id="lf-log"></div>
@@ -2052,7 +2052,7 @@
         <div class="dupe-scan-bar">
           <input class="dupe-folder-input" id="inst-folder" placeholder="Dossier à analyser" value="{{ downloads_folder }}">
           <button class="btn-ghost" onclick="browseFolder('inst-folder')">Parcourir…</button>
-          <button class="btn-primary" id="btn-scan-inst" onclick="startInstallerScan()">Analyser</button>
+          <button class="btn-primary" id="btn-scan-inst" data-activity="Anciens installers" onclick="startInstallerScan()">Analyser</button>
         </div>
       </div>
       <div id="inst-results" class="results-scroll"></div>
@@ -2072,7 +2072,7 @@
         <div class="dupe-scan-bar">
           <input class="dupe-folder-input" id="ef-folder" placeholder="Ex: C:\Users" value="C:\Users">
           <button class="btn-ghost" onclick="browseFolder('ef-folder')">Parcourir…</button>
-          <button class="btn-primary" id="btn-scan-ef" data-log-target="ef-log" onclick="startEmptyFolderScan()">Analyser</button>
+          <button class="btn-primary" id="btn-scan-ef" data-activity="Dossiers vides" data-log-target="ef-log" onclick="startEmptyFolderScan()">Analyser</button>
         </div>
       </div>
       <div class="log-body" id="ef-log"></div>
@@ -2092,7 +2092,7 @@
       <div class="card-body">
         <div class="dupe-scan-bar">
           <span style="font-size:12px;color:var(--text-mid);flex:1">Program Files &amp; Program Files (x86)</span>
-          <button class="btn-primary" id="btn-scan-orphan" data-log-target="orphan-log" onclick="startOrphanScan()">Analyser</button>
+          <button class="btn-primary" id="btn-scan-orphan" data-activity="Dossiers orphelins" data-log-target="orphan-log" onclick="startOrphanScan()">Analyser</button>
         </div>
       </div>
       <div class="log-body" id="orphan-log"></div>
@@ -2107,7 +2107,7 @@
         <div class="tool-section-title">Windows.old</div>
         <div class="tool-section-sub">Ancien système Windows conservé après une mise à jour majeure</div>
       </div>
-      <button class="btn-primary" id="btn-scan-winold" data-log-target="winold-log" onclick="loadWindowsOld()">Analyser</button>
+      <button class="btn-primary" id="btn-scan-winold" data-activity="Windows.old" data-log-target="winold-log" onclick="loadWindowsOld()">Analyser</button>
     </div>
     <div class="card">
       <div class="log-body" id="winold-log"></div>
@@ -2169,6 +2169,7 @@
     </div>
     <div class="card">
       <div class="log-body" id="uwp-log"><div class="tool-empty">Cliquez sur « Analyser » pour lister les apps bloat détectées.</div></div>
+      <div class="tweak-filters" id="uwp-filters" style="margin:10px 16px;display:none"></div>
       <div id="uwp-results" class="results-scroll"></div>
     </div>
   </div>
@@ -2180,7 +2181,7 @@
         <div class="tool-section-title">Réparation système</div>
         <div class="tool-section-sub">Actions de dépannage Windows (DNS, Winsock, Store, SFC, DISM, Windows Update…)</div>
       </div>
-      <button class="btn-primary" id="btn-load-repair" onclick="loadRepairActions()">Charger</button>
+      <button class="btn-primary" id="btn-load-repair" data-activity="Outils de réparation" onclick="loadRepairActions()">Analyser</button>
     </div>
     <div class="card">
       <div id="repair-list"><div class="tool-empty" style="padding:20px">Cliquez sur « Charger » pour voir les outils de réparation disponibles.</div></div>
@@ -2234,7 +2235,7 @@
         <div class="tool-section-title">Nettoyage du registre</div>
         <div class="tool-section-sub">Détecte et supprime les entrées obsolètes du registre Windows</div>
       </div>
-      <button class="btn-primary" id="btn-scan-reg" data-log-target="reg-log" onclick="startRegistryScan()">Analyser</button>
+      <button class="btn-primary" id="btn-scan-reg" data-activity="Scan du registre" data-log-target="reg-log" onclick="startRegistryScan()">Analyser</button>
     </div>
     <div class="callout callout-yellow">
       <div class="callout-icon">
@@ -2257,7 +2258,7 @@
         <div class="tool-section-title">Raccourcis cassés</div>
         <div class="tool-section-sub">Raccourcis du Bureau et du Menu Démarrer pointant vers des programmes supprimés</div>
       </div>
-      <button class="btn-primary" id="btn-scan-shortcuts" onclick="loadShortcuts()">Analyser</button>
+      <button class="btn-primary" id="btn-scan-shortcuts" data-activity="Raccourcis cassés" onclick="loadShortcuts()">Analyser</button>
     </div>
     <div class="card">
       <div id="shortcuts-results"><div class="tool-empty">Cliquez sur « Analyser » pour lancer le scan.</div></div>
@@ -2271,7 +2272,7 @@
         <div class="tool-section-title">Fichier d'hibernation</div>
         <div class="tool-section-sub">hiberfil.sys — sauvegarde RAM pour la veille prolongée</div>
       </div>
-      <button class="btn-primary" id="btn-scan-hiber" data-log-target="hiber-log" onclick="loadHibernation()">Analyser</button>
+      <button class="btn-primary" id="btn-scan-hiber" data-activity="Hibernation (hiberfil.sys)" data-log-target="hiber-log" onclick="loadHibernation()">Analyser</button>
     </div>
     <div class="card">
       <div class="log-body" id="hiber-log"></div>
@@ -2286,7 +2287,7 @@
         <div class="tool-section-title">Points de restauration</div>
         <div class="tool-section-sub">Supprimez les anciens points de restauration Windows pour libérer de l'espace</div>
       </div>
-      <button class="btn-primary" id="btn-refresh-rp" onclick="loadRestorePoints()">Analyser</button>
+      <button class="btn-primary" id="btn-refresh-rp" data-activity="Points de restauration" onclick="loadRestorePoints()">Analyser</button>
     </div>
     <div class="card">
       <div id="rp-results"><div class="tool-loading">Chargement…</div></div>
@@ -2309,7 +2310,7 @@
         <div class="tool-section-title">Nettoyage de confidentialité</div>
         <div class="tool-section-sub">Fichiers récents, historique de la barre d'adresse, jump lists, presse-papier</div>
       </div>
-      <button class="btn-primary" id="btn-refresh-privacy" onclick="loadPrivacy()">Analyser</button>
+      <button class="btn-primary" id="btn-refresh-privacy" data-activity="Confidentialité" onclick="loadPrivacy()">Analyser</button>
     </div>
     <div class="card">
       <div id="privacy-results"><div class="tool-loading">Chargement…</div></div>
@@ -2364,7 +2365,7 @@
         espace disque, fichiers temporaires, cache navigateur, démarrage, corbeille et cache applicatif.
       </div>
       <div style="margin-top:14px;display:flex;gap:6px;">
-        <button class="btn-primary" id="btn-scan-health" data-log-target="health-log" onclick="loadHealth()">Analyser</button>
+        <button class="btn-primary" id="btn-scan-health" data-activity="Santé du PC" data-log-target="health-log" onclick="loadHealth()">Analyser</button>
         <button class="btn-ghost" onclick="switchTab('nettoyage')">Nettoyer maintenant</button>
       </div>
     </div>
@@ -2551,10 +2552,10 @@
 <div class="card" style="margin-top:14px">
   <div class="section-head" style="padding:14px 16px">
     <div>
-      <div class="tool-section-title">Services Windows en arrière-plan</div>
+      <div class="tool-section-title">Services en arrière-plan</div>
       <div class="tool-section-sub">Services non essentiels (télémétrie, Xbox, legacy). <strong>Nécessite les droits administrateur.</strong></div>
     </div>
-    <button class="btn-primary" id="btn-load-services" onclick="loadServices()">Analyser</button>
+    <button class="btn-primary" id="btn-load-services" data-activity="Services Windows" onclick="loadServices()">Analyser</button>
   </div>
   <div class="tweak-filters" id="services-filters" style="margin:0 16px 10px;display:none"></div>
   <div id="services-list"><div class="tool-empty" style="padding:20px">Cliquez sur « Analyser » pour lister les services détectés.</div></div>
@@ -2564,10 +2565,10 @@
 <div class="card" style="margin-top:14px">
   <div class="section-head" style="padding:14px 16px">
     <div>
-      <div class="tool-section-title">Tâches planifiées de télémétrie</div>
-      <div class="tool-section-sub">Tâches récurrentes qui remontent des données à Microsoft. <strong>Nécessite les droits administrateur.</strong></div>
+      <div class="tool-section-title">Tâches planifiées</div>
+      <div class="tool-section-sub">Tâches Windows récurrentes (télémétrie, CEIP, maps). <strong>Nécessite les droits administrateur.</strong></div>
     </div>
-    <button class="btn-primary" id="btn-load-tasks" onclick="loadScheduledTasks()">Analyser</button>
+    <button class="btn-primary" id="btn-load-tasks" data-activity="Tâches planifiées" onclick="loadScheduledTasks()">Analyser</button>
   </div>
   <div class="tweak-filters" id="tasks-filters" style="margin:0 16px 10px;display:none"></div>
   <div id="tasks-list"><div class="tool-empty" style="padding:20px">Cliquez sur « Analyser » pour lister les tâches planifiées.</div></div>

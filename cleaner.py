@@ -2358,98 +2358,129 @@ def get_windows_tweaks():
     return result
 
 
-def get_tweak_tags():
-    """Retourne la liste des catégories d'effet pour les filtres UI."""
-    return [{"id": tid, "label": lbl} for tid, lbl in _TWEAK_TAGS]
+# Presets one-click — chaque preset couvre 3 types d'objets :
+#   tweaks_off    : IDs de tweaks (HKCU) à désactiver
+#   services_off  : noms de services Windows à désactiver (admin requis)
+#   tasks_off     : chemins de tâches planifiées à désactiver (admin requis)
+# Le frontend applique les 3 via les endpoints /set-batch respectifs.
+_PRESET_STANDARD_TWEAKS = [
+    # Pubs et promotions
+    "silent_apps", "start_suggestions", "settings_suggestions",
+    "start_account_notifs", "start_irisxp", "preinstalled_apps",
+    "oem_preinstalled", "start_iris_recommendations",
+    "lockscreen_tips", "soft_landing", "welcome_experience",
+    "finish_setup", "tips_tricks", "onedrive_ads",
+    "sub_content_338387", "sub_content_353694",
+    # Cosmétique peu controversé
+    "copilot_button", "explorer_recommended",
+    # Privacy légère
+    "ad_id", "tailored_experiences",
+    # Edge promos
+    "edge_shopping",
+]
 
+_PRESET_AGGRESSIVE_TWEAKS = _PRESET_STANDARD_TWEAKS + [
+    # Performance
+    "copilot", "edge_startup_boost", "edge_background",
+    "cortana", "bing_search", "search_highlights",
+    "game_dvr", "game_bar",
+    "start_recommended", "spotlight_lockscreen",
+    "general_content_delivery", "notepad_ai",
+    "app_launch_tracking", "edge_personalization_reporting",
+    "edge_hub_sidebar",
+    # Explorer
+    "show_recent", "show_frequent",
+]
 
-# Presets one-click — chaque preset est une liste d'IDs de tweaks à désactiver.
-# Le frontend applique le preset via /api/windows-tweaks/set-batch avec active=False.
+_PRESET_PARANOID_TWEAKS = _PRESET_AGGRESSIVE_TWEAKS + [
+    "activity_history", "cloud_clipboard",
+    "inking_typing", "online_speech",
+]
+
 _TWEAK_PRESETS = {
     "standard": {
         "label": "Standard",
         "desc":  "Coupe les pubs, suggestions, notifications promo. Zéro risque.",
-        "tweaks_off": [
-            # Pubs et promotions
-            "silent_apps", "start_suggestions", "settings_suggestions",
-            "start_account_notifs", "start_irisxp", "preinstalled_apps",
-            "oem_preinstalled", "start_iris_recommendations",
-            "lockscreen_tips", "soft_landing", "welcome_experience",
-            "finish_setup", "tips_tricks", "onedrive_ads",
-            "sub_content_338387", "sub_content_353694",
-            # Cosmétique peu controversé
-            "copilot_button", "explorer_recommended",
-            # Privacy légère
-            "ad_id", "tailored_experiences",
-            # Edge promos
-            "edge_shopping",
-        ],
+        "tweaks_off":   _PRESET_STANDARD_TWEAKS,
+        "services_off": [],
+        "tasks_off":    [],
     },
     "aggressive": {
         "label": "Agressif",
-        "desc":  "Standard + coupe Copilot, Edge boost, Cortana, Game Bar. Gros gain RAM.",
-        "tweaks_off": [
-            # Tout le standard
-            "silent_apps", "start_suggestions", "settings_suggestions",
-            "start_account_notifs", "start_irisxp", "preinstalled_apps",
-            "oem_preinstalled", "start_iris_recommendations",
-            "lockscreen_tips", "soft_landing", "welcome_experience",
-            "finish_setup", "tips_tricks", "onedrive_ads",
-            "sub_content_338387", "sub_content_353694",
-            "copilot_button", "explorer_recommended",
-            "ad_id", "tailored_experiences", "edge_shopping",
-            # + Performance
-            "copilot", "edge_startup_boost", "edge_background",
-            "cortana", "bing_search", "search_highlights",
-            "game_dvr", "game_bar",
-            "start_recommended", "spotlight_lockscreen",
-            "general_content_delivery", "notepad_ai",
-            "app_launch_tracking", "edge_personalization_reporting",
-            "edge_hub_sidebar",
-            # Explorer
-            "show_recent", "show_frequent",
+        "desc":  "Standard + Copilot, Edge boost, Cortana, Game Bar, Xbox. Gros gain RAM.",
+        "tweaks_off":   _PRESET_AGGRESSIVE_TWEAKS,
+        "services_off": [
+            # Xbox gaming (si pas gamer)
+            "XblAuthManager", "XblGameSave", "XboxNetApiSvc",
+            # Legacy
+            "MapsBroker", "RetailDemo", "WMPNetworkSvc", "Fax",
+            "RemoteRegistry",
+            # Géolocalisation
+            "lfsvc",
+        ],
+        "tasks_off": [
+            # Legacy maps
+            r"\Microsoft\Windows\Maps\MapsUpdateTask",
+            r"\Microsoft\Windows\Maps\MapsToastTask",
         ],
     },
     "paranoid": {
         "label": "Paranoïaque",
-        "desc":  "Agressif + vie privée extrême. Coupe toute la telemetry et data collection.",
-        "tweaks_off": [
-            # Tout agressif
-            "silent_apps", "start_suggestions", "settings_suggestions",
-            "start_account_notifs", "start_irisxp", "preinstalled_apps",
-            "oem_preinstalled", "start_iris_recommendations",
-            "lockscreen_tips", "soft_landing", "welcome_experience",
-            "finish_setup", "tips_tricks", "onedrive_ads",
-            "sub_content_338387", "sub_content_353694",
-            "copilot_button", "explorer_recommended",
-            "ad_id", "tailored_experiences", "edge_shopping",
-            "copilot", "edge_startup_boost", "edge_background",
-            "cortana", "bing_search", "search_highlights",
-            "game_dvr", "game_bar",
-            "start_recommended", "spotlight_lockscreen",
-            "general_content_delivery", "notepad_ai",
-            "app_launch_tracking", "edge_personalization_reporting",
-            "edge_hub_sidebar", "show_recent", "show_frequent",
-            # + Vie privée extrême
-            "activity_history", "cloud_clipboard",
-            "inking_typing", "online_speech",
+        "desc":  "Agressif + toute la telemetry et data collection. Coupe DiagTrack et les tâches CEIP.",
+        "tweaks_off":   _PRESET_PARANOID_TWEAKS,
+        "services_off": [
+            # Xbox
+            "XblAuthManager", "XblGameSave", "XboxNetApiSvc",
+            # Legacy
+            "MapsBroker", "RetailDemo", "WMPNetworkSvc", "Fax",
+            "RemoteRegistry", "lfsvc",
+            # Télémétrie
+            "DiagTrack", "dmwappushservice", "WerSvc",
+            # Cloud sync (assume le user ne les utilise pas)
+            "CDPUserSvc", "OneSyncSvc",
+        ],
+        "tasks_off": [
+            # Télémétrie complète
+            r"\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser",
+            r"\Microsoft\Windows\Application Experience\ProgramDataUpdater",
+            r"\Microsoft\Windows\Application Experience\PcaPatchDbTask",
+            r"\Microsoft\Windows\Customer Experience Improvement Program\Consolidator",
+            r"\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip",
+            r"\Microsoft\Windows\Autochk\Proxy",
+            r"\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector",
+            r"\Microsoft\Windows\Feedback\Siuf\DmClient",
+            r"\Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload",
+            r"\Microsoft\Windows\Windows Error Reporting\QueueReporting",
+            r"\Microsoft\Windows\PushToInstall\Registration",
+            # Legacy
+            r"\Microsoft\Windows\Maps\MapsUpdateTask",
+            r"\Microsoft\Windows\Maps\MapsToastTask",
         ],
     },
 }
 
 
 def get_tweak_presets():
-    """Retourne les presets disponibles pour l'UI."""
-    return [
-        {
-            "id":    pid,
-            "label": data["label"],
-            "desc":  data["desc"],
-            "count": len(data["tweaks_off"]),
-            "tweaks_off": data["tweaks_off"],
-        }
-        for pid, data in _TWEAK_PRESETS.items()
-    ]
+    """Retourne les presets disponibles pour l'UI.
+
+    Chaque preset inclut maintenant tweaks_off + services_off + tasks_off.
+    Le count total est la somme des 3.
+    """
+    out = []
+    for pid, data in _TWEAK_PRESETS.items():
+        tweaks_off   = data.get("tweaks_off",   [])
+        services_off = data.get("services_off", [])
+        tasks_off    = data.get("tasks_off",    [])
+        out.append({
+            "id":           pid,
+            "label":        data["label"],
+            "desc":         data["desc"],
+            "count":        len(tweaks_off) + len(services_off) + len(tasks_off),
+            "tweaks_off":   tweaks_off,
+            "services_off": services_off,
+            "tasks_off":    tasks_off,
+        })
+    return out
 
 
 def set_windows_tweak(tweak_id, active):
@@ -2692,61 +2723,61 @@ _WINDOWS_SERVICES_TO_DISABLE = [
     # Telemetry
     {"name": "DiagTrack",        "label": "Expérience utilisateur connectée et télémétrie",
      "desc": "Collecte et envoie les données de diagnostic à Microsoft. Gros gain RAM (40-80 Mo)",
-     "category": "telemetry",    "risk": "safe"},
+     "category": "telemetry",    "risk": "safe", "ram_mb": 60},
     {"name": "dmwappushservice", "label": "Service de routage WAP push",
      "desc": "Route les messages push utilisés par la télémétrie",
-     "category": "telemetry",    "risk": "safe"},
+     "category": "telemetry",    "risk": "safe", "ram_mb": 5},
     {"name": "WerSvc",           "label": "Rapport d'erreurs Windows",
      "desc": "Envoie les rapports de plantage à Microsoft",
-     "category": "telemetry",    "risk": "safe"},
+     "category": "telemetry",    "risk": "safe", "ram_mb": 10},
     {"name": "DPS",              "label": "Stratégie de diagnostic",
      "desc": "Détection de problèmes Windows, dépendances diagnostics",
-     "category": "telemetry",    "risk": "review"},
+     "category": "telemetry",    "risk": "review", "ram_mb": 30},
     {"name": "PcaSvc",           "label": "Assistant Compatibilité des programmes",
      "desc": "Surveille la compatibilité des apps, remonte des données d'usage",
-     "category": "telemetry",    "risk": "review"},
+     "category": "telemetry",    "risk": "review", "ram_mb": 15},
 
     # Legacy
     {"name": "MapsBroker",       "label": "Gestionnaire de téléchargement de cartes",
      "desc": "Télécharge les cartes hors connexion de l'app Cartes",
-     "category": "legacy",       "risk": "safe"},
+     "category": "legacy",       "risk": "safe", "ram_mb": 15},
     {"name": "RetailDemo",       "label": "Mode démo magasin",
      "desc": "Service de démonstration en magasin, inutile en perso",
-     "category": "legacy",       "risk": "safe"},
+     "category": "legacy",       "risk": "safe", "ram_mb": 0},
     {"name": "WMPNetworkSvc",    "label": "Partage réseau Windows Media Player",
      "desc": "Partage DLNA/UPnP des bibliothèques WMP",
-     "category": "legacy",       "risk": "safe"},
+     "category": "legacy",       "risk": "safe", "ram_mb": 10},
     {"name": "Fax",              "label": "Télécopie (Fax)",
      "desc": "Service d'envoi et réception de fax via modem",
-     "category": "legacy",       "risk": "safe"},
+     "category": "legacy",       "risk": "safe", "ram_mb": 0},
     {"name": "RemoteRegistry",   "label": "Registre à distance",
      "desc": "Permet la modification du registre depuis une autre machine",
-     "category": "privacy",      "risk": "safe"},
+     "category": "privacy",      "risk": "safe", "ram_mb": 0},
 
     # Gaming (à désactiver si pas gamer)
     {"name": "XblAuthManager",   "label": "Xbox Live — Authentification",
      "desc": "Sign-in Xbox Live, inutile sans jeux Xbox/Game Pass",
-     "category": "gaming",       "risk": "safe"},
+     "category": "gaming",       "risk": "safe", "ram_mb": 10},
     {"name": "XblGameSave",      "label": "Xbox Live — Sauvegardes",
      "desc": "Synchro cloud des sauvegardes de jeux Xbox",
-     "category": "gaming",       "risk": "safe"},
+     "category": "gaming",       "risk": "safe", "ram_mb": 5},
     {"name": "XboxNetApiSvc",    "label": "Xbox Live — Réseau",
      "desc": "Accès réseau multijoueur pour apps Xbox",
-     "category": "gaming",       "risk": "safe"},
+     "category": "gaming",       "risk": "safe", "ram_mb": 5},
     {"name": "XboxGipSvc",       "label": "Accessoires Xbox",
      "desc": "Support des manettes Xbox pour l'app Accessoires",
-     "category": "gaming",       "risk": "review"},
+     "category": "gaming",       "risk": "review", "ram_mb": 5},
 
     # Privacy / Cloud
     {"name": "lfsvc",            "label": "Géolocalisation",
      "desc": "Fournit la position géographique aux applications",
-     "category": "privacy",      "risk": "safe"},
+     "category": "privacy",      "risk": "safe", "ram_mb": 10},
     {"name": "CDPUserSvc",       "label": "Plateforme des appareils connectés",
      "desc": "Synchro multi-appareils via compte Microsoft (Timeline, clipboard cloud)",
-     "category": "cloud_sync",   "risk": "review"},
+     "category": "cloud_sync",   "risk": "review", "ram_mb": 25},
     {"name": "OneSyncSvc",       "label": "Hôte de synchronisation",
      "desc": "Sync Courrier/Contacts/Calendrier avec le cloud Microsoft",
-     "category": "cloud_sync",   "risk": "review"},
+     "category": "cloud_sync",   "risk": "review", "ram_mb": 20},
 ]
 
 
@@ -2864,6 +2895,7 @@ def get_services_state():
             "status":   status,
             "start_type": start,
             "needs_admin": True,
+            "impact":   {"ram_mb": svc.get("ram_mb", 0)},
         })
     return result
 
@@ -3454,47 +3486,6 @@ def _render_drivers_json(data):
         "drivers":      data["drivers"],
     }
     return json.dumps(payload, ensure_ascii=False, indent=2)
-
-
-def capture_benchmark():
-    """Capture un snapshot des métriques système à un instant t.
-
-    CPU est sampled sur 2 secondes pour plus de stabilité.
-    """
-    import psutil
-    from datetime import datetime
-
-    cpu_pct = psutil.cpu_percent(interval=2.0)
-    mem = psutil.virtual_memory()
-    proc_count = len(psutil.pids())
-    boot_time = psutil.boot_time()
-    uptime_s = max(0, int(datetime.now().timestamp() - boot_time))
-
-    # Top 5 processus par RAM
-    top_procs = []
-    for p in psutil.process_iter(["name", "memory_info"]):
-        try:
-            info = p.info
-            rss = info.get("memory_info").rss if info.get("memory_info") else 0
-            if rss > 0:
-                top_procs.append({"name": info.get("name") or "?", "rss": rss})
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-    top_procs.sort(key=lambda x: -x["rss"])
-    top_procs = top_procs[:5]
-    for p in top_procs:
-        p["rss_fmt"] = fmt_size(p["rss"])
-
-    return {
-        "timestamp":      datetime.now().isoformat(timespec="seconds"),
-        "mem_total":      mem.total,
-        "mem_available":  mem.available,
-        "mem_used_pct":   round(mem.percent, 1),
-        "cpu_pct":        round(cpu_pct, 1),
-        "process_count":  proc_count,
-        "uptime_seconds": uptime_s,
-        "top_processes":  top_procs,
-    }
 
 
 def export_drivers_report(fmt="html"):
