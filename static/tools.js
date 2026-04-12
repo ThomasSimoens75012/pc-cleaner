@@ -3239,21 +3239,6 @@ function _detectedWindowsMajor() {
   return _windowsVersion.major || 11;
 }
 
-function fakeWindowsVersion(major) {
-  if (major === null || major === undefined) {
-    localStorage.removeItem("pcc-fake-windows");
-  } else {
-    localStorage.setItem("pcc-fake-windows", String(major));
-  }
-  // Re-render complet si les tweaks sont déjà chargés
-  if (_tweakItems.length) {
-    _renderTweaks();
-    _renderTweakFilters();
-    _renderTweakChart();
-    _renderVersionBanner();
-  }
-}
-
 function _isTweakCompatible(item) {
   const minWin = item.min_windows || 10;
   return _detectedWindowsMajor() >= minWin;
@@ -3270,23 +3255,13 @@ function _renderVersionBanner() {
 
   el.style.display = "inline-flex";
 
-  const fakeLabel = isFake
-    ? ` <span style="color:var(--amber)">(simulé W${detected})</span>`
-    : "";
   const incompatNote = incompatCount > 0
-    ? `<span class="vb-note">${incompatCount} grisé${incompatCount > 1 ? "s" : ""}</span>`
+    ? `<span class="vb-note">${incompatCount} option${incompatCount > 1 ? "s" : ""} réservée${incompatCount > 1 ? "s" : ""} à Windows 11</span>`
     : "";
-
-  const fakeBtn = isFake
-    ? `<button class="fake-btn" onclick="fakeWindowsVersion(null)">retirer</button>`
-    : (detected === 11
-        ? `<button class="fake-btn" onclick="fakeWindowsVersion(10)">simuler W10</button>`
-        : `<button class="fake-btn" onclick="fakeWindowsVersion(11)">simuler W11</button>`);
 
   el.innerHTML = `
-    <span class="vb-chip"><strong>${_escapeHtml(caption)}</strong></span>${fakeLabel}
+    <span class="vb-chip"><strong>${_escapeHtml(caption)}</strong></span>
     ${incompatNote}
-    ${fakeBtn}
   `;
 }
 
