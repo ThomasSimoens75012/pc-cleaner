@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>OpenCleaner — 10 styles d'apps complets</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'IBM Plex Sans', sans-serif; background: #e8e8e6; color: #37352f; }
+
+.picker {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: #000; color: #fff; padding: 6px 12px;
+  display: flex; align-items: center; gap: 4px; font-size: 11px; flex-wrap: wrap;
+}
+.picker button {
+  background: #222; color: #ccc; border: 1px solid #444; border-radius: 3px;
+  padding: 4px 10px; font-family: inherit; font-size: 10px; cursor: pointer;
+}
+.picker button:hover { background: #333; }
+.picker button.on { background: #0f7b6c; border-color: #0f7b6c; color: #fff; }
+.picker .sp { flex: 1; }
+.picker .d { font-size: 9px; opacity: .5; max-width: 450px; }
+
+.frame { display: none; margin: 40px auto 30px; border-radius: 8px; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,.15); }
+.frame.on { display: block; }
+
+/* ═══════════════════════════════════════════════
+   SHARED CONTENT (same for all variants)
+   ═══════════════════════════════════════════════ */
+.app { display: flex; min-height: 700px; }
+.sb { display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+.sb-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.sb-logo svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+.sb-sec { text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+.sb-i { display: flex; align-items: center; gap: 8px; width: 100%; border: none; background: none; text-align: left; cursor: pointer; font-family: inherit; }
+.sb-i svg { width: 15px; height: 15px; flex-shrink: 0; opacity: .5; }
+.sb-i.on svg { opacity: .8; }
+.sb-badge { margin-left: auto; }
+.ct { flex: 1; overflow-y: auto; }
+.sw { position: relative; width: 32px; height: 18px; border-radius: 9px; cursor: pointer; flex-shrink: 0; }
+.sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+.sw.on::after { left: 16px; }
+.chev { width: 10px; height: 10px; flex-shrink: 0; }
+.chev.closed { transform: rotate(-90deg); }
+
+/* Shared SVGs */
+.icon-star { }
+
+/* ═══════════════════════════════════════════════
+   1. CCleaner-inspired
+   ═══════════════════════════════════════════════ */
+#a1 { max-width: 900px; }
+#a1 .app { font-family: 'Inter', sans-serif; font-size: 13px; color: #1a1a2e; background: #f0f2f5; }
+#a1 .sb { width: 200px; background: #1a1a2e; color: #a8b0c0; padding: 16px 0; }
+#a1 .sb-logo { color: #fff; padding: 14px 16px; font-size: 15px; }
+#a1 .sb-sec { font-size: 9px; color: #556; padding: 14px 16px 4px; }
+#a1 .sb-i { color: #8892a8; padding: 10px 16px; font-size: 13px; transition: .15s; }
+#a1 .sb-i:hover { background: rgba(255,255,255,.05); color: #ccd; }
+#a1 .sb-i.on { background: rgba(255,255,255,.1); color: #fff; border-left: 3px solid #4fc3f7; padding-left: 13px; }
+#a1 .ct { padding: 24px 28px; }
+#a1 h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+#a1 .sub { font-size: 12px; color: #666; margin-bottom: 16px; }
+#a1 .stats { display: flex; gap: 12px; margin-bottom: 16px; }
+#a1 .stat-card { flex: 1; background: #fff; border-radius: 8px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+#a1 .stat-val { font-size: 24px; font-weight: 700; color: #1a1a2e; }
+#a1 .stat-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: .3px; margin-top: 2px; }
+#a1 .task-group { background: #fff; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.06); overflow: hidden; }
+#a1 .tg-head { padding: 12px 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #eef; }
+#a1 .tg-head .meta { margin-left: auto; font-size: 11px; color: #999; font-weight: 400; }
+#a1 .task { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid #f5f5f8; }
+#a1 .task:last-child { border: none; }
+#a1 .task input { accent-color: #4fc3f7; }
+#a1 .task-info { flex: 1; }
+#a1 .task-name { font-weight: 500; }
+#a1 .task-desc { font-size: 11px; color: #888; margin-top: 1px; }
+#a1 .task-size { font-weight: 600; color: #555; font-variant-numeric: tabular-nums; }
+#a1 .actions { display: flex; gap: 8px; margin-top: 14px; }
+#a1 .btn-main { background: #4fc3f7; color: #fff; border: none; border-radius: 6px; padding: 10px 20px; font-family: inherit; font-weight: 600; cursor: pointer; }
+#a1 .btn-sec { background: #fff; border: 1px solid #dde; border-radius: 6px; padding: 8px 14px; font-family: inherit; font-size: 12px; color: #666; cursor: pointer; }
+
+/* ═══════════════════════════════════════════════
+   2. BleachBit / Terminal hacker
+   ═══════════════════════════════════════════════ */
+#a2 { max-width: 880px; }
+#a2 .app { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #00ff41; background: #0a0a0a; }
+#a2 .sb { width: 220px; background: #0d0d0d; border-right: 1px solid #1a3a1a; padding: 12px 0; }
+#a2 .sb-logo { color: #00ff41; padding: 12px 14px; font-size: 14px; }
+#a2 .sb-sec { font-size: 9px; color: #0a5; padding: 12px 14px 4px; }
+#a2 .sb-i { color: #0b6; padding: 7px 14px; font-size: 12px; }
+#a2 .sb-i:hover { background: #0f1f0f; }
+#a2 .sb-i.on { color: #0f0; background: #0a1a0a; border-left: 2px solid #0f0; }
+#a2 .sb-badge { font-size: 10px; color: #0a5; }
+#a2 .ct { padding: 16px 20px; }
+#a2 h1 { font-size: 16px; color: #0f0; margin-bottom: 2px; }
+#a2 .sub { font-size: 11px; color: #084; margin-bottom: 12px; }
+#a2 .stat-line { display: flex; gap: 20px; margin-bottom: 12px; padding: 8px 12px; border: 1px dashed #1a3a1a; font-size: 11px; }
+#a2 .stat-line strong { color: #0f0; }
+#a2 .task-group { border: 1px solid #1a3a1a; margin-bottom: 8px; }
+#a2 .tg-head { padding: 8px 12px; background: #0d1a0d; display: flex; align-items: center; gap: 8px; font-weight: 600; border-bottom: 1px solid #1a3a1a; }
+#a2 .tg-head .meta { margin-left: auto; color: #084; font-weight: 400; }
+#a2 .task { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px dotted #1a2a1a; }
+#a2 .task:last-child { border: none; }
+#a2 .task input { accent-color: #0f0; }
+#a2 .task-info { flex: 1; }
+#a2 .task-name { color: #0c0; }
+#a2 .task-desc { font-size: 10px; color: #074; }
+#a2 .task-size { color: #0a0; font-variant-numeric: tabular-nums; }
+#a2 .btn-main { background: #0f0; color: #000; border: none; padding: 8px 16px; font-family: inherit; font-weight: 700; cursor: pointer; }
+#a2 .btn-sec { background: none; border: 1px solid #1a3a1a; color: #0a0; padding: 6px 12px; font-family: inherit; font-size: 11px; cursor: pointer; }
+
+/* ═══════════════════════════════════════════════
+   3. Windows 11 Settings
+   ═══════════════════════════════════════════════ */
+#a3 { max-width: 940px; }
+#a3 .app { font-family: 'Segoe UI', 'Inter', sans-serif; font-size: 14px; color: #1a1a1a; background: #f3f3f3; }
+#a3 .sb { width: 240px; background: #f9f9f9; padding: 20px 12px; border-right: 1px solid #e5e5e5; }
+#a3 .sb-logo { font-size: 16px; padding: 4px 12px 20px; }
+#a3 .sb-sec { font-size: 11px; color: #666; padding: 12px 12px 6px; }
+#a3 .sb-i { color: #444; padding: 10px 12px; border-radius: 6px; font-size: 14px; }
+#a3 .sb-i:hover { background: #f0f0f0; }
+#a3 .sb-i.on { background: #e8f0fe; color: #0067c0; }
+#a3 .sb-badge { font-size: 11px; background: #e8f0fe; color: #0067c0; padding: 1px 6px; border-radius: 10px; }
+#a3 .ct { padding: 28px 32px; background: #fff; margin: 12px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+#a3 h1 { font-size: 28px; font-weight: 600; margin-bottom: 4px; }
+#a3 .sub { font-size: 13px; color: #666; margin-bottom: 20px; }
+#a3 .stat-cards { display: flex; gap: 12px; margin-bottom: 20px; }
+#a3 .s-card { flex: 1; background: #f9f9f9; border-radius: 8px; padding: 16px; border: 1px solid #e8e8e8; }
+#a3 .s-card .val { font-size: 26px; font-weight: 600; }
+#a3 .s-card .lbl { font-size: 11px; color: #888; margin-top: 2px; }
+#a3 .task-group { background: #f9f9f9; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e8e8e8; overflow: hidden; }
+#a3 .tg-head { padding: 14px 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+#a3 .tg-head .meta { margin-left: auto; font-size: 12px; color: #888; font-weight: 400; }
+#a3 .task { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-top: 1px solid #eee; }
+#a3 .task input { accent-color: #0067c0; width: 18px; height: 18px; }
+#a3 .task-info { flex: 1; }
+#a3 .task-name { font-weight: 500; }
+#a3 .task-desc { font-size: 12px; color: #888; margin-top: 2px; }
+#a3 .task-size { font-weight: 600; color: #444; }
+#a3 .btn-main { background: #0067c0; color: #fff; border: none; border-radius: 4px; padding: 10px 24px; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
+#a3 .btn-sec { background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; padding: 8px 16px; font-family: inherit; font-size: 13px; color: #444; cursor: pointer; }
+
+/* ═══════════════════════════════════════════════
+   4. Notion (current refined)
+   ═══════════════════════════════════════════════ */
+#a4 { max-width: 920px; }
+#a4 .app { font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; color: #37352f; background: #fff; }
+#a4 .sb { width: 220px; background: #fbfbfa; border-right: 1px solid #e9e9e7; padding: 14px 10px; }
+#a4 .sb-logo { padding: 4px 10px 14px; font-size: 15px; }
+#a4 .sb-sec { font-size: 10px; color: #9b9a97; padding: 10px 10px 4px; }
+#a4 .sb-i { color: #787774; padding: 8px 10px; border-radius: 4px; font-size: 13px; }
+#a4 .sb-i:hover { background: #f7f6f3; color: #37352f; }
+#a4 .sb-i.on { background: #ededeb; color: #37352f; font-weight: 500; }
+#a4 .sb-badge { font-size: 10px; background: #f1f1ef; color: #9b9a97; padding: 1px 6px; border-radius: 3px; }
+#a4 .ct { padding: 28px 36px; }
+#a4 h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+#a4 .sub { font-size: 13px; color: #787774; margin-bottom: 14px; }
+#a4 .callout { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 6px; background: #fbfbfa; border: 1px solid #e9e9e7; border-left: 3px solid #0f7b6c; margin-bottom: 12px; font-size: 12px; }
+#a4 .task-group { border: 1px solid #e9e9e7; border-radius: 6px; margin-bottom: 10px; overflow: hidden; }
+#a4 .tg-head { padding: 10px 14px; background: #fbfbfa; border-bottom: 1px solid #e9e9e7; border-left: 3px solid #9b9a97; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+#a4 .tg-head .meta { margin-left: auto; font-size: 11px; color: #9b9a97; font-weight: 400; }
+#a4 .task { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid #e9e9e7; }
+#a4 .task:last-child { border: none; }
+#a4 .task input { accent-color: #37352f; }
+#a4 .task-info { flex: 1; }
+#a4 .task-name { font-weight: 500; }
+#a4 .task-desc { font-size: 11px; color: #9b9a97; margin-top: 1px; }
+#a4 .task-size { font-weight: 600; color: #787774; font-variant-numeric: tabular-nums; }
+#a4 .btn-main { background: #37352f; color: #fff; border: none; border-radius: 4px; padding: 8px 16px; font-family: inherit; font-weight: 500; cursor: pointer; }
+#a4 .btn-sec { background: none; border: 1px solid #dfdedc; border-radius: 4px; padding: 6px 12px; font-family: inherit; font-size: 11px; color: #787774; cursor: pointer; }
+
+/* ═══════════════════════════════════════════════
+   5. Sharp Angular (user's preference)
+   ═══════════════════════════════════════════════ */
+#a5 { max-width: 920px; }
+#a5 .app { font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; color: #1a1a1a; background: #fff; }
+#a5 .sb { width: 210px; background: #fafafa; border-right: 2px solid #ddd; padding: 14px 0; }
+#a5 .sb-logo { padding: 8px 16px 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+#a5 .sb-sec { font-size: 9px; color: #999; padding: 12px 16px 4px; letter-spacing: 1px; }
+#a5 .sb-i { color: #666; padding: 9px 16px; font-size: 13px; border-left: 3px solid transparent; }
+#a5 .sb-i:hover { background: #f5f5f5; }
+#a5 .sb-i.on { background: none; color: #1a1a1a; font-weight: 600; border-left-color: #1a1a1a; }
+#a5 .sb-badge { font-size: 10px; background: #eee; color: #888; padding: 1px 6px; }
+#a5 .ct { padding: 24px 32px; }
+#a5 h1 { font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+#a5 .sub { font-size: 12px; color: #888; margin-bottom: 14px; }
+#a5 .callout { display: flex; gap: 10px; align-items: center; padding: 10px 14px; background: #fafafa; border: 2px solid #ddd; border-left: 4px solid #0f7b6c; margin-bottom: 12px; font-size: 12px; }
+#a5 .task-group { border: 2px solid #ddd; margin-bottom: 8px; overflow: hidden; }
+#a5 .tg-head { padding: 10px 14px; background: #f5f5f5; border-bottom: 2px solid #ddd; border-left: 4px solid #999; display: flex; align-items: center; gap: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+#a5 .tg-head .meta { margin-left: auto; font-size: 10px; color: #999; font-weight: 400; text-transform: none; letter-spacing: 0; }
+#a5 .task { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid #eee; }
+#a5 .task:last-child { border: none; }
+#a5 .task input { accent-color: #1a1a1a; }
+#a5 .task-info { flex: 1; }
+#a5 .task-name { font-weight: 500; }
+#a5 .task-desc { font-size: 11px; color: #999; margin-top: 1px; }
+#a5 .task-size { font-weight: 600; color: #555; font-variant-numeric: tabular-nums; }
+#a5 .btn-main { background: #1a1a1a; color: #fff; border: none; padding: 9px 20px; font-family: inherit; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: .5px; font-size: 12px; }
+#a5 .btn-sec { background: none; border: 2px solid #ddd; padding: 7px 14px; font-family: inherit; font-size: 11px; color: #666; cursor: pointer; }
+
+/* ═══════════════════════════════════════════════
+   6. Glassmorphism
+   ═══════════════════════════════════════════════ */
+#a6 { max-width: 920px; }
+#a6 .app { font-family: 'Inter', sans-serif; font-size: 13px; color: #2c3e50; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 700px; }
+#a6 .sb { width: 220px; background: rgba(255,255,255,.12); backdrop-filter: blur(20px); border-right: 1px solid rgba(255,255,255,.15); padding: 16px 10px; }
+#a6 .sb-logo { color: #fff; padding: 6px 10px 16px; font-size: 15px; }
+#a6 .sb-sec { font-size: 9px; color: rgba(255,255,255,.4); padding: 10px 10px 4px; }
+#a6 .sb-i { color: rgba(255,255,255,.6); padding: 8px 10px; border-radius: 8px; font-size: 13px; }
+#a6 .sb-i:hover { background: rgba(255,255,255,.1); color: #fff; }
+#a6 .sb-i.on { background: rgba(255,255,255,.2); color: #fff; }
+#a6 .sb-badge { font-size: 10px; background: rgba(255,255,255,.15); color: rgba(255,255,255,.7); padding: 1px 6px; border-radius: 8px; }
+#a6 .ct { padding: 24px 28px; }
+#a6 h1 { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+#a6 .sub { font-size: 13px; color: rgba(255,255,255,.6); margin-bottom: 16px; }
+#a6 .glass { background: rgba(255,255,255,.15); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.2); border-radius: 12px; }
+#a6 .task-group { margin-bottom: 10px; overflow: hidden; }
+#a6 .task-group.glass { }
+#a6 .tg-head { padding: 12px 16px; display: flex; align-items: center; gap: 8px; font-weight: 600; color: #fff; border-bottom: 1px solid rgba(255,255,255,.1); }
+#a6 .tg-head .meta { margin-left: auto; font-size: 11px; color: rgba(255,255,255,.5); font-weight: 400; }
+#a6 .task { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,.08); color: rgba(255,255,255,.85); }
+#a6 .task:last-child { border: none; }
+#a6 .task input { accent-color: #fff; }
+#a6 .task-info { flex: 1; }
+#a6 .task-name { font-weight: 500; }
+#a6 .task-desc { font-size: 11px; color: rgba(255,255,255,.45); margin-top: 1px; }
+#a6 .task-size { font-weight: 600; color: rgba(255,255,255,.7); font-variant-numeric: tabular-nums; }
+#a6 .btn-main { background: rgba(255,255,255,.25); backdrop-filter: blur(8px); color: #fff; border: 1px solid rgba(255,255,255,.3); border-radius: 8px; padding: 10px 20px; font-family: inherit; font-weight: 600; cursor: pointer; }
+#a6 .btn-sec { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: 8px; padding: 7px 14px; font-family: inherit; font-size: 12px; color: rgba(255,255,255,.7); cursor: pointer; }
+
+/* ═══════════════════════════════════════════════
+   7. Brutalist / Newspaper
+   ═══════════════════════════════════════════════ */
+#a7 { max-width: 900px; }
+#a7 .app { font-family: Georgia, 'Times New Roman', serif; font-size: 14px; color: #111; background: #f5f0e8; }
+#a7 .sb { width: 200px; background: #111; color: #e8e0d0; padding: 16px 0; }
+#a7 .sb-logo { color: #f5f0e8; padding: 12px 16px; font-size: 18px; font-style: italic; }
+#a7 .sb-sec { font-size: 8px; color: #665; padding: 14px 16px 4px; letter-spacing: 2px; font-family: 'IBM Plex Sans', sans-serif; }
+#a7 .sb-i { color: #998; padding: 8px 16px; font-size: 14px; border-bottom: 1px solid #222; }
+#a7 .sb-i:hover { color: #f5f0e8; }
+#a7 .sb-i.on { color: #f5f0e8; background: #222; font-weight: 700; }
+#a7 .ct { padding: 28px 32px; }
+#a7 h1 { font-size: 32px; font-weight: 700; margin-bottom: 4px; border-bottom: 3px double #111; padding-bottom: 8px; }
+#a7 .sub { font-size: 14px; color: #665; margin-bottom: 18px; font-style: italic; }
+#a7 .task-group { border: 2px solid #111; margin-bottom: 12px; }
+#a7 .tg-head { padding: 10px 16px; background: #111; color: #f5f0e8; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-family: 'IBM Plex Sans', sans-serif; }
+#a7 .tg-head .meta { margin-left: auto; color: #887; font-weight: 400; letter-spacing: 0; }
+#a7 .task { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #ddd5c8; }
+#a7 .task:last-child { border: none; }
+#a7 .task input { accent-color: #111; width: 18px; height: 18px; }
+#a7 .task-info { flex: 1; }
+#a7 .task-name { font-weight: 700; }
+#a7 .task-desc { font-size: 13px; color: #887; margin-top: 2px; }
+#a7 .task-size { font-weight: 700; color: #444; font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+#a7 .btn-main { background: #111; color: #f5f0e8; border: none; padding: 10px 24px; font-family: inherit; font-weight: 700; cursor: pointer; font-size: 14px; }
+#a7 .btn-sec { background: none; border: 2px solid #111; padding: 8px 16px; font-family: inherit; font-size: 13px; color: #111; cursor: pointer; }
+
+/* ═══════════════════════════════════════════════
+   8. macOS-inspired
+   ═══════════════════════════════════════════════ */
+#a8 { max-width: 880px; }
+#a8 .app { font-family: -apple-system, 'SF Pro Display', 'Inter', sans-serif; font-size: 13px; color: #1d1d1f; background: #f5f5f7; border-radius: 12px; }
+#a8 .sb { width: 200px; background: rgba(246,246,248,.85); backdrop-filter: blur(20px); border-right: 1px solid #d2d2d7; padding: 46px 8px 14px; }
+#a8 .dots { position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; }
+#a8 .dot { width: 12px; height: 12px; border-radius: 50%; }
+#a8 .dot.r { background: #ff5f57; }
+#a8 .dot.y { background: #febc2e; }
+#a8 .dot.g { background: #28c840; }
+#a8 .sb-logo { padding: 0 8px 12px; font-size: 13px; font-weight: 600; }
+#a8 .sb-sec { font-size: 10px; color: #86868b; padding: 10px 8px 4px; font-weight: 600; }
+#a8 .sb-i { color: #1d1d1f; padding: 6px 8px; border-radius: 6px; font-size: 13px; }
+#a8 .sb-i:hover { background: rgba(0,0,0,.04); }
+#a8 .sb-i.on { background: #0071e3; color: #fff; }
+#a8 .sb-i.on svg { opacity: 1; }
+#a8 .sb-badge { font-size: 10px; background: rgba(0,0,0,.06); color: #86868b; padding: 1px 6px; border-radius: 10px; }
+#a8 .ct { padding: 20px 24px; position: relative; }
+#a8 h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+#a8 .sub { font-size: 13px; color: #86868b; margin-bottom: 14px; }
+#a8 .task-group { background: #fff; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 0 0 0.5px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.04); overflow: hidden; }
+#a8 .tg-head { padding: 10px 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+#a8 .tg-head .meta { margin-left: auto; font-size: 11px; color: #86868b; font-weight: 400; }
+#a8 .task { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-top: 0.5px solid rgba(0,0,0,.08); }
+#a8 .task input { accent-color: #0071e3; }
+#a8 .task-info { flex: 1; }
+#a8 .task-name { font-weight: 500; font-size: 13px; }
+#a8 .task-desc { font-size: 11px; color: #86868b; margin-top: 1px; }
+#a8 .task-size { font-weight: 500; color: #86868b; font-variant-numeric: tabular-nums; }
+#a8 .btn-main { background: #0071e3; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-family: inherit; font-weight: 500; cursor: pointer; font-size: 13px; }
+#a8 .btn-sec { background: rgba(0,0,0,.04); border: 0.5px solid rgba(0,0,0,.1); border-radius: 8px; padding: 6px 14px; font-family: inherit; font-size: 12px; color: #1d1d1f; cursor: pointer; }
+
+/* ═══════════════════════════════════════════════
+   9. Linear / Minimalist dark
+   ═══════════════════════════════════════════════ */
+#a9 { max-width: 920px; }
+#a9 .app { font-family: 'Inter', sans-serif; font-size: 13px; color: #e0e0e0; background: #131316; }
+#a9 .sb { width: 200px; background: #19191d; border-right: 1px solid #2a2a30; padding: 14px 8px; }
+#a9 .sb-logo { color: #fff; padding: 6px 8px 16px; font-size: 14px; }
+#a9 .sb-sec { font-size: 10px; color: #555; padding: 10px 8px 4px; }
+#a9 .sb-i { color: #888; padding: 7px 8px; border-radius: 6px; font-size: 13px; }
+#a9 .sb-i:hover { background: #222228; color: #ccc; }
+#a9 .sb-i.on { background: #222228; color: #fff; }
+#a9 .sb-badge { font-size: 10px; background: #2a2a30; color: #666; padding: 1px 6px; border-radius: 4px; }
+#a9 .ct { padding: 24px 30px; }
+#a9 h1 { font-size: 22px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+#a9 .sub { font-size: 13px; color: #666; margin-bottom: 14px; }
+#a9 .task-group { border: 1px solid #2a2a30; border-radius: 8px; margin-bottom: 8px; overflow: hidden; background: #19191d; }
+#a9 .tg-head { padding: 10px 14px; display: flex; align-items: center; gap: 8px; font-weight: 600; color: #fff; border-bottom: 1px solid #2a2a30; }
+#a9 .tg-head .meta { margin-left: auto; font-size: 11px; color: #555; font-weight: 400; }
+#a9 .task { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid #222228; color: #ccc; }
+#a9 .task:last-child { border: none; }
+#a9 .task:hover { background: #1e1e24; }
+#a9 .task input { accent-color: #8b5cf6; }
+#a9 .task-info { flex: 1; }
+#a9 .task-name { font-weight: 500; }
+#a9 .task-desc { font-size: 11px; color: #555; margin-top: 1px; }
+#a9 .task-size { font-weight: 500; color: #666; font-variant-numeric: tabular-nums; }
+#a9 .btn-main { background: #8b5cf6; color: #fff; border: none; border-radius: 6px; padding: 8px 18px; font-family: inherit; font-weight: 500; cursor: pointer; }
+#a9 .btn-sec { background: #222228; border: 1px solid #2a2a30; border-radius: 6px; padding: 6px 14px; font-family: inherit; font-size: 12px; color: #888; cursor: pointer; }
+
+/* ═══════════════════════════════════════════════
+   10. Neobrutalism
+   ═══════════════════════════════════════════════ */
+#a10 { max-width: 920px; }
+#a10 .app { font-family: 'Space Grotesk', sans-serif; font-size: 14px; color: #000; background: #e8ff8a; }
+#a10 .sb { width: 200px; background: #fff; border-right: 3px solid #000; padding: 14px 0; }
+#a10 .sb-logo { padding: 10px 14px 16px; font-size: 16px; font-weight: 700; }
+#a10 .sb-sec { font-size: 10px; color: #666; padding: 10px 14px 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+#a10 .sb-i { color: #333; padding: 10px 14px; font-size: 14px; font-weight: 500; border-bottom: 2px solid #eee; }
+#a10 .sb-i:hover { background: #e8ff8a; }
+#a10 .sb-i.on { background: #000; color: #e8ff8a; font-weight: 700; }
+#a10 .sb-badge { font-size: 10px; background: #e8ff8a; color: #000; padding: 1px 6px; border: 1px solid #000; font-weight: 700; }
+#a10 .ct { padding: 24px 28px; }
+#a10 h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
+#a10 .sub { font-size: 14px; color: #444; margin-bottom: 16px; }
+#a10 .task-group { background: #fff; border: 3px solid #000; margin-bottom: 10px; box-shadow: 5px 5px 0 #000; overflow: hidden; }
+#a10 .tg-head { padding: 12px 16px; background: #000; color: #e8ff8a; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .5px; }
+#a10 .tg-head .meta { margin-left: auto; color: #aaa; font-weight: 400; letter-spacing: 0; text-transform: none; }
+#a10 .task { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 2px solid #eee; }
+#a10 .task:last-child { border: none; }
+#a10 .task input { accent-color: #000; width: 18px; height: 18px; }
+#a10 .task-info { flex: 1; }
+#a10 .task-name { font-weight: 600; }
+#a10 .task-desc { font-size: 12px; color: #666; margin-top: 2px; }
+#a10 .task-size { font-weight: 700; color: #000; font-variant-numeric: tabular-nums; }
+#a10 .btn-main { background: #000; color: #e8ff8a; border: 3px solid #000; padding: 10px 24px; font-family: inherit; font-weight: 700; cursor: pointer; font-size: 14px; box-shadow: 3px 3px 0 #666; }
+#a10 .btn-sec { background: #fff; border: 3px solid #000; padding: 8px 16px; font-family: inherit; font-size: 13px; color: #000; cursor: pointer; font-weight: 600; box-shadow: 3px 3px 0 #000; }
+</style>
+</head>
+<body>
+
+<div class="picker">
+  <span style="font-weight:700;margin-right:4px">Style :</span>
+  <button onclick="show(1)" class="on">1·CCleaner</button>
+  <button onclick="show(2)">2·Terminal</button>
+  <button onclick="show(3)">3·Win11</button>
+  <button onclick="show(4)">4·Notion</button>
+  <button onclick="show(5)">5·Angular</button>
+  <button onclick="show(6)">6·Glass</button>
+  <button onclick="show(7)">7·Brutalist</button>
+  <button onclick="show(8)">8·macOS</button>
+  <button onclick="show(9)">9·Linear</button>
+  <button onclick="show(10)">10·Neo</button>
+  <span class="sp"></span>
+  <span class="d" id="desc">Inspiré CCleaner : sidebar sombre, cards blanches arrondies, accent bleu ciel.</span>
+</div>
+
+<script>
+const D={
+1:"CCleaner : sidebar sombre #1a1a2e, cards blanches arrondies 8px, accent #4fc3f7 bleu ciel, ombres légères, Inter font.",
+2:"Terminal hacker : fond noir, texte vert monospace #00ff41, bordures pointillées vertes, aucun arrondi, JetBrains Mono.",
+3:"Windows 11 Settings : fond #f3f3f3, cards blanches #f9f9f9 avec bordures fines, accent bleu #0067c0, Segoe UI, arrondis 8px.",
+4:"Notion sobre : l'actuel. Monochrome #37352f, IBM Plex, arrondis 6px, bordures 1px, callout bordure gauche verte.",
+5:"Sharp anguleux : border-radius 0, bordures 2px, titres UPPERCASE letter-spacing, sidebar items avec trait gauche actif.",
+6:"Glassmorphism : fond gradient violet, cards semi-transparentes backdrop-filter:blur, bordures blanches translucides, Inter.",
+7:"Brutalist newspaper : serif Georgia, fond parchemin #f5f0e8, titres avec double-bordure, sidebar noire, headers inversés.",
+8:"macOS natif : SF Pro, fond #f5f5f7, sidebar translucide blur, dots rouge/jaune/vert, accent #0071e3, arrondis 10px, ombres 0.5px.",
+9:"Linear dark : fond #131316, cards #19191d, accent violet #8b5cf6, Inter, bordures subtiles #2a2a30, arrondis 6-8px.",
+10:"Neobrutalism : Space Grotesk, fond jaune vif #e8ff8a, bordures 3px noires, box-shadow 5px offset, headers inversés noir/jaune."
+};
+function show(n){
+  document.querySelectorAll('.frame').forEach(f=>f.classList.remove('on'));
+  document.getElementById('a'+n).classList.add('on');
+  document.querySelectorAll('.picker button').forEach(b=>b.classList.remove('on'));
+  event.target.classList.add('on');
+  document.getElementById('desc').textContent=D[n]||'';
+}
+</script>
+
+<!-- ═══════ TEMPLATE for each variant ═══════ -->
+<!-- Content is identical, only CSS differs -->
+
+<div class="frame on" id="a1"><!-- CCleaner --><div class="app"><div class="sb"><div class="sb-logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg> OpenCleaner</div><div class="sb-sec">Espace de travail</div><button class="sb-i on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg> Nettoyage</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/></svg> Outils</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> Santé <span class="sb-badge">85</span></button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg> Personnalisation</button></div><div class="ct"><h1>Nettoyage</h1><div class="sub">Supprimez les fichiers temporaires, caches et traces pour libérer de l'espace.</div><div class="stats"><div class="stat-card"><div class="stat-val">1.8 Go</div><div class="stat-label">Récupérables</div></div><div class="stat-card"><div class="stat-val">86%</div><div class="stat-label">Disque C:</div></div><div class="stat-card"><div class="stat-val">3 jours</div><div class="stat-label">Dernier nettoyage</div></div></div><div class="task-group"><div class="tg-head"><input type="checkbox" checked style="accent-color:#4fc3f7"> Système <span class="meta">4 tâches · 620 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Fichiers temporaires</div><div class="task-desc">Libère de l'espace disque. Sans effet sur les performances.</div></div><div class="task-size">512 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Corbeille</div><div class="task-desc">Vide définitivement. Non récupérable.</div></div><div class="task-size">89 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache DNS</div><div class="task-desc">Se reconstruit automatiquement.</div></div><div class="task-size">—</div></div></div><div class="task-group"><div class="tg-head"><input type="checkbox" checked style="accent-color:#4fc3f7"> Navigateurs <span class="meta">3 tâches · 922 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache navigateurs</div><div class="task-desc">Sites plus lents la 1re visite. MdP protégés.</div></div><div class="task-size">890 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Historique</div></div><div class="task-size">24 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Cookies</div><div class="task-desc">Déconnexion de Gmail, Facebook…</div></div><div class="task-size">8 Mo</div></div></div><div class="actions"><button class="btn-main">Lancer le nettoyage →</button><button class="btn-sec">Tout cocher</button><button class="btn-sec">Réanalyser</button></div></div></div></div>
+
+<!-- Copy the same content structure for each variant, just wrapped in different #aX -->
+<div class="frame" id="a2"><div class="app"><div class="sb"><div class="sb-logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg> OpenCleaner</div><div class="sb-sec">workspace</div><button class="sb-i on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg> clean</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg> tools</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> health <span class="sb-badge">85</span></button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg> tweaks</button></div><div class="ct"><h1>> nettoyage</h1><div class="sub">rm -rf /tmp/* /cache/* /recent/*</div><div class="stat-line"><span>RECLAIMABLE: <strong>1.8 Go</strong></span><span>DISK C: <strong>86%</strong></span><span>LAST_RUN: <strong>3d ago</strong></span></div><div class="task-group"><div class="tg-head">[x] SYSTEM <span class="meta">4 tasks · 620 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">/tmp/* /var/tmp/*</div><div class="task-desc">temporary files — safe to remove</div></div><div class="task-size">512M</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">$RECYCLE.BIN</div><div class="task-desc">permanent delete — no undo</div></div><div class="task-size">89M</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">dns cache</div><div class="task-desc">ipconfig /flushdns — auto-rebuilt</div></div><div class="task-size">—</div></div></div><div class="task-group"><div class="tg-head">[x] BROWSERS <span class="meta">3 tasks · 922 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">browser cache</div><div class="task-desc">slower first load — passwords safe</div></div><div class="task-size">890M</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">history</div></div><div class="task-size">24M</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">cookies</div><div class="task-desc">logout all sessions</div></div><div class="task-size">8M</div></div></div><div style="margin-top:12px;display:flex;gap:8px"><button class="btn-main">EXECUTE →</button><button class="btn-sec">--select-all</button><button class="btn-sec">--rescan</button></div></div></div></div>
+
+<div class="frame" id="a3"><div class="app"><div class="sb"><div class="sb-logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg> OpenCleaner</div><div class="sb-sec">Navigation</div><button class="sb-i on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg> Nettoyage</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg> Outils</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> Santé <span class="sb-badge">85</span></button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg> Personnalisation</button></div><div class="ct"><h1>Nettoyage</h1><div class="sub">Supprimez les fichiers temporaires et libérez de l'espace disque.</div><div class="stat-cards"><div class="s-card"><div class="val">1.8 Go</div><div class="lbl">Espace récupérable</div></div><div class="s-card"><div class="val">86%</div><div class="lbl">Disque C: utilisé</div></div><div class="s-card"><div class="val">il y a 3j</div><div class="lbl">Dernier nettoyage</div></div></div><div class="task-group"><div class="tg-head"><input type="checkbox" checked style="width:18px;height:18px;accent-color:#0067c0"> Système <span class="meta">4 tâches · 620 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Fichiers temporaires</div><div class="task-desc">Libère de l'espace. Sans effet sur les performances.</div></div><div class="task-size">512 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Corbeille</div><div class="task-desc">Vide définitivement. Non récupérable.</div></div><div class="task-size">89 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache DNS</div></div><div class="task-size">—</div></div></div><div class="task-group"><div class="tg-head"><input type="checkbox" checked style="width:18px;height:18px;accent-color:#0067c0"> Navigateurs <span class="meta">922 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache navigateurs</div><div class="task-desc">Sites plus lents la première visite.</div></div><div class="task-size">890 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Historique</div></div><div class="task-size">24 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Cookies</div><div class="task-desc">Vous serez déconnecté de tous les sites.</div></div><div class="task-size">8 Mo</div></div></div><div style="margin-top:16px;display:flex;gap:8px"><button class="btn-main">Lancer le nettoyage</button><button class="btn-sec">Tout cocher</button><button class="btn-sec">Réanalyser</button></div></div></div></div>
+
+<div class="frame" id="a4"><div class="app"><div class="sb"><div class="sb-logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg> OpenCleaner</div><div class="sb-sec">Espace de travail</div><button class="sb-i on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg> Nettoyage</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg> Outils</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> Santé <span class="sb-badge">85</span></button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg> Personnalisation</button></div><div class="ct"><h1>Nettoyage</h1><div class="sub">Supprimez les fichiers temporaires, caches et traces.</div><div class="callout"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0f7b6c" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> <strong>Mots de passe protégés</strong> — Identifiants et sessions intacts.</div><div class="task-group"><div class="tg-head"><input type="checkbox" checked style="accent-color:#37352f"> Système <span class="meta">4 tâches · 620 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Fichiers temporaires</div><div class="task-desc">Libère de l'espace. Sans effet sur les performances.</div></div><div class="task-size">512 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Corbeille</div><div class="task-desc">Vide définitivement.</div></div><div class="task-size">89 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache DNS</div></div><div class="task-size">—</div></div></div><div class="task-group"><div class="tg-head"><input type="checkbox" checked style="accent-color:#37352f"> Navigateurs <span class="meta">922 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache navigateurs</div><div class="task-desc">MdP protégés. Sites plus lents la 1re visite.</div></div><div class="task-size">890 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Historique</div></div><div class="task-size">24 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Cookies</div><div class="task-desc">Déconnexion de tous les sites.</div></div><div class="task-size">8 Mo</div></div></div><div style="margin-top:12px;display:flex;gap:8px"><button class="btn-main">Lancer le nettoyage →</button><button class="btn-sec">Tout cocher</button><button class="btn-sec">Réanalyser</button></div></div></div></div>
+
+<div class="frame" id="a5"><div class="app"><div class="sb"><div class="sb-logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg> OPENCLEANER</div><div class="sb-sec">WORKSPACE</div><button class="sb-i on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg> Nettoyage</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg> Outils</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> Santé <span class="sb-badge">85</span></button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg> Personnalisation</button></div><div class="ct"><h1>NETTOYAGE</h1><div class="sub">Supprimez les fichiers temporaires, caches et traces.</div><div class="callout"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0f7b6c" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> <strong>MOTS DE PASSE PROTÉGÉS</strong> — Identifiants et sessions intacts.</div><div class="task-group"><div class="tg-head"><input type="checkbox" checked style="accent-color:#1a1a1a"> SYSTÈME <span class="meta">4 tâches · 620 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Fichiers temporaires</div><div class="task-desc">Libère de l'espace. Sans effet sur les performances.</div></div><div class="task-size">512 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Corbeille</div><div class="task-desc">Vide définitivement. Non récupérable.</div></div><div class="task-size">89 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache DNS</div></div><div class="task-size">—</div></div></div><div class="task-group"><div class="tg-head"><input type="checkbox" checked style="accent-color:#1a1a1a"> NAVIGATEURS <span class="meta">922 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache navigateurs</div><div class="task-desc">MdP protégés. Sites plus lents la 1re visite.</div></div><div class="task-size">890 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Historique</div></div><div class="task-size">24 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Cookies</div><div class="task-desc">Déconnexion de tous les sites.</div></div><div class="task-size">8 Mo</div></div></div><div style="margin-top:12px;display:flex;gap:8px"><button class="btn-main">LANCER LE NETTOYAGE →</button><button class="btn-sec">TOUT COCHER</button><button class="btn-sec">RÉANALYSER</button></div></div></div></div>
+
+<div class="frame" id="a6"><div class="app"><div class="sb"><div class="sb-logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg> OpenCleaner</div><div class="sb-sec">workspace</div><button class="sb-i on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg> Nettoyage</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg> Outils</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> Santé</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg> Personnalisation</button></div><div class="ct"><h1>Nettoyage</h1><div class="sub">Supprimez les fichiers temporaires, caches et traces.</div><div class="task-group glass"><div class="tg-head"><input type="checkbox" checked style="accent-color:#fff"> Système <span class="meta">4 tâches · 620 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Fichiers temporaires</div><div class="task-desc">Libère de l'espace disque.</div></div><div class="task-size">512 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Corbeille</div></div><div class="task-size">89 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache DNS</div></div><div class="task-size">—</div></div></div><div class="task-group glass"><div class="tg-head"><input type="checkbox" checked style="accent-color:#fff"> Navigateurs <span class="meta">922 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache navigateurs</div><div class="task-desc">MdP protégés.</div></div><div class="task-size">890 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Historique</div></div><div class="task-size">24 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Cookies</div></div><div class="task-size">8 Mo</div></div></div><div style="margin-top:12px;display:flex;gap:8px"><button class="btn-main">Lancer le nettoyage →</button><button class="btn-sec">Tout cocher</button></div></div></div></div>
+
+<div class="frame" id="a7"><div class="app"><div class="sb"><div class="sb-logo">OpenCleaner</div><div class="sb-sec">SECTIONS</div><button class="sb-i on">Nettoyage</button><button class="sb-i">Outils</button><button class="sb-i">Santé</button><button class="sb-i">Personnalisation</button></div><div class="ct"><h1>Nettoyage</h1><div class="sub">Supprimez les fichiers temporaires, caches et traces de navigation.</div><div class="task-group"><div class="tg-head">SYSTÈME <span class="meta">4 tâches · 620 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Fichiers temporaires</div><div class="task-desc">Libère de l'espace disque. Sans effet sur les performances.</div></div><div class="task-size">512 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Corbeille</div><div class="task-desc">Vide définitivement. Non récupérable.</div></div><div class="task-size">89 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache DNS</div></div><div class="task-size">—</div></div></div><div class="task-group"><div class="tg-head">NAVIGATEURS <span class="meta">922 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache navigateurs</div><div class="task-desc">Mots de passe protégés. Sites plus lents la première visite.</div></div><div class="task-size">890 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Historique</div></div><div class="task-size">24 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Cookies</div><div class="task-desc">Déconnexion de tous les sites web.</div></div><div class="task-size">8 Mo</div></div></div><div style="margin-top:14px;display:flex;gap:10px"><button class="btn-main">Lancer le nettoyage →</button><button class="btn-sec">Tout cocher</button><button class="btn-sec">Réanalyser</button></div></div></div></div>
+
+<div class="frame" id="a8"><div class="app" style="position:relative"><div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div><div class="sb"><div class="sb-logo">OpenCleaner</div><div class="sb-sec">Général</div><button class="sb-i on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg> Nettoyage</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg> Outils</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> Santé <span class="sb-badge">85</span></button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg> Personnalisation</button></div><div class="ct"><h1>Nettoyage</h1><div class="sub">Supprimez les fichiers temporaires et libérez de l'espace.</div><div class="task-group"><div class="tg-head"><input type="checkbox" checked style="accent-color:#0071e3"> Système <span class="meta">4 tâches · 620 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Fichiers temporaires</div><div class="task-desc">Sans effet sur les performances.</div></div><div class="task-size">512 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Corbeille</div></div><div class="task-size">89 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache DNS</div></div><div class="task-size">—</div></div></div><div class="task-group"><div class="tg-head"><input type="checkbox" checked style="accent-color:#0071e3"> Navigateurs <span class="meta">922 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache navigateurs</div><div class="task-desc">MdP protégés.</div></div><div class="task-size">890 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Historique</div></div><div class="task-size">24 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Cookies</div></div><div class="task-size">8 Mo</div></div></div><div style="margin-top:12px;display:flex;gap:8px"><button class="btn-main">Lancer le nettoyage</button><button class="btn-sec">Tout cocher</button><button class="btn-sec">Réanalyser</button></div></div></div></div>
+
+<div class="frame" id="a9"><div class="app"><div class="sb"><div class="sb-logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg> OpenCleaner</div><div class="sb-sec">Navigation</div><button class="sb-i on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg> Nettoyage</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg> Outils</button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> Santé <span class="sb-badge">85</span></button><button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg> Personnalisation</button></div><div class="ct"><h1>Nettoyage</h1><div class="sub">Supprimez les fichiers temporaires, caches et traces.</div><div class="task-group"><div class="tg-head"><input type="checkbox" checked style="accent-color:#8b5cf6"> Système <span class="meta">4 tâches · 620 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Fichiers temporaires</div><div class="task-desc">Libère de l'espace disque.</div></div><div class="task-size">512 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Corbeille</div></div><div class="task-size">89 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache DNS</div></div><div class="task-size">—</div></div></div><div class="task-group"><div class="tg-head"><input type="checkbox" checked style="accent-color:#8b5cf6"> Navigateurs <span class="meta">922 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache navigateurs</div><div class="task-desc">MdP protégés.</div></div><div class="task-size">890 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Historique</div></div><div class="task-size">24 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Cookies</div></div><div class="task-size">8 Mo</div></div></div><div style="margin-top:12px;display:flex;gap:8px"><button class="btn-main">Lancer le nettoyage →</button><button class="btn-sec">Tout cocher</button></div></div></div></div>
+
+<div class="frame" id="a10"><div class="app"><div class="sb"><div class="sb-logo">OPENCLEANER</div><div class="sb-sec">NAV</div><button class="sb-i on">NETTOYAGE</button><button class="sb-i">OUTILS</button><button class="sb-i">SANTÉ <span class="sb-badge">85</span></button><button class="sb-i">PERSO</button></div><div class="ct"><h1>Nettoyage</h1><div class="sub">Supprimez les fichiers temporaires, caches et traces pour libérer de l'espace.</div><div class="task-group"><div class="tg-head">SYSTÈME <span class="meta">4 tâches · 620 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Fichiers temporaires</div><div class="task-desc">Libère de l'espace disque. Sans effet sur les performances.</div></div><div class="task-size">512 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Corbeille</div><div class="task-desc">Vide définitivement. Non récupérable.</div></div><div class="task-size">89 Mo</div></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache DNS</div></div><div class="task-size">—</div></div></div><div class="task-group"><div class="tg-head">NAVIGATEURS <span class="meta">922 Mo</span></div><div class="task"><input type="checkbox" checked><div class="task-info"><div class="task-name">Cache navigateurs</div><div class="task-desc">Mots de passe protégés. Sites plus lents la première visite.</div></div><div class="task-size">890 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Historique</div></div><div class="task-size">24 Mo</div></div><div class="task"><input type="checkbox"><div class="task-info"><div class="task-name">Cookies</div><div class="task-desc">Déconnexion de tous les sites.</div></div><div class="task-size">8 Mo</div></div></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn-main">LANCER →</button><button class="btn-sec">TOUT COCHER</button><button class="btn-sec">RÉANALYSER</button></div></div></div></div>
+
+</body>
+</html>

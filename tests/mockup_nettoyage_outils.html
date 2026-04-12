@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Mockups — Pages Nettoyage & Outils</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  :root {
+    --text: #37352f; --text-mid: #787774; --text-dim: #9b9a97;
+    --bg: #fff; --bg2: #fbfbfa; --bg3: #f1f1ef;
+    --border: #e9e9e7; --border2: #dfdedc;
+    --hover: #f7f6f3; --accent: #37352f;
+    --green: #0f7b6c; --green-bg: #e6f4ea;
+    --amber: #d9730d; --red: #e03e3e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'IBM Plex Sans', -apple-system, sans-serif; background: #f5f5f4; color: var(--text); }
+  .mc { max-width: 980px; margin: 30px auto; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .mc-label { background: var(--text); color: var(--bg); padding: 10px 20px; font-size: 13px; font-weight: 600; }
+  .mc-desc { padding: 10px 20px; background: var(--bg2); border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-mid); line-height: 1.5; }
+  .mc.reco { border-color: var(--green); border-width: 2px; }
+  .mc.reco .mc-label { background: var(--green); }
+  .pg { padding: 28px 36px; }
+  h1.pt { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .ps { font-size: 13px; color: var(--text-mid); margin-bottom: 16px; }
+  .sep { height: 50px; }
+  .card { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+  .callout { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 6px; font-size: 13px; line-height: 1.5; background: var(--bg2); border: 1px solid var(--border); border-left: 3px solid var(--green); margin-bottom: 14px; }
+  .callout-icon { flex-shrink: 0; color: var(--green); }
+  .callout-content { flex: 1; }
+  .btn-p { background: var(--text); color: var(--bg); border: none; border-radius: 4px; padding: 8px 16px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-g { background: none; border: 1px solid var(--border2); border-radius: 4px; padding: 5px 10px; font-family: inherit; font-size: 11px; color: var(--text-mid); cursor: pointer; }
+  .sw { position: relative; width: 34px; height: 20px; background: var(--border2); border-radius: 10px; cursor: pointer; flex-shrink: 0; }
+  .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+  .sw.on { background: var(--accent); }
+  .sw.on::after { left: 16px; }
+
+  /* Stats */
+  .stats { display: flex; gap: 14px; margin-bottom: 16px; }
+  .stat { flex: 1; padding: 14px 16px; border: 1px solid var(--border); border-radius: 6px; }
+  .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+  .stat-val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* Task checkbox */
+  .task-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .task-row:last-child { border-bottom: none; }
+  .task-row:hover { background: var(--hover); }
+  .task-cb { width: 18px; height: 18px; accent-color: var(--text); cursor: pointer; flex-shrink: 0; }
+  .task-info { flex: 1; }
+  .task-label { font-size: 13px; font-weight: 500; }
+  .task-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; line-height: 1.4; }
+  .task-size { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-mid); min-width: 60px; text-align: right; }
+  .task-badge { font-size: 9px; background: var(--bg3); color: var(--text-dim); padding: 1px 5px; border-radius: 3px; margin-left: 6px; }
+  .task-badge.disk { background: var(--bg3); }
+  .task-badge.priv { background: #f3e8fd; color: #8430ce; }
+
+  /* Log */
+  .log { padding: 10px 14px; max-height: 120px; overflow-y: auto; font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1.7; color: var(--text-mid); background: var(--bg2); border-top: 1px solid var(--border); }
+
+  /* Tools sections */
+  .tools-group { margin-bottom: 8px; }
+  .tools-group-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--bg2); border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; }
+  .tools-group-head .icon-wrap { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--bg3); border-radius: 6px; }
+  .tools-group-head .meta { margin-left: auto; font-size: 11px; color: var(--text-dim); font-weight: 400; }
+  .tool-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 54px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .tool-item:last-child { border-bottom: none; }
+  .tool-item:hover { background: var(--hover); }
+  .tool-item .name { flex: 1; font-weight: 500; }
+  .tool-item .sub { font-size: 11px; color: var(--text-dim); }
+  .pills { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+  .pill { font-size: 11px; padding: 4px 9px; border-radius: 4px; background: var(--bg3); color: var(--text-dim); border: none; cursor: pointer; font-family: inherit; }
+  .pill.on { background: var(--text); color: var(--bg); }
+
+  /* Progress */
+  .prog { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; margin: 8px 0; }
+  .prog-fill { height: 100%; background: var(--text); border-radius: 3px; width: 65%; }
+
+  .fr { display: flex; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .fr > * { flex: 1; min-width: 280px; }
+</style>
+</head>
+<body>
+
+<div style="max-width:980px;margin:30px auto;padding:0 20px">
+  <h1 style="font-size:20px;margin-bottom:4px">Mockups — Pages Nettoyage & Outils</h1>
+  <p style="font-size:13px;color:var(--text-mid);margin-bottom:40px">3 variantes pour chaque page. Même esprit que le layout E de Personnalisation.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     NETTOYAGE
+     ═══════════════════════════════════════════════════════════ -->
+
+<div style="max-width:980px;margin:0 auto;padding:10px 20px"><h2 style="font-size:16px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-mid)">Page Nettoyage</h2></div>
+
+<!-- N1 — Actuel amélioré -->
+<div class="mc">
+<div class="mc-label">N1 — Actuel amélioré : stats + tâches groupées + descriptions</div>
+<div class="mc-desc">Layout actuel mais avec les nouvelles descriptions enrichies, badges impact (disque/confidentialité), et stats en haut compactes. Le callout protection reste.</div>
+<div class="pg">
+  <h1 class="pt">Nettoyage</h1>
+  <p class="ps">Supprimez les fichiers temporaires, caches et traces pour libérer de l'espace.</p>
+
+  <div class="callout">
+    <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+    <div class="callout-content"><strong>Mots de passe et cookies protégés</strong> — OpenCleaner ne supprime jamais vos identifiants.</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Espace récupérable</div><div class="stat-val">1.8 Go</div><div class="stat-sub">14 catégories analysées</div></div>
+    <div class="stat"><div class="stat-label">Disque C:</div><div class="stat-val">86%</div><div class="stat-sub">42 Go libres sur 512</div></div>
+    <div class="stat"><div class="stat-label">Dernier nettoyage</div><div class="stat-val">il y a 3j</div><div class="stat-sub">820 Mo libérés</div></div>
+  </div>
+
+  <div class="card">
+    <div class="tools-group-head">
+      <div class="icon-wrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M8 2v20M16 2v20"/></svg></div>
+      Système
+      <span class="meta">4 tâches · ~620 Mo</span>
+    </div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Fichiers temporaires <span class="task-badge disk">disque</span></div><div class="task-desc">Libère de l'espace disque. Les fichiers sont recréés à la demande.</div></div><div class="task-size">512 Mo</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Corbeille <span class="task-badge disk">disque</span></div><div class="task-desc">Vide définitivement la corbeille. Les fichiers ne seront plus récupérables.</div></div><div class="task-size">89 Mo</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Cache DNS <span class="task-badge">réseau</span></div><div class="task-desc">Se reconstruit automatiquement. Utile si un site a changé d'adresse.</div></div><div class="task-size">—</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Fichiers récents <span class="task-badge priv">confidentialité</span></div><div class="task-desc">Supprime la liste des fichiers ouverts récemment. N'efface pas les fichiers eux-mêmes.</div></div><div class="task-size">18 Mo</div></div>
+  </div>
+
+  <div class="card">
+    <div class="tools-group-head">
+      <div class="icon-wrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+      Navigateurs
+      <span class="meta">3 tâches · ~1.1 Go</span>
+    </div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Cache navigateurs <span class="task-badge disk">disque</span></div><div class="task-desc">Sites plus lents la première visite. Mots de passe protégés.</div></div><div class="task-size">890 Mo</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb"><div class="task-info"><div class="task-label">Historique <span class="task-badge priv">confidentialité</span></div><div class="task-desc">Efface sites visités, recherches, téléchargements. Ne supprime pas les fichiers.</div></div><div class="task-size">24 Mo</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb"><div class="task-info"><div class="task-label">Cookies <span class="task-badge priv">confidentialité</span></div><div class="task-desc">Vous serez déconnecté de tous les sites (Gmail, Facebook…).</div></div><div class="task-size">8 Mo</div></div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:12px;margin:16px 0">
+    <button class="btn-p">Lancer le nettoyage <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+    <button class="btn-g">Tout cocher</button>
+    <button class="btn-g">Tout décocher</button>
+    <button class="btn-g">Réanalyser</button>
+  </div>
+</div>
+</div>
+<div class="sep"></div>
+
+<!-- N2 — 2 colonnes -->
+<div class="mc">
+<div class="mc-label">N2 — 2 colonnes : tâches à gauche, stats + log à droite</div>
+<div class="mc-desc">Les tâches de nettoyage occupent la colonne principale. Stats, disques et log sont dans une sidebar droite sticky. Action en bas de la colonne tâches.</div>
+<div class="pg">
+  <h1 class="pt">Nettoyage</h1>
+  <p class="ps">Supprimez les fichiers temporaires, caches et traces.</p>
+
+  <div class="callout">
+    <div class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+    <div class="callout-content"><strong>Mots de passe protégés</strong> — Identifiants et sessions de navigateur intacts.</div>
+  </div>
+
+  <div style="display:flex;gap:18px;align-items:flex-start">
+    <div style="flex:1">
+      <div class="card" style="margin-bottom:8px">
+        <div class="tools-group-head">Système <span class="meta">~620 Mo</span></div>
+        <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Fichiers temporaires</div><div class="task-desc">Libère de l'espace. Sans effet sur les performances.</div></div><div class="task-size">512 Mo</div></div>
+        <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Corbeille</div><div class="task-desc">Vide définitivement.</div></div><div class="task-size">89 Mo</div></div>
+        <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Cache DNS</div></div><div class="task-size">—</div></div>
+        <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Fichiers récents</div><div class="task-desc">N'efface pas les fichiers eux-mêmes.</div></div><div class="task-size">18 Mo</div></div>
+      </div>
+      <div class="card" style="margin-bottom:8px">
+        <div class="tools-group-head">Navigateurs <span class="meta">~1.1 Go</span></div>
+        <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Cache</div><div class="task-desc">Sites plus lents la 1re visite.</div></div><div class="task-size">890 Mo</div></div>
+        <div class="task-row"><input type="checkbox" class="task-cb"><div class="task-info"><div class="task-label">Historique</div></div><div class="task-size">24 Mo</div></div>
+        <div class="task-row"><input type="checkbox" class="task-cb"><div class="task-info"><div class="task-label">Cookies</div><div class="task-desc">Déconnexion de tous les sites.</div></div><div class="task-size">8 Mo</div></div>
+      </div>
+      <div class="card">
+        <div class="tools-group-head">Applications <span class="meta">~95 Mo</span></div>
+        <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Cache miniatures</div></div><div class="task-size">12 Mo</div></div>
+        <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Cache Discord/Teams/Slack</div></div><div class="task-size">83 Mo</div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn-p">Lancer le nettoyage →</button>
+        <button class="btn-g">Tout cocher</button>
+        <button class="btn-g">Tout décocher</button>
+      </div>
+    </div>
+
+    <div style="width:260px;flex-shrink:0">
+      <div class="card" style="margin-bottom:10px">
+        <div style="padding:16px;text-align:center">
+          <div style="font-size:32px;font-weight:700;font-variant-numeric:tabular-nums">1.8 Go</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Espace récupérable</div>
+          <div class="prog" style="margin-top:10px"><div class="prog-fill" style="width:86%"></div></div>
+          <div style="font-size:10px;color:var(--text-dim)">Disque C: 86% utilisé (42 Go libres)</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:10px">
+        <div style="padding:12px;font-size:12px">
+          <div style="font-weight:600;margin-bottom:4px">Dernier nettoyage</div>
+          <div style="color:var(--text-mid)">il y a 3 jours — 820 Mo libérés</div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="padding:8px 10px;font-size:10px;font-weight:600;color:var(--text-mid);border-bottom:1px solid var(--border)">Journal</div>
+        <div class="log">
+          <div>09:14:32 — OpenCleaner prêt.</div>
+          <div>09:14:33 — 14 catégories analysées.</div>
+          <div>09:14:34 — Estimation : 1.8 Go récupérables.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="sep"></div>
+
+<!-- N3 — Compact + preview modal -->
+<div class="mc reco">
+<div class="mc-label">N3 — RECOMMANDÉ : Compact + preview enrichi</div>
+<div class="mc-desc">Stats en ligne compacte. Tâches en accordéon par groupe (même pattern que Personnalisation). Badge impact (disque/confidentialité/réseau) + taille. Bouton lance un modal preview avec détails avant confirmation.</div>
+<div class="pg">
+  <h1 class="pt">Nettoyage</h1>
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap">
+    <p class="ps" style="margin:0">Supprimez les fichiers temporaires, caches et traces.</p>
+    <div style="margin-left:auto;display:flex;gap:12px;font-size:13px;font-variant-numeric:tabular-nums">
+      <span><strong style="font-size:18px">1.8 Go</strong> <span style="color:var(--text-dim)">récupérables</span></span>
+      <span style="color:var(--border2)">|</span>
+      <span><strong>C:</strong> <span style="color:var(--text-dim)">86% · 42 Go libres</span></span>
+      <span style="color:var(--border2)">|</span>
+      <span style="color:var(--text-dim)">Dernier : <strong>il y a 3j</strong></span>
+    </div>
+  </div>
+
+  <div class="callout" style="padding:10px 14px;font-size:12px;margin-bottom:12px">
+    <div class="callout-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+    <div class="callout-content"><strong>Mots de passe protégés</strong> — Identifiants et sessions navigateur intacts.</div>
+  </div>
+
+  <div class="card">
+    <!-- Système -->
+    <div class="tools-group-head" style="cursor:pointer">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      <input type="checkbox" class="task-cb" checked style="margin:0">
+      <span style="flex:1">Système</span>
+      <span class="meta">4 tâches · 620 Mo</span>
+    </div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Fichiers temporaires <span class="task-badge disk">disque</span></div><div class="task-desc">Libère de l'espace. Sans effet sur les performances.</div></div><div class="task-size">512 Mo</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Corbeille <span class="task-badge disk">disque</span></div><div class="task-desc">Vide définitivement. Non récupérable.</div></div><div class="task-size">89 Mo</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Cache DNS</div><div class="task-desc">Se reconstruit automatiquement.</div></div><div class="task-size">—</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Fichiers récents <span class="task-badge priv">confidentialité</span></div><div class="task-desc">N'efface pas les fichiers, juste les raccourcis.</div></div><div class="task-size">18 Mo</div></div>
+
+    <!-- Navigateurs -->
+    <div class="tools-group-head" style="cursor:pointer;border-top:1px solid var(--border)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      <input type="checkbox" class="task-cb" checked style="margin:0">
+      <span style="flex:1">Navigateurs</span>
+      <span style="font-size:10px;color:var(--amber);margin-right:4px">Chrome ouvert</span>
+      <span class="meta">3 tâches · 922 Mo</span>
+    </div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Cache navigateurs <span class="task-badge disk">disque</span></div><div class="task-desc">Sites plus lents la 1re visite. Mots de passe protégés.</div></div><div class="task-size">890 Mo</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb"><div class="task-info"><div class="task-label">Historique <span class="task-badge priv">confidentialité</span></div><div class="task-desc">Sites visités, recherches, téléchargements.</div></div><div class="task-size">24 Mo</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb"><div class="task-info"><div class="task-label">Cookies <span class="task-badge priv">confidentialité</span></div><div class="task-desc">Déconnexion de Gmail, Facebook, etc.</div></div><div class="task-size">8 Mo</div></div>
+
+    <!-- Applications (fermé) -->
+    <div class="tools-group-head" style="cursor:pointer;border-top:1px solid var(--border)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg>
+      <input type="checkbox" class="task-cb" checked style="margin:0">
+      <span style="flex:1">Applications</span>
+      <span class="meta">2 tâches · 95 Mo</span>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:10px;margin-top:14px">
+    <button class="btn-p" style="padding:10px 20px;font-size:14px">Lancer le nettoyage →</button>
+    <button class="btn-g">Tout cocher</button>
+    <button class="btn-g">Tout décocher</button>
+    <button class="btn-g">Réanalyser</button>
+    <span style="margin-left:auto;font-size:11px;color:var(--text-dim)">9 tâches sélectionnées · ~1.6 Go</span>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div style="padding:8px 14px;font-size:11px;font-weight:600;color:var(--text-mid);border-bottom:1px solid var(--border);display:flex;justify-content:space-between">
+      <span>Journal en temps réel</span>
+      <span style="font-weight:400;cursor:pointer">Effacer</span>
+    </div>
+    <div class="log">
+      <div>09:14:32 — OpenCleaner prêt.</div>
+      <div>09:14:33 — 14 catégories analysées. Estimation : 1.8 Go récupérables.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="sep"></div>
+<div class="sep"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     OUTILS
+     ═══════════════════════════════════════════════════════════ -->
+
+<div style="max-width:980px;margin:0 auto;padding:10px 20px"><h2 style="font-size:16px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-mid)">Page Outils</h2></div>
+
+<!-- O1 — Grille de cartes -->
+<div class="mc">
+<div class="mc-label">O1 — Grille de cartes compactes par outil</div>
+<div class="mc-desc">Chaque outil = une carte compacte avec icône, titre, compteur. Clic ouvre la section en dessous. Réduit le scroll vertical pour accéder aux outils en bas de page.</div>
+<div class="pg">
+  <h1 class="pt">Outils</h1>
+  <p class="ps">Analyse approfondie, nettoyage ciblé et gestion de vos fichiers et applications.</p>
+
+  <div class="pills">
+    <button class="pill on">Tout</button>
+    <button class="pill">Fichiers</button>
+    <button class="pill">Système</button>
+    <button class="pill">Applications</button>
+    <button class="pill">Navigateurs</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:16px">
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Doublons</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Fichiers & dossiers identiques</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Grands fichiers</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Fichiers > 500 Mo</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Espace disque</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Treemap + navigation</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Anciens installers</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">.exe .msi .iso dans Downloads</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Cache WI</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">C:\Windows\Installer</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Dossiers vides</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Résidus de désinstallations</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Dossiers orphelins</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Program Files inutilisés</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Registre</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Entrées obsolètes</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Raccourcis cassés</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Bureau, menu Démarrer</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Applications</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">69 apps · 7 cassées</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">UWP Debloat</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">35 apps pré-installées</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Extensions nav.</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Chrome, Edge, Firefox</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Données nav.</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Granulaire par profil</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Mises à jour</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Windows + pilotes + winget</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Démarrage</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">8 programmes au boot</div></div>
+    <div class="card" style="margin:0;padding:14px;cursor:pointer"><div style="font-size:13px;font-weight:600">Réparation</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">SFC, DISM, icônes</div></div>
+  </div>
+
+  <div style="font-size:12px;color:var(--text-dim);text-align:center">Cliquez sur une carte pour ouvrir l'outil. Le contenu détaillé s'affiche en dessous.</div>
+</div>
+</div>
+<div class="sep"></div>
+
+<!-- O2 — Groupes avec accordéons -->
+<div class="mc">
+<div class="mc-label">O2 — Groupes thématiques avec accordéons</div>
+<div class="mc-desc">Les outils sont regroupés (Fichiers, Système, Applications, Navigateurs) en accordéons, comme les tweaks dans Personnalisation. Cohérence visuelle avec le reste de l'app.</div>
+<div class="pg">
+  <h1 class="pt">Outils</h1>
+  <p class="ps">Analyse approfondie, nettoyage ciblé et gestion.</p>
+
+  <div class="card">
+    <div class="tools-group-head" style="cursor:pointer;border-left:3px solid var(--text)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      <strong>Fichiers & Espace</strong>
+      <span class="meta">6 outils</span>
+    </div>
+    <div class="tool-item"><div class="name">Doublons fichiers & dossiers</div><button class="btn-g">Analyser</button></div>
+    <div class="tool-item"><div class="name">Grands fichiers</div><button class="btn-g">Analyser</button></div>
+    <div class="tool-item"><div class="name">Analyse espace disque (treemap)</div><button class="btn-g">Analyser</button></div>
+    <div class="tool-item"><div class="name">Anciens installers</div><button class="btn-g">Analyser</button></div>
+    <div class="tool-item"><div class="name">Cache Windows Installer <span style="color:var(--text-dim);font-weight:400;font-size:11px">15.3 Go</span></div><button class="btn-g">Analyser</button></div>
+    <div class="tool-item"><div class="name">Dossiers vides & orphelins</div><button class="btn-g">Analyser</button></div>
+
+    <div class="tools-group-head" style="cursor:pointer;border-left:3px solid var(--text-dim);border-top:1px solid var(--border)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg>
+      <strong>Système</strong>
+      <span class="meta">4 outils</span>
+    </div>
+
+    <div class="tools-group-head" style="cursor:pointer;border-left:3px solid var(--text-dim);border-top:1px solid var(--border)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg>
+      <strong>Applications</strong>
+      <span class="meta">3 outils</span>
+    </div>
+
+    <div class="tools-group-head" style="cursor:pointer;border-left:3px solid var(--text-dim);border-top:1px solid var(--border)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg>
+      <strong>Navigateurs</strong>
+      <span class="meta">3 outils</span>
+    </div>
+  </div>
+</div>
+</div>
+<div class="sep"></div>
+
+<!-- O3 — Recommandé -->
+<div class="mc reco">
+<div class="mc-label">O3 — RECOMMANDÉ : Grille + détail en dessous</div>
+<div class="mc-desc">Grille de cartes compactes en haut (vue d'ensemble rapide), clic sur une carte scrolle vers sa section détaillée en dessous. Le meilleur des deux mondes : accès rapide + contenu complet.</div>
+<div class="pg">
+  <h1 class="pt">Outils</h1>
+  <p class="ps">Analyse approfondie, nettoyage ciblé et gestion de vos fichiers et applications.</p>
+
+  <!-- Quick access grid -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px">
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Doublons</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Grands fichiers</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Espace disque</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Installers</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Cache WI</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Dossiers vides</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Orphelins</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Registre</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Raccourcis</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center;border-color:var(--amber)"><div style="font-size:12px;font-weight:600;color:var(--amber)">Apps <span style="font-size:10px;font-weight:400">7 cassées</span></div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">UWP</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Extensions</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Données nav.</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Mises à jour</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Démarrage</div></div>
+    <div class="card" style="margin:0;padding:10px 12px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:600">Réparation</div></div>
+  </div>
+
+  <div style="font-size:11px;color:var(--text-dim);margin-bottom:16px">Cliquez sur un outil ci-dessus pour y accéder directement. Les sections détaillées suivent ci-dessous.</div>
+
+  <!-- Sections détaillées (aperçu compact) -->
+  <div class="card" style="margin-bottom:8px">
+    <div class="tools-group-head" style="border-left:3px solid var(--text)">
+      <strong>Doublons fichiers & dossiers</strong>
+      <span class="meta"><button class="btn-g" style="font-size:10px">Analyser</button></span>
+    </div>
+    <div style="padding:12px 16px;font-size:12px;color:var(--text-mid)">Détecte les fichiers et dossiers identiques dans un même dossier. Sélectionnez les copies à supprimer.</div>
+  </div>
+  <div class="card" style="margin-bottom:8px">
+    <div class="tools-group-head" style="border-left:3px solid var(--text)">
+      <strong>Applications installées</strong>
+      <span class="meta">69 apps · 7 cassées · <button class="btn-g" style="font-size:10px">Scan approfondi</button></span>
+    </div>
+    <div style="padding:12px 16px;font-size:12px;color:var(--text-mid)">Catégorisation, dernière utilisation, détection des entrées cassées, désinstallation silencieuse via winget.</div>
+  </div>
+  <div style="font-size:11px;color:var(--text-dim);text-align:center;padding:20px">… (14 autres sections)</div>
+</div>
+</div>
+
+<div style="max-width:980px;margin:40px auto;padding:20px 20px 60px">
+  <div style="padding:18px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text-mid);line-height:1.7">
+    <strong style="color:var(--text)">Résumé</strong><br><br>
+    <strong>Nettoyage N1</strong> — Actuel + descriptions enrichies + badges impact. Conservateur, facile à implémenter.<br>
+    <strong>Nettoyage N2</strong> — 2 colonnes : tâches à gauche, dashboard stats/log à droite. Dense et informatif.<br>
+    <strong style="color:var(--green)">Nettoyage N3 (reco)</strong> — Stats inline compactes, tâches groupées en accordéons avec checkbox groupe, badges impact, avertissement navigateur ouvert. Cohérent avec le layout E de Personnalisation.<br><br>
+    <strong>Outils O1</strong> — Grille de cartes 4×4. Accès rapide à n'importe quel outil sans scroller. Contenu apparaît au clic.<br>
+    <strong>Outils O2</strong> — Accordéons par groupe thématique. Même pattern que Personnalisation. Cohérence visuelle forte.<br>
+    <strong style="color:var(--green)">Outils O3 (reco)</strong> — Grille compacte d'accès rapide en haut + sections détaillées en dessous. Le meilleur des deux : vue d'ensemble + contenu complet.
+  </div>
+</div>
+
+</body>
+</html>

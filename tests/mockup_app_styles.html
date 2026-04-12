@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>OpenCleaner — 6 styles géométriques</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');
+
+/* ═══════ BASE TOKENS ═══════ */
+:root {
+  --text: #37352f; --text-mid: #787774; --text-dim: #9b9a97;
+  --bg: #fff; --bg2: #fbfbfa; --bg3: #f1f1ef;
+  --border: #e9e9e7; --border2: #dfdedc;
+  --hover: #f7f6f3; --accent: #37352f;
+  --green: #0f7b6c; --amber: #d9730d;
+  --radius: 6px;
+  --shadow: none;
+  --card-border: 1px solid var(--border);
+  --card-bg: var(--bg);
+  --font: 'IBM Plex Sans', -apple-system, sans-serif;
+  --sidebar-w: 220px;
+  --pad: 14px 16px;
+  --gap: 12px;
+  --font-size: 13px;
+  --title-size: 24px;
+  --sb-radius: 4px;
+  --sb-item-pad: 8px 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: var(--font-size); }
+
+/* ═══════ VARIANT SWITCHER ═══════ */
+.vbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  background: #111; color: #fff;
+  display: flex; align-items: center; gap: 6px; padding: 7px 16px;
+  font-size: 12px;
+}
+.vbar button {
+  background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.15);
+  border-radius: 4px; padding: 5px 12px; font-family: inherit; font-size: 11px; cursor: pointer;
+  transition: .15s;
+}
+.vbar button:hover { background: rgba(255,255,255,.2); }
+.vbar button.on { background: var(--green); border-color: var(--green); }
+.vbar .sp { flex: 1; }
+.vbar .desc { font-size: 10px; opacity: .6; max-width: 500px; }
+
+/* ═══════ APP SHELL ═══════ */
+.app { display: flex; min-height: 100vh; padding-top: 38px; }
+
+/* ═══════ SIDEBAR ═══════ */
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0;
+  background: var(--bg2); border-right: var(--card-border);
+  padding: 14px 10px; display: flex; flex-direction: column;
+  position: fixed; top: 38px; bottom: 0; left: 0; overflow-y: auto;
+  box-shadow: var(--shadow);
+}
+.sb-brand { display: flex; align-items: center; gap: 8px; padding: 4px 10px 14px; font-weight: 700; font-size: 15px; }
+.sb-brand svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+.sb-sec { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); padding: 10px 10px 4px; font-weight: 600; }
+.sb-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: var(--sb-item-pad); border-radius: var(--sb-radius);
+  border: none; background: none;
+  font-family: var(--font); font-size: var(--font-size); color: var(--text-mid);
+  cursor: pointer; width: 100%; text-align: left; transition: .12s;
+}
+.sb-item:hover { background: var(--hover); color: var(--text); }
+.sb-item.on { background: var(--hover); color: var(--text); font-weight: 600; }
+.sb-item svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .5; }
+.sb-item.on svg { opacity: .8; }
+.sb-badge { font-size: 10px; background: var(--bg3); padding: 1px 6px; border-radius: var(--radius); margin-left: auto; color: var(--text-dim); }
+.sb-sp { flex: 1; }
+.sb-bottom { padding-top: 8px; border-top: 1px solid var(--border); margin-top: 8px; }
+
+/* ═══════ MAIN ═══════ */
+.main { flex: 1; margin-left: var(--sidebar-w); padding: 28px 36px; max-width: 960px; }
+h1.pt { font-size: var(--title-size); font-weight: 700; margin-bottom: 4px; }
+.ps { font-size: var(--font-size); color: var(--text-mid); margin-bottom: 14px; }
+
+/* ═══════ CARD ═══════ */
+.card {
+  border: var(--card-border);
+  border-radius: var(--radius);
+  margin-bottom: var(--gap);
+  overflow: hidden;
+  background: var(--card-bg);
+  box-shadow: var(--shadow);
+}
+
+/* ═══════ CALLOUT ═══════ */
+.callout {
+  display: flex; gap: 12px; align-items: center;
+  padding: 10px 14px; border-radius: var(--radius);
+  font-size: 12px; line-height: 1.5;
+  background: var(--bg2); border: var(--card-border);
+  border-left: 3px solid var(--green);
+  margin-bottom: var(--gap);
+  box-shadow: var(--shadow);
+}
+.callout svg { flex-shrink: 0; color: var(--green); }
+
+/* ═══════ BUTTONS ═══════ */
+.btn-p {
+  background: var(--accent); color: var(--bg); border: none;
+  border-radius: var(--radius); padding: 8px 16px;
+  font-family: var(--font); font-size: var(--font-size); font-weight: 500; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-g {
+  background: none; border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 5px 10px;
+  font-family: var(--font); font-size: 11px; color: var(--text-mid); cursor: pointer;
+}
+.btn-g:hover { background: var(--hover); color: var(--text); }
+
+/* ═══════ SWITCH ═══════ */
+.sw {
+  position: relative; width: 34px; height: 20px;
+  background: var(--border2); border-radius: 10px; cursor: pointer; flex-shrink: 0;
+}
+.sw::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px; background: #fff; border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,.12);
+}
+.sw.on { background: var(--accent); }
+.sw.on::after { left: 16px; }
+
+/* ═══════ PILLS ═══════ */
+.pills { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: var(--gap); }
+.pill {
+  font-size: 11px; padding: 4px 9px; border-radius: var(--radius);
+  background: var(--bg3); color: var(--text-dim);
+  border: none; cursor: pointer; font-family: var(--font);
+}
+.pill.on { background: var(--accent); color: var(--bg); }
+
+/* ═══════ CHART ═══════ */
+.chart { padding: var(--pad); }
+.chart-title { font-size: 11px; font-weight: 600; color: var(--text-mid); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px; }
+.cb { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 11px; }
+.cb-l { width: 70px; text-align: right; color: var(--text-dim); }
+.cb-bar { flex: 1; height: 7px; background: var(--bg3); border-radius: calc(var(--radius) / 2); overflow: hidden; }
+.cb-fill { height: 100%; background: var(--accent); border-radius: calc(var(--radius) / 2); }
+.cb-v { width: 50px; font-weight: 600; color: var(--text-mid); font-variant-numeric: tabular-nums; }
+
+/* ═══════ GROUP ACCORDION ═══════ */
+.grp { margin-top: 3px; }
+.grp:first-child { margin-top: 0; }
+.grp-h {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 11px 14px; background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--text-dim); cursor: pointer;
+}
+.grp-h:hover { background: var(--hover); }
+.grp-h.open { border-left-color: var(--text); }
+.grp-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.grp-ch { width: 12px; height: 12px; color: var(--text-dim); transition: .2s; flex-shrink: 0; }
+.grp-h:not(.open) .grp-ch { transform: rotate(-90deg); }
+.grp-n { font-size: var(--font-size); font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+.grp-s { display: flex; gap: 4px; flex-wrap: wrap; font-size: 10px; color: var(--text-dim); }
+.grp-s span { background: var(--bg3); padding: 1px 5px; border-radius: var(--radius); }
+.grp-d { font-size: 11px; color: var(--text-dim); padding-left: 19px; }
+.grp-sw { margin-left: auto; }
+.grp-body { border-left: 3px solid var(--border); }
+
+/* ═══════ ROW ═══════ */
+.row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px 9px 22px;
+  border-bottom: 1px solid var(--border); cursor: pointer;
+}
+.row:hover { background: var(--hover); }
+.row:last-child { border-bottom: none; }
+.row-i { flex: 1; }
+.row-l { font-weight: 500; }
+.row-d { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+.row.abs { opacity: .4; pointer-events: none; }
+.abs-b { font-size: 9px; background: var(--bg3); color: var(--text-dim); padding: 1px 5px; border-radius: var(--radius); font-weight: 600; margin-left: 4px; }
+
+/* ═══════ TASK ROW ═══════ */
+.task { display: flex; align-items: center; gap: 12px; padding: var(--pad); border-bottom: 1px solid var(--border); }
+.task:hover { background: var(--hover); }
+.task:last-child { border-bottom: none; }
+.task input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+.task-i { flex: 1; }
+.task-l { font-weight: 500; }
+.task-d { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+.task-sz { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-mid); min-width: 50px; text-align: right; }
+.task-badge { font-size: 9px; background: var(--bg3); color: var(--text-dim); padding: 1px 5px; border-radius: var(--radius); margin-left: 4px; }
+
+/* ═══════ DETAIL PANEL ═══════ */
+.dsplit { display: flex; }
+.dlist { flex: 1; min-width: 0; }
+.dpanel { width: 260px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--bg2); padding: 14px; }
+.dp-t { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.dp-d { font-size: 12px; color: var(--text-mid); line-height: 1.5; margin-bottom: 10px; }
+.dp-s { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.dp-s:last-of-type { border-bottom: none; }
+.dp-sl { color: var(--text-dim); }
+.dp-sv { font-weight: 600; font-variant-numeric: tabular-nums; }
+.dp-sv.no { color: var(--text-dim); font-weight: 400; }
+.dp-tr { margin-top: 10px; padding: 8px 10px; background: var(--bg3); border-radius: var(--radius); border-left: 2px solid var(--text-dim); font-size: 11px; color: var(--text-mid); line-height: 1.4; }
+.dp-empty { color: var(--text-dim); font-size: 12px; text-align: center; padding: 30px 0; }
+
+/* ═══════ QUICK ACCESS GRID ═══════ */
+.qa { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
+.qa-c {
+  border: var(--card-border); border-radius: var(--radius);
+  padding: 8px 10px; cursor: pointer; text-align: center;
+  font-size: 11px; font-weight: 500; transition: .12s;
+  background: var(--card-bg); box-shadow: var(--shadow);
+}
+.qa-c:hover { background: var(--hover); }
+
+/* ═══════ TABS ═══════ */
+.tab { display: none; }
+.tab.on { display: block; }
+
+/* ═══════ LOG ═══════ */
+.log {
+  padding: 8px 12px; max-height: 80px; overflow-y: auto;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1.7;
+  color: var(--text-mid); background: var(--bg2); border-top: 1px solid var(--border);
+}
+
+/* ═══════ ACTIVITY MINI ═══════ */
+.act {
+  position: fixed; top: 48px; right: 12px; width: 240px;
+  background: var(--card-bg); border: var(--card-border);
+  border-radius: var(--radius); box-shadow: 0 4px 12px rgba(0,0,0,.06);
+  font-size: 11px; z-index: 100;
+}
+.act-h { padding: 7px 10px; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 10px; color: var(--text-mid); }
+.act-b { padding: 6px 10px; }
+.act-i { padding: 3px 0; display: flex; align-items: center; gap: 6px; color: var(--text-mid); }
+.act-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+
+/* ════════════════════════════════════════════════════════════
+   VARIANT OVERRIDES
+   ════════════════════════════════════════════════════════════ */
+
+/* ── B: Sharp / Angular ── */
+body.v-b {
+  --radius: 0px;
+  --card-border: 2px solid var(--border);
+  --font: 'IBM Plex Sans', monospace;
+  --sb-radius: 0px;
+}
+body.v-b .sidebar { border-right-width: 2px; }
+body.v-b .sb-item.on { border-left: 3px solid var(--text); padding-left: 7px; background: none; }
+body.v-b .grp-h { border-left-width: 4px; }
+body.v-b .grp-body { border-left-width: 4px; }
+body.v-b .callout { border-left-width: 4px; border-radius: 0; }
+body.v-b .btn-p { border-radius: 0; text-transform: uppercase; letter-spacing: .5px; font-size: 12px; }
+body.v-b .btn-g { border-radius: 0; }
+body.v-b .pill { border-radius: 0; }
+body.v-b .sw { border-radius: 2px; }
+body.v-b .sw::after { border-radius: 2px; }
+body.v-b .cb-bar, body.v-b .cb-fill { border-radius: 0; }
+body.v-b h1.pt { text-transform: uppercase; letter-spacing: 1px; font-size: 20px; }
+body.v-b .grp-n { letter-spacing: 1px; }
+body.v-b .act { border-radius: 0; border-width: 2px; }
+
+/* ── C: Soft / Rounded ── */
+body.v-c {
+  --radius: 14px;
+  --card-border: none;
+  --shadow: 0 2px 8px rgba(0,0,0,.06), 0 0 1px rgba(0,0,0,.1);
+  --card-bg: var(--bg);
+  --bg: #fafafa;
+  --bg2: #fff;
+  --hover: #f5f5f5;
+  --font: 'Inter', -apple-system, sans-serif;
+  --sb-radius: 10px;
+  --sb-item-pad: 10px 12px;
+  --pad: 16px 20px;
+  --gap: 16px;
+}
+body.v-c .sidebar { background: var(--bg); border-right: none; box-shadow: 2px 0 12px rgba(0,0,0,.04); }
+body.v-c .sb-brand { font-size: 16px; padding-bottom: 18px; }
+body.v-c .sb-item.on { background: var(--bg2); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+body.v-c .callout { border-left: none; border-radius: 14px; box-shadow: var(--shadow); }
+body.v-c .btn-p { border-radius: 20px; padding: 10px 20px; }
+body.v-c .btn-g { border-radius: 20px; border: none; background: var(--bg3); }
+body.v-c .pill { border-radius: 20px; padding: 6px 14px; }
+body.v-c .grp-h { border-left: none; border-radius: 10px 10px 0 0; box-shadow: var(--shadow); margin-top: 8px; }
+body.v-c .grp-body { border-left: none; }
+body.v-c .row { padding-left: 28px; }
+body.v-c .sw { border-radius: 12px; }
+body.v-c .act { border-radius: 16px; border: none; box-shadow: 0 4px 20px rgba(0,0,0,.1); }
+
+/* ── D: Flat / Spacieux ── */
+body.v-d {
+  --radius: 0px;
+  --card-border: none;
+  --shadow: none;
+  --card-bg: var(--bg3);
+  --bg2: var(--bg3);
+  --pad: 20px 24px;
+  --gap: 20px;
+  --title-size: 30px;
+  --font-size: 14px;
+}
+body.v-d .sidebar { background: var(--bg); border-right: none; padding: 24px 14px; }
+body.v-d .sb-brand { font-size: 18px; padding-bottom: 24px; }
+body.v-d .sb-item { padding: 12px 14px; font-size: 14px; }
+body.v-d .sb-item.on { background: none; font-weight: 700; color: var(--text); }
+body.v-d .sb-item.on::before { content: ''; width: 3px; height: 16px; background: var(--text); border-radius: 2px; margin-right: -4px; }
+body.v-d .card { border-radius: 8px; }
+body.v-d .callout { border-left: none; background: var(--bg3); border: none; padding: 18px 22px; }
+body.v-d .grp-h { border-left: none; padding: 16px 20px; background: var(--bg3); border-bottom: none; margin-bottom: 2px; }
+body.v-d .grp-body { border-left: none; background: var(--bg3); margin-bottom: 8px; }
+body.v-d .row { border-bottom: none; padding: 12px 16px 12px 30px; }
+body.v-d .row:hover { background: rgba(0,0,0,.03); }
+body.v-d .pills { gap: 8px; }
+body.v-d .pill { padding: 6px 14px; font-size: 12px; background: none; border-bottom: 2px solid transparent; border-radius: 0; }
+body.v-d .pill.on { background: none; color: var(--text); border-bottom-color: var(--text); }
+body.v-d .task { border-bottom: none; padding: 14px 20px; }
+body.v-d .btn-p { padding: 12px 24px; font-size: 14px; border-radius: 4px; }
+body.v-d .act { border-radius: 8px; border: none; background: var(--bg3); }
+body.v-d h1.pt { font-size: 30px; margin-bottom: 8px; }
+
+/* ── E: Dense / Compact ── */
+body.v-e {
+  --radius: 3px;
+  --font-size: 12px;
+  --title-size: 18px;
+  --pad: 7px 10px;
+  --gap: 6px;
+  --sidebar-w: 180px;
+  --sb-item-pad: 5px 8px;
+}
+body.v-e .sidebar { padding: 8px 6px; }
+body.v-e .sb-brand { font-size: 13px; padding-bottom: 10px; }
+body.v-e .sb-item { font-size: 12px; gap: 6px; }
+body.v-e .sb-item svg { width: 14px; height: 14px; }
+body.v-e .main { padding: 16px 20px; }
+body.v-e h1.pt { margin-bottom: 2px; }
+body.v-e .ps { margin-bottom: 8px; font-size: 11px; }
+body.v-e .callout { padding: 6px 10px; font-size: 11px; gap: 8px; }
+body.v-e .grp-h { padding: 6px 10px; }
+body.v-e .grp-n { font-size: 11px; }
+body.v-e .row { padding: 5px 8px 5px 18px; font-size: 12px; }
+body.v-e .row-l { font-size: 12px; }
+body.v-e .row-d { font-size: 10px; }
+body.v-e .task { padding: 5px 10px; }
+body.v-e .task-l { font-size: 12px; }
+body.v-e .task-d { font-size: 10px; }
+body.v-e .pill { font-size: 10px; padding: 2px 6px; }
+body.v-e .btn-p { padding: 5px 12px; font-size: 12px; }
+body.v-e .btn-g { padding: 3px 8px; font-size: 10px; }
+body.v-e .chart { padding: 8px 10px; }
+body.v-e .cb { margin-bottom: 3px; font-size: 10px; }
+body.v-e .cb-l { width: 50px; }
+body.v-e .cb-v { width: 40px; }
+body.v-e .dpanel { width: 200px; padding: 8px; }
+body.v-e .dp-t { font-size: 12px; }
+body.v-e .dp-d { font-size: 11px; }
+body.v-e .dp-s { font-size: 11px; padding: 3px 0; }
+body.v-e .dp-tr { font-size: 10px; padding: 6px 8px; }
+body.v-e .qa { grid-template-columns: repeat(5, 1fr); gap: 4px; }
+body.v-e .qa-c { padding: 5px 6px; font-size: 10px; }
+body.v-e .act { width: 200px; font-size: 10px; }
+
+/* ── F: Card-based / Elevation ── */
+body.v-f {
+  --radius: 10px;
+  --card-border: none;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+  --card-bg: var(--bg);
+  --bg: #f4f4f2;
+  --bg2: #fff;
+  --bg3: #f0efed;
+}
+body.v-f .sidebar { background: var(--bg2); border-right: none; box-shadow: 2px 0 8px rgba(0,0,0,.04); }
+body.v-f .sb-item.on { background: var(--bg3); box-shadow: inset 0 0 0 1px var(--border); }
+body.v-f .callout { border: none; border-left: 3px solid var(--green); box-shadow: var(--shadow); background: var(--bg2); }
+body.v-f .grp-h { border-left: 3px solid var(--text-dim); background: var(--bg2); box-shadow: var(--shadow); }
+body.v-f .grp-h.open { border-left-color: var(--text); }
+body.v-f .grp-body { border-left: 3px solid var(--border); background: var(--bg2); }
+body.v-f .card { background: var(--bg2); }
+body.v-f .main { background: var(--bg); }
+body.v-f .task { border-bottom-color: var(--bg3); }
+body.v-f .row { border-bottom-color: var(--bg3); }
+body.v-f .act { background: var(--bg2); border: none; box-shadow: 0 4px 20px rgba(0,0,0,.1); }
+body.v-f .qa-c { background: var(--bg2); border: none; box-shadow: var(--shadow); }
+body.v-f .qa-c:hover { box-shadow: 0 2px 8px rgba(0,0,0,.1); transform: translateY(-1px); }
+body.v-f .pill { box-shadow: 0 1px 2px rgba(0,0,0,.05); border: none; }
+body.v-f .pill.on { box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+</style>
+</head>
+<body>
+
+<div class="vbar">
+  <span style="font-weight:700;margin-right:6px">Style :</span>
+  <button class="on" onclick="sv('')">A · Notion sobre</button>
+  <button onclick="sv('v-b')">B · Sharp anguleux</button>
+  <button onclick="sv('v-c')">C · Soft arrondi</button>
+  <button onclick="sv('v-d')">D · Flat spacieux</button>
+  <button onclick="sv('v-e')">E · Dense compact</button>
+  <button onclick="sv('v-f')">F · Cards élevées</button>
+  <span class="sp"></span>
+  <span class="desc" id="vdesc">Notion monochrome : arrondis 6px, bordures 1px, fond plat, IBM Plex.</span>
+</div>
+
+<div class="app">
+
+<aside class="sidebar">
+  <div class="sb-brand"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg> OpenCleaner</div>
+  <div class="sb-sec">Espace de travail</div>
+  <button class="sb-item on" onclick="st('nett',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg> Nettoyage</button>
+  <button class="sb-item" onclick="st('out',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg> Outils</button>
+  <button class="sb-item" onclick="st('san',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> Santé <span class="sb-badge">85</span></button>
+  <button class="sb-item" onclick="st('pil',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg> Pilotes</button>
+  <button class="sb-item" onclick="st('per',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg> Personnalisation</button>
+  <div class="sb-sec">Récents</div>
+  <button class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Historique <span class="sb-badge">3j</span></button>
+  <div class="sb-sp"></div>
+  <div class="sb-bottom">
+    <button class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Diagnostic</button>
+    <button class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Rapport</button>
+  </div>
+</aside>
+
+<div class="main">
+
+<!-- ═══ NETTOYAGE ═══ -->
+<div class="tab on" id="t-nett">
+  <h1 class="pt">Nettoyage</h1>
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+    <span class="ps" style="margin:0">Supprimez les fichiers temporaires, caches et traces.</span>
+    <div style="margin-left:auto;display:flex;gap:10px;font-variant-numeric:tabular-nums;font-size:12px">
+      <span><strong style="font-size:16px">1.8 Go</strong> <span style="color:var(--text-dim)">récupérables</span></span>
+      <span style="color:var(--border2)">|</span>
+      <span><strong>C:</strong> <span style="color:var(--text-dim)">86%</span></span>
+      <span style="color:var(--border2)">|</span>
+      <span style="color:var(--text-dim)">Dernier : <strong style="color:var(--text)">3j</strong></span>
+    </div>
+  </div>
+  <div class="callout"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg><div><strong>Mots de passe protégés</strong> — Identifiants et sessions navigateur intacts.</div></div>
+
+  <div class="card">
+    <div class="grp-h open"><div class="grp-top"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="width:15px;height:15px;accent-color:var(--accent)"><span class="grp-n">Système</span><div class="grp-s"><span>4 tâches</span><span>620 Mo</span></div></div></div>
+    <div class="task"><input type="checkbox" checked><div class="task-i"><div class="task-l">Fichiers temporaires <span class="task-badge">disque</span></div><div class="task-d">Libère de l'espace. Sans effet sur les performances.</div></div><div class="task-sz">512 Mo</div></div>
+    <div class="task"><input type="checkbox" checked><div class="task-i"><div class="task-l">Corbeille <span class="task-badge">disque</span></div><div class="task-d">Vide définitivement. Non récupérable.</div></div><div class="task-sz">89 Mo</div></div>
+    <div class="task"><input type="checkbox" checked><div class="task-i"><div class="task-l">Cache DNS</div><div class="task-d">Se reconstruit automatiquement.</div></div><div class="task-sz">—</div></div>
+    <div class="task"><input type="checkbox" checked><div class="task-i"><div class="task-l">Fichiers récents <span class="task-badge" style="background:#f3e8fd;color:#8430ce">confid.</span></div><div class="task-d">N'efface pas les fichiers, juste les raccourcis.</div></div><div class="task-sz">18 Mo</div></div>
+  </div>
+
+  <div class="card">
+    <div class="grp-h open"><div class="grp-top"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="width:15px;height:15px;accent-color:var(--accent)"><span class="grp-n">Navigateurs</span><span style="font-size:10px;color:var(--amber)">Chrome ouvert</span><div class="grp-s"><span>3 tâches</span><span>922 Mo</span></div></div></div>
+    <div class="task"><input type="checkbox" checked><div class="task-i"><div class="task-l">Cache navigateurs <span class="task-badge">disque</span></div><div class="task-d">Sites plus lents la 1re visite. MdP protégés.</div></div><div class="task-sz">890 Mo</div></div>
+    <div class="task"><input type="checkbox"><div class="task-i"><div class="task-l">Historique <span class="task-badge" style="background:#f3e8fd;color:#8430ce">confid.</span></div></div><div class="task-sz">24 Mo</div></div>
+    <div class="task"><input type="checkbox"><div class="task-i"><div class="task-l">Cookies <span class="task-badge" style="background:#f3e8fd;color:#8430ce">confid.</span></div><div class="task-d">Déconnexion de Gmail, Facebook…</div></div><div class="task-sz">8 Mo</div></div>
+  </div>
+
+  <div class="card">
+    <div class="grp-h"><div class="grp-top"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="width:15px;height:15px;accent-color:var(--accent)"><span class="grp-n">Applications</span><div class="grp-s"><span>2 tâches</span><span>95 Mo</span></div></div></div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
+    <button class="btn-p">Lancer le nettoyage →</button>
+    <button class="btn-g">Tout cocher</button>
+    <button class="btn-g">Tout décocher</button>
+    <button class="btn-g">Réanalyser</button>
+    <span style="margin-left:auto;font-size:11px;color:var(--text-dim)">9 tâches · ~1.6 Go</span>
+  </div>
+
+  <div class="card">
+    <div style="padding:5px 10px;font-size:10px;font-weight:600;color:var(--text-dim);border-bottom:1px solid var(--border);display:flex;justify-content:space-between"><span>Journal</span><span style="font-weight:400;cursor:pointer">Effacer</span></div>
+    <div class="log"><div>09:14:32 — OpenCleaner prêt.</div><div>09:14:33 — 14 catégories analysées. 1.8 Go récupérables.</div></div>
+  </div>
+</div>
+
+<!-- ═══ OUTILS ═══ -->
+<div class="tab" id="t-out">
+  <h1 class="pt">Outils</h1>
+  <p class="ps">Analyse approfondie, nettoyage ciblé et gestion.</p>
+  <div class="qa">
+    <div class="qa-c">Doublons</div><div class="qa-c">Grands fichiers</div><div class="qa-c">Espace disque</div><div class="qa-c">Installers</div>
+    <div class="qa-c">Cache WI</div><div class="qa-c">Dossiers vides</div><div class="qa-c">Orphelins</div><div class="qa-c">Registre</div>
+    <div class="qa-c">Raccourcis</div><div class="qa-c" style="border-color:var(--amber)"><span style="color:var(--amber)">Apps</span></div><div class="qa-c">UWP</div><div class="qa-c">Extensions</div>
+    <div class="qa-c">Données nav.</div><div class="qa-c">Mises à jour</div><div class="qa-c">Démarrage</div><div class="qa-c">Réparation</div>
+  </div>
+  <div class="card">
+    <div class="grp-h open" style="border-left-color:var(--text)"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><strong style="flex:1">Fichiers & Espace</strong><span style="font-size:11px;color:var(--text-dim)">6 outils</span></div>
+    <div class="row" style="padding-left:42px"><div class="row-i"><div class="row-l">Doublons fichiers & dossiers</div><div class="row-d">Détecte les copies identiques dans un même dossier.</div></div><button class="btn-g">Analyser</button></div>
+    <div class="row" style="padding-left:42px"><div class="row-i"><div class="row-l">Grands fichiers</div><div class="row-d">Fichiers > 500 Mo sur votre disque.</div></div><button class="btn-g">Analyser</button></div>
+    <div class="row" style="padding-left:42px"><div class="row-i"><div class="row-l">Analyse espace disque</div><div class="row-d">Treemap interactif avec navigation.</div></div><button class="btn-g">Analyser</button></div>
+    <div class="row" style="padding-left:42px"><div class="row-i"><div class="row-l">Anciens installers</div><div class="row-d">.exe .msi .iso dans Downloads.</div></div><button class="btn-g">Analyser</button></div>
+    <div class="row" style="padding-left:42px"><div class="row-i"><div class="row-l">Cache Windows Installer <span style="color:var(--text-dim);font-weight:400;font-size:11px">15.3 Go</span></div><div class="row-d">MSI/MSP → nettoyage via cleanmgr.</div></div><button class="btn-g">Analyser</button></div>
+    <div class="row" style="padding-left:42px"><div class="row-i"><div class="row-l">Dossiers vides & orphelins</div><div class="row-d">Résidus dans Program Files.</div></div><button class="btn-g">Analyser</button></div>
+  </div>
+  <div class="card"><div class="grp-h"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg><strong style="flex:1">Système</strong><span style="font-size:11px;color:var(--text-dim)">3 outils</span></div></div>
+  <div class="card"><div class="grp-h"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg><strong style="flex:1">Applications</strong><span style="font-size:11px;color:var(--text-dim)">69 apps · 7 cassées</span></div></div>
+  <div class="card"><div class="grp-h"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg><strong style="flex:1">Navigateurs</strong><span style="font-size:11px;color:var(--text-dim)">3 outils</span></div></div>
+</div>
+
+<!-- ═══ SANTÉ ═══ -->
+<div class="tab" id="t-san">
+  <h1 class="pt">Santé du système</h1>
+  <p class="ps">Vue d'ensemble de l'état de votre PC.</p>
+  <div style="display:flex;gap:14px;margin-bottom:14px">
+    <div class="card" style="flex:1;margin:0;text-align:center;padding:24px"><div style="font-size:48px;font-weight:700;color:var(--green)">85</div><div style="font-size:12px;color:var(--text-dim);margin-top:4px">Score de santé</div></div>
+    <div style="flex:2;display:flex;flex-direction:column;gap:6px">
+      <div class="card" style="margin:0;padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><span>CPU</span><strong>12%</strong></div>
+      <div class="card" style="margin:0;padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><span>RAM</span><strong>64% — 10.2 / 16 Go</strong></div>
+      <div class="card" style="margin:0;padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><span>Disque C:</span><strong>86%</strong></div>
+      <div class="card" style="margin:0;padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><span>Démarrage</span><strong>8 programmes</strong></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="grp-h open" style="border-left-color:var(--text)"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><strong>Top processus RAM</strong></div>
+    <div class="row" style="padding-left:42px"><div class="row-i"><div class="row-l">chrome.exe (12)</div></div><span style="font-variant-numeric:tabular-nums;font-weight:600">1.4 Go</span></div>
+    <div class="row" style="padding-left:42px"><div class="row-i"><div class="row-l">msedge.exe (5)</div></div><span style="font-variant-numeric:tabular-nums;font-weight:600">680 Mo</span></div>
+    <div class="row" style="padding-left:42px"><div class="row-i"><div class="row-l">explorer.exe</div></div><span style="font-variant-numeric:tabular-nums;font-weight:600">320 Mo</span></div>
+    <div class="row" style="padding-left:42px"><div class="row-i"><div class="row-l">SearchHost.exe</div></div><span style="font-variant-numeric:tabular-nums;font-weight:600">190 Mo</span></div>
+  </div>
+</div>
+
+<!-- ═══ PILOTES ═══ -->
+<div class="tab" id="t-pil">
+  <h1 class="pt">Pilotes</h1>
+  <p class="ps">Nom, fabricant, version et date de chaque pilote matériel.</p>
+  <div style="display:flex;gap:6px;margin-bottom:12px;justify-content:flex-end">
+    <button class="btn-g">HTML</button><button class="btn-g">TXT</button><button class="btn-g">JSON</button>
+    <span style="width:8px"></span>
+    <button class="btn-g">Windows Update</button>
+    <button class="btn-p" style="font-size:12px;padding:6px 12px">Analyser</button>
+  </div>
+  <div class="card">
+    <div class="log"><div>Cliquez sur « Analyser » pour lancer le scan.</div></div>
+    <div style="padding:30px;text-align:center;color:var(--text-dim);font-size:12px">Les résultats apparaîtront ici.</div>
+  </div>
+</div>
+
+<!-- ═══ PERSONNALISATION ═══ -->
+<div class="tab" id="t-per">
+  <h1 class="pt">Personnalisation Windows</h1>
+  <p class="ps">Désactivez les fonctionnalités inutiles. Tout est réversible.</p>
+
+  <div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap">
+    <div class="card" style="flex:3;min-width:300px;margin:0">
+      <div class="chart">
+        <div class="chart-title">Impact cumulé de vos réglages</div>
+        <div class="cb"><div class="cb-l">RAM</div><div class="cb-bar"><div class="cb-fill" style="width:35%"></div></div><div class="cb-v">533 Mo</div></div>
+        <div class="cb"><div class="cb-l">Processus</div><div class="cb-bar"><div class="cb-fill" style="width:20%"></div></div><div class="cb-v">4</div></div>
+        <div class="cb"><div class="cb-l">Services</div><div class="cb-bar"><div class="cb-fill" style="width:45%"></div></div><div class="cb-v">9/17</div></div>
+      </div>
+    </div>
+    <div style="flex:2;min-width:200px;display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:12px;font-weight:600">Appliquer un preset</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn-g">Standard</button><button class="btn-g">Agressif</button>
+        <button class="btn-g" style="border-color:var(--green);color:var(--green);font-weight:600">Perf. Max</button>
+        <button class="btn-g">Paranoïaque</button>
+      </div>
+      <div style="display:flex;gap:5px;margin-top:4px">
+        <button class="btn-g" style="font-size:10px">Sauvegarder</button><button class="btn-g" style="font-size:10px">Restaurer</button><button class="btn-g" style="font-size:10px">.reg</button>
+        <span style="color:var(--border2);line-height:24px">|</span>
+        <button class="btn-g" style="font-size:10px">Widgets</button>
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:auto">Réglages HKCU, réversibles.</div>
+    </div>
+  </div>
+
+  <div class="pills">
+    <button class="pill on">Tout <span style="font-weight:600">50</span></button>
+    <button class="pill">Performance <span style="font-weight:600">8</span></button>
+    <button class="pill">Télémétrie <span style="font-weight:600">12</span></button>
+    <button class="pill">Confidentialité <span style="font-weight:600">15</span></button>
+    <button class="pill">Publicités <span style="font-weight:600">6</span></button>
+  </div>
+
+  <div class="card" style="margin-bottom:2px">
+    <div class="dsplit">
+      <div class="dlist">
+        <div class="grp"><div class="grp-h open"><div class="grp-top"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span class="grp-n">IA & contenus</span><div class="grp-s"><span>500 Mo</span><span>1 proc.</span><span>9/9</span><span>2 absents</span></div><div class="grp-sw"><div class="sw"></div></div></div><div class="grp-d">Copilot, Edge IA. Libère RAM.</div></div>
+          <div class="grp-body">
+            <div class="row abs"><div class="row-i"><div class="row-l">Copilot <span class="abs-b">Absent</span></div></div><div class="sw"></div></div>
+            <div class="row"><div class="row-i"><div class="row-l">Edge Startup Boost</div><div class="row-d">Pré-lance Edge — ~350 Mo</div></div><div class="sw"></div></div>
+            <div class="row"><div class="row-i"><div class="row-l">Edge arrière-plan</div><div class="row-d">~150 Mo après fermeture</div></div><div class="sw"></div></div>
+          </div>
+        </div>
+        <div class="grp"><div class="grp-h"><div class="grp-top"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span class="grp-n">Recherche</span><div class="grp-s"><span>133 Mo</span><span>0/2</span></div><div class="grp-sw"><div class="sw on"></div></div></div></div></div>
+        <div class="grp"><div class="grp-h"><div class="grp-top"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span class="grp-n">Menu Démarrer</span><div class="grp-s"><span>0/9</span></div><div class="grp-sw"><div class="sw on"></div></div></div></div></div>
+        <div class="grp"><div class="grp-h"><div class="grp-top"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span class="grp-n">Vie privée</span><div class="grp-s"><span>15 Mo</span><span>0/4</span></div><div class="grp-sw"><div class="sw on"></div></div></div></div></div>
+        <div style="border-top:2px solid var(--border);margin:2px 12px"></div>
+        <div class="grp"><div class="grp-h"><div class="grp-top"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span class="grp-n">Services</span><div class="grp-s"><span>14</span><span>admin</span></div><div class="grp-sw"><div class="sw on"></div></div></div></div></div>
+        <div class="grp"><div class="grp-h"><div class="grp-top"><svg class="grp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span class="grp-n">Tâches planifiées</span><div class="grp-s"><span>13</span><span>admin</span></div><div class="grp-sw"><div class="sw on"></div></div></div></div></div>
+      </div>
+      <div class="dpanel">
+        <div class="dp-empty">Cliquez sur un élément pour voir ses détails.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /.main -->
+
+</div><!-- /.app -->
+
+<div class="act">
+  <div class="act-h">Activité</div>
+  <div class="act-b">
+    <div class="act-i"><div class="act-dot ok"></div> Estimation terminée — 1.8 Go</div>
+    <div class="act-i"><div class="act-dot ok"></div> 69 applications détectées</div>
+  </div>
+</div>
+
+<script>
+const descs = {
+  '': 'A — Notion sobre : arrondis 6px, bordures 1px fines, fond blanc plat, IBM Plex Sans, séparation par lignes. Le style actuel affiné.',
+  'v-b': 'B — Sharp anguleux : border-radius 0, bordures 2px épaisses, coins carrés, titres uppercase. Style éditorial/technique/presse.',
+  'v-c': 'C — Soft arrondi : border-radius 14-16px, pas de bordures, ombres portées, boutons pilules (20px radius), Inter font. Style app mobile/iOS.',
+  'v-d': 'D — Flat spacieux : aucune bordure, séparation par fond et espace, grands paddings, titres 30px, pills en soulignement. Style Stripe/Linear.',
+  'v-e': 'E — Dense compact : radius 3px, padding réduit, polices 12px, sidebar 180px, 5 colonnes en grille. Power-user, maximum de contenu par écran.',
+  'v-f': 'F — Cards élevées : radius 10px, pas de bordures, ombres multi-niveaux (Material Design), cards flottantes sur fond gris. Impression de profondeur.',
+};
+function sv(cls) {
+  document.body.className = cls;
+  document.getElementById('vdesc').textContent = descs[cls] || '';
+  document.querySelectorAll('.vbar button').forEach(b => b.classList.remove('on'));
+  event.target.classList.add('on');
+}
+function st(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.getElementById('t-' + id).classList.add('on');
+  document.querySelectorAll('.sb-item').forEach(b => b.classList.remove('on'));
+  if (el) el.classList.add('on');
+}
+</script>
+
+</body>
+</html>

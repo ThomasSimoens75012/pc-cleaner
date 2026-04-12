@@ -1093,7 +1093,7 @@ async function bulkToggleTasksCategory(category, targetEnabled) {
 function _scheduledTaskRowHtml(task, isAdmin) {
   const locked = !isAdmin;
   const pathAttr = task.path.replace(/"/g, '&quot;');
-  const pathJs   = task.path.replace(/"/g, '&quot;').replace(/'/g, "\\'");
+  const pathJs   = task.path.replace(/\\/g, '\\\\').replace(/"/g, '&quot;').replace(/'/g, "\\'");
   return `
     <div class="tweak-row${locked ? ' row-locked' : ''}" style="padding:10px 16px" data-task-path="${pathAttr}">
       <div class="tweak-info">

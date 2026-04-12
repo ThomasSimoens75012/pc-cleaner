@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>OpenCleaner — 6 variantes globales</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+/* ═══════ THEME TOKENS (switched per variant) ═══════ */
+:root {
+  --text: #37352f; --text-mid: #787774; --text-dim: #9b9a97;
+  --bg: #fff; --bg2: #fbfbfa; --bg3: #f1f1ef;
+  --border: #e9e9e7; --border2: #dfdedc;
+  --hover: #f7f6f3; --hover-strong: #ededeb;
+  --accent: #37352f;
+  --green: #0f7b6c; --green-bg: #e6f4ea;
+  --amber: #d9730d; --amber-bg: #fdebd0;
+  --red: #e03e3e;
+  --sidebar-w: 220px;
+  --content-pad: 36px;
+  --font-base: 13px;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'IBM Plex Sans', -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: var(--font-base); }
+
+/* ═══════ VARIANT SWITCHER BAR ═══════ */
+.variant-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  background: var(--text); color: var(--bg);
+  display: flex; align-items: center; gap: 8px; padding: 8px 20px;
+  font-size: 12px; font-weight: 500;
+}
+.variant-bar button {
+  background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.2);
+  border-radius: 4px; padding: 5px 12px; font-family: inherit; font-size: 11px; cursor: pointer;
+}
+.variant-bar button:hover { background: rgba(255,255,255,.25); }
+.variant-bar button.active { background: var(--green); border-color: var(--green); }
+.variant-bar .spacer { flex: 1; }
+.variant-bar .desc { font-size: 10px; opacity: .7; max-width: 400px; }
+
+/* ═══════ APP SHELL ═══════ */
+.app { display: flex; min-height: 100vh; padding-top: 40px; }
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0;
+  background: var(--bg2); border-right: 1px solid var(--border);
+  padding: 16px 10px; display: flex; flex-direction: column;
+  position: fixed; top: 40px; bottom: 0; left: 0; overflow-y: auto;
+}
+.sb-brand { display: flex; align-items: center; gap: 8px; padding: 4px 10px 16px; font-weight: 700; font-size: 15px; }
+.sb-brand svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+.sb-section { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); padding: 12px 10px 4px; font-weight: 600; }
+.sb-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 4px; border: none; background: none;
+  font-family: inherit; font-size: 13px; color: var(--text-mid);
+  cursor: pointer; width: 100%; text-align: left;
+}
+.sb-item:hover { background: var(--hover); color: var(--text); }
+.sb-item.active { background: var(--hover-strong); color: var(--text); font-weight: 500; }
+.sb-item svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .6; }
+.sb-badge { font-size: 10px; background: var(--bg3); padding: 1px 6px; border-radius: 3px; margin-left: auto; color: var(--text-dim); }
+.sb-spacer { flex: 1; }
+.sb-bottom { padding-top: 10px; border-top: 1px solid var(--border); margin-top: 10px; }
+.sb-bottom .sb-item { font-size: 12px; }
+
+/* Main content */
+.main {
+  flex: 1; margin-left: var(--sidebar-w);
+  padding: var(--content-pad);
+  max-width: 960px;
+}
+
+/* ═══════ SHARED COMPONENTS ═══════ */
+h1.pt { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.ps { font-size: 13px; color: var(--text-mid); margin-bottom: 16px; }
+.card { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+.callout { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--radius); font-size: 12px; line-height: 1.5; background: var(--bg2); border: 1px solid var(--border); border-left: 3px solid var(--green); margin-bottom: 12px; }
+.callout-icon { flex-shrink: 0; color: var(--green); }
+.callout-content { flex: 1; }
+.btn-p { background: var(--accent); color: var(--bg); border: none; border-radius: 4px; padding: 8px 16px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.btn-g { background: none; border: 1px solid var(--border2); border-radius: 4px; padding: 5px 10px; font-family: inherit; font-size: 11px; color: var(--text-mid); cursor: pointer; }
+.btn-g:hover { background: var(--hover); color: var(--text); }
+.sw { position: relative; width: 34px; height: 20px; background: var(--border2); border-radius: 10px; cursor: pointer; flex-shrink: 0; }
+.sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.sw.on { background: var(--accent); }
+.sw.on::after { left: 16px; }
+.pills { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+.pill { font-size: 11px; padding: 4px 9px; border-radius: 4px; background: var(--bg3); color: var(--text-dim); border: none; cursor: pointer; font-family: inherit; }
+.pill.on { background: var(--accent); color: var(--bg); }
+
+/* Stats inline */
+.stats-inline { display: flex; gap: 14px; font-size: 13px; font-variant-numeric: tabular-nums; flex-wrap: wrap; margin-bottom: 14px; }
+.stats-inline .si-val { font-weight: 700; font-size: 17px; }
+.stats-inline .si-label { color: var(--text-dim); font-size: 11px; }
+.stats-inline .si-sep { color: var(--border2); align-self: center; }
+
+/* Chart */
+.chart { padding: 14px 16px; }
+.chart-title { font-size: 11px; font-weight: 600; color: var(--text-mid); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px; }
+.cb { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 11px; }
+.cb-l { width: 70px; text-align: right; color: var(--text-dim); }
+.cb-bar { flex: 1; height: 7px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+.cb-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+.cb-v { width: 50px; font-weight: 600; color: var(--text-mid); font-variant-numeric: tabular-nums; }
+
+/* Group accordion */
+.tg { margin-top: 3px; }
+.tg:first-child { margin-top: 0; }
+.tgh { display: flex; flex-direction: column; gap: 3px; padding: 11px 14px; background: var(--bg2); border-bottom: 1px solid var(--border); border-left: 3px solid var(--text-dim); cursor: pointer; }
+.tgh:hover { background: var(--hover); }
+.tgh.open { border-left-color: var(--text); }
+.tg-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.tg-ch { width: 12px; height: 12px; color: var(--text-dim); transition: .2s; flex-shrink: 0; }
+.tgh:not(.open) .tg-ch { transform: rotate(-90deg); }
+.tg-n { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+.tg-s { display: flex; gap: 4px; flex-wrap: wrap; font-size: 10px; color: var(--text-dim); }
+.tg-s span { background: var(--bg3); padding: 1px 5px; border-radius: 3px; }
+.tg-d { font-size: 11px; color: var(--text-dim); padding-left: 19px; }
+.tg-sw { margin-left: auto; }
+.tgb { border-left: 3px solid var(--border); }
+.tw { display: flex; align-items: center; gap: 10px; padding: 9px 12px 9px 22px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.tw:hover { background: var(--hover); }
+.tw:last-child { border-bottom: none; }
+.tw-i { flex: 1; }
+.tw-l { font-weight: 500; }
+.tw-d { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+.tw.abs { opacity: .4; pointer-events: none; }
+.abs-b { font-size: 9px; background: var(--bg3); color: var(--text-dim); padding: 1px 5px; border-radius: 3px; font-weight: 600; margin-left: 4px; }
+
+/* Detail panel */
+.dsplit { display: flex; }
+.dlist { flex: 1; min-width: 0; }
+.dpanel { width: 260px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--bg2); padding: 14px; }
+.dp-t { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.dp-d { font-size: 12px; color: var(--text-mid); line-height: 1.5; margin-bottom: 10px; }
+.dp-s { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.dp-s:last-of-type { border-bottom: none; }
+.dp-sl { color: var(--text-dim); }
+.dp-sv { font-weight: 600; font-variant-numeric: tabular-nums; }
+.dp-sv.no { color: var(--text-dim); font-weight: 400; }
+.dp-tr { margin-top: 10px; padding: 8px 10px; background: var(--bg3); border-radius: 4px; border-left: 2px solid var(--text-dim); font-size: 11px; color: var(--text-mid); line-height: 1.4; }
+.dp-empty { color: var(--text-dim); font-size: 12px; text-align: center; padding: 30px 0; }
+
+/* Task rows (nettoyage) */
+.task-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.task-row:hover { background: var(--hover); }
+.task-row:last-child { border-bottom: none; }
+.task-cb { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+.task-info { flex: 1; }
+.task-label { font-size: 13px; font-weight: 500; }
+.task-desc { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+.task-size { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-mid); min-width: 55px; text-align: right; }
+.task-badge { font-size: 9px; background: var(--bg3); color: var(--text-dim); padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+
+/* Group header (tools/nettoyage) */
+.grp-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--bg2); border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; cursor: pointer; border-left: 3px solid var(--text-dim); }
+.grp-head:hover { background: var(--hover); }
+.grp-head .meta { margin-left: auto; font-size: 11px; color: var(--text-dim); font-weight: 400; }
+.grp-head svg { width: 12px; height: 12px; color: var(--text-dim); flex-shrink: 0; }
+
+/* Tool item */
+.tool-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 42px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.tool-item:hover { background: var(--hover); }
+.tool-item:last-child { border-bottom: none; }
+.tool-item .name { flex: 1; font-weight: 500; }
+.tool-item .sub { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+
+/* Quick access grid */
+.qa-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 16px; }
+.qa-card { border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; cursor: pointer; text-align: center; font-size: 11px; font-weight: 500; transition: .12s; }
+.qa-card:hover { background: var(--hover); border-color: var(--text-dim); }
+
+/* Tabs */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Activity panel preview */
+.activity-mini {
+  position: fixed; top: 50px; right: 12px;
+  width: 260px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: 0 4px 12px rgba(0,0,0,.08);
+  font-size: 12px; z-index: 100;
+}
+.activity-head { padding: 8px 12px; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+.activity-body { padding: 8px 12px; max-height: 140px; overflow-y: auto; }
+.activity-item { padding: 4px 0; display: flex; align-items: center; gap: 8px; }
+.activity-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.activity-dot.ok { background: var(--green); }
+.activity-dot.run { background: var(--amber); animation: pulse 1.4s infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+
+/* Log */
+.log { padding: 8px 12px; max-height: 100px; overflow-y: auto; font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1.7; color: var(--text-mid); background: var(--bg2); border-top: 1px solid var(--border); }
+
+/* Health */
+.health-score { font-size: 48px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; padding: 20px; }
+.health-bar { display: flex; gap: 4px; margin: 12px 0; }
+.health-bar div { flex: 1; height: 6px; border-radius: 3px; background: var(--bg3); }
+.health-bar div.filled { background: var(--green); }
+
+/* ═══════ VARIANT OVERRIDES ═══════ */
+body.variant-b { --sidebar-w: 56px; }
+body.variant-b .sb-brand span, body.variant-b .sb-item span, body.variant-b .sb-section, body.variant-b .sb-badge,
+body.variant-b .sb-bottom .sb-item span { display: none; }
+body.variant-b .sidebar { padding: 12px 6px; align-items: center; }
+body.variant-b .sb-brand { padding: 8px 0 16px; }
+body.variant-b .sb-item { justify-content: center; padding: 10px; border-radius: 6px; }
+body.variant-b .sb-item svg { opacity: 1; width: 20px; height: 20px; }
+
+body.variant-c { --sidebar-w: 0px; }
+body.variant-c .sidebar { display: none; }
+body.variant-c .main { margin-left: 0; }
+body.variant-c .topbar { display: flex !important; }
+.topbar {
+  display: none;
+  position: fixed; top: 40px; left: 0; right: 0; z-index: 50;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  padding: 0 20px; gap: 0; align-items: stretch;
+}
+.topbar .tb-brand { font-weight: 700; font-size: 14px; padding: 10px 16px 10px 0; border-right: 1px solid var(--border); margin-right: 8px; }
+.topbar .tb-item { padding: 10px 14px; font-size: 13px; color: var(--text-mid); cursor: pointer; border-bottom: 2px solid transparent; }
+.topbar .tb-item:hover { color: var(--text); }
+.topbar .tb-item.active { color: var(--text); font-weight: 500; border-bottom-color: var(--text); }
+body.variant-c .main { padding-top: 50px; }
+
+body.variant-d {
+  --text: #e0e0e0; --text-mid: #a0a0a0; --text-dim: #707070;
+  --bg: #1e1e1e; --bg2: #252525; --bg3: #2d2d2d;
+  --border: #383838; --border2: #444;
+  --hover: #2a2a2a; --hover-strong: #333;
+  --accent: #e0e0e0;
+}
+
+body.variant-e { --content-pad: 20px; --font-base: 12px; }
+body.variant-e h1.pt { font-size: 20px; }
+body.variant-e .ps { font-size: 12px; margin-bottom: 10px; }
+body.variant-e .card { margin-bottom: 8px; }
+body.variant-e .callout { padding: 8px 12px; margin-bottom: 8px; font-size: 11px; }
+body.variant-e .task-row { padding: 7px 12px; }
+body.variant-e .tgh { padding: 8px 12px; }
+body.variant-e .tw { padding: 6px 10px 6px 20px; }
+body.variant-e .sidebar { padding: 10px 8px; }
+body.variant-e .sb-item { padding: 6px 8px; font-size: 12px; }
+
+body.variant-f .main { margin-right: 280px; }
+body.variant-f .right-panel { display: block !important; }
+.right-panel {
+  display: none;
+  position: fixed; top: 40px; right: 0; bottom: 0; width: 280px;
+  background: var(--bg2); border-left: 1px solid var(--border);
+  padding: 16px; overflow-y: auto;
+}
+.right-panel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: var(--text-dim); margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════ VARIANT SWITCHER ═══════ -->
+<div class="variant-bar">
+  <span style="font-weight:700">OpenCleaner — Variante globale :</span>
+  <button class="active" onclick="setVariant('')">A · Actuel sobre</button>
+  <button onclick="setVariant('variant-b')">B · Sidebar icônes</button>
+  <button onclick="setVariant('variant-c')">C · Top navigation</button>
+  <button onclick="setVariant('variant-d')">D · Dark mode</button>
+  <button onclick="setVariant('variant-e')">E · Compact dense</button>
+  <button onclick="setVariant('variant-f')">F · Panel droit fixe</button>
+  <span class="spacer"></span>
+  <span class="desc" id="variant-desc">Style Notion monochrome actuel, affiné avec les améliorations récentes (layout E, accordéons, descriptions).</span>
+</div>
+
+<!-- ═══════ TOP BAR (variant C) ═══════ -->
+<div class="topbar">
+  <div class="tb-brand">OpenCleaner</div>
+  <div class="tb-item active" onclick="switchMockupTab('nett',this)">Nettoyage</div>
+  <div class="tb-item" onclick="switchMockupTab('outils',this)">Outils</div>
+  <div class="tb-item" onclick="switchMockupTab('sante',this)">Santé</div>
+  <div class="tb-item" onclick="switchMockupTab('pilotes',this)">Pilotes</div>
+  <div class="tb-item" onclick="switchMockupTab('perso',this)">Personnalisation</div>
+</div>
+
+<!-- ═══════ APP SHELL ═══════ -->
+<div class="app">
+
+<!-- ═══════ SIDEBAR ═══════ -->
+<aside class="sidebar">
+  <div class="sb-brand">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg>
+    <span>OpenCleaner</span>
+  </div>
+  <div class="sb-section">Espace de travail</div>
+  <button class="sb-item active" onclick="switchMockupTab('nett',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg><span>Nettoyage</span></button>
+  <button class="sb-item" onclick="switchMockupTab('outils',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span>Outils</span></button>
+  <button class="sb-item" onclick="switchMockupTab('sante',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg><span>Santé</span><span class="sb-badge">85</span></button>
+  <button class="sb-item" onclick="switchMockupTab('pilotes',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg><span>Pilotes</span></button>
+  <button class="sb-item" onclick="switchMockupTab('perso',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg><span>Personnalisation</span></button>
+  <div class="sb-section">Récents</div>
+  <button class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Historique</span><span class="sb-badge">il y a 3j</span></button>
+  <div class="sb-spacer"></div>
+  <div class="sb-bottom">
+    <button class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Diagnostic</span></button>
+    <button class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>Rapport HTML</span></button>
+    <div class="sb-item" style="cursor:default;font-size:11px;color:var(--text-dim)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg><span>Mode Standard</span></div>
+  </div>
+</aside>
+
+<!-- ═══════ RIGHT PANEL (variant F) ═══════ -->
+<div class="right-panel">
+  <h3>Activité</h3>
+  <div class="activity-item"><div class="activity-dot ok"></div><span>Scan apps terminé — 69 apps</span></div>
+  <div class="activity-item"><div class="activity-dot ok"></div><span>Estimation : 1.8 Go</span></div>
+  <div class="activity-item"><div class="activity-dot run"></div><span>Scan pilotes en cours…</span></div>
+  <div style="border-top:1px solid var(--border);margin:12px 0;padding-top:12px">
+    <h3>Détail sélection</h3>
+    <div class="dp-t">Edge Startup Boost</div>
+    <div class="dp-d" style="font-size:11px">Pré-lance Edge au démarrage.</div>
+    <div class="dp-s"><span class="dp-sl">RAM</span><span class="dp-sv">350 Mo</span></div>
+    <div class="dp-s"><span class="dp-sl">Processus</span><span class="dp-sv">1</span></div>
+    <div class="dp-tr" style="font-size:10px"><strong>Compromis :</strong> Edge 1-2s plus lent au lancement.</div>
+  </div>
+  <div style="border-top:1px solid var(--border);margin:12px 0;padding-top:12px">
+    <h3>Actions rapides</h3>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <button class="btn-g" style="text-align:left;font-size:10px">Sauvegarder config</button>
+      <button class="btn-g" style="text-align:left;font-size:10px">Restaurer config</button>
+      <button class="btn-g" style="text-align:left;font-size:10px">Exporter .reg</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MAIN CONTENT ═══════ -->
+<div class="main">
+
+<!-- ═══════ TAB: NETTOYAGE ═══════ -->
+<div class="tab-panel active" id="tab-nett">
+  <h1 class="pt">Nettoyage</h1>
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+    <span class="ps" style="margin:0">Supprimez les fichiers temporaires, caches et traces.</span>
+    <div class="stats-inline" style="margin:0;margin-left:auto">
+      <span><span class="si-val">1.8 Go</span> <span class="si-label">récupérables</span></span>
+      <span class="si-sep">|</span>
+      <span><strong>C:</strong> <span class="si-label">86% · 42 Go libres</span></span>
+      <span class="si-sep">|</span>
+      <span class="si-label">Dernier : <strong style="color:var(--text)">il y a 3j</strong></span>
+    </div>
+  </div>
+
+  <div class="callout" style="font-size:12px">
+    <div class="callout-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+    <div class="callout-content"><strong>Mots de passe protégés</strong> — Identifiants et sessions navigateur intacts.</div>
+  </div>
+
+  <div class="card">
+    <div class="grp-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked class="task-cb" style="margin:0"> Système <span class="meta">4 tâches · 620 Mo</span></div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Fichiers temporaires <span class="task-badge">disque</span></div><div class="task-desc">Libère de l'espace. Sans effet sur les performances.</div></div><div class="task-size">512 Mo</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Corbeille <span class="task-badge">disque</span></div><div class="task-desc">Vide définitivement. Non récupérable.</div></div><div class="task-size">89 Mo</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Cache DNS</div><div class="task-desc">Se reconstruit automatiquement.</div></div><div class="task-size">—</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Fichiers récents <span class="task-badge" style="background:#f3e8fd;color:#8430ce">confidentialité</span></div><div class="task-desc">N'efface pas les fichiers, juste les raccourcis.</div></div><div class="task-size">18 Mo</div></div>
+  </div>
+
+  <div class="card">
+    <div class="grp-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked class="task-cb" style="margin:0"> Navigateurs <span style="font-size:10px;color:var(--amber);margin-right:4px;font-weight:400">Chrome ouvert</span><span class="meta">3 tâches · 922 Mo</span></div>
+    <div class="task-row"><input type="checkbox" class="task-cb" checked><div class="task-info"><div class="task-label">Cache navigateurs <span class="task-badge">disque</span></div><div class="task-desc">Sites plus lents la 1re visite. MdP protégés.</div></div><div class="task-size">890 Mo</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb"><div class="task-info"><div class="task-label">Historique <span class="task-badge" style="background:#f3e8fd;color:#8430ce">confidentialité</span></div><div class="task-desc">Sites visités, recherches.</div></div><div class="task-size">24 Mo</div></div>
+    <div class="task-row"><input type="checkbox" class="task-cb"><div class="task-info"><div class="task-label">Cookies <span class="task-badge" style="background:#f3e8fd;color:#8430ce">confidentialité</span></div><div class="task-desc">Déconnexion de Gmail, Facebook…</div></div><div class="task-size">8 Mo</div></div>
+  </div>
+
+  <div class="card">
+    <div class="grp-head" style="border-left-color:var(--text-dim)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked class="task-cb" style="margin:0"> Applications <span class="meta">2 tâches · 95 Mo</span></div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
+    <button class="btn-p">Lancer le nettoyage →</button>
+    <button class="btn-g">Tout cocher</button>
+    <button class="btn-g">Tout décocher</button>
+    <button class="btn-g">Réanalyser</button>
+    <span style="margin-left:auto;font-size:11px;color:var(--text-dim)">9 tâches · ~1.6 Go</span>
+  </div>
+
+  <div class="card">
+    <div style="padding:6px 12px;font-size:10px;font-weight:600;color:var(--text-dim);border-bottom:1px solid var(--border);display:flex;justify-content:space-between"><span>Journal</span><span style="font-weight:400;cursor:pointer">Effacer</span></div>
+    <div class="log"><div>09:14:32 — OpenCleaner prêt.</div><div>09:14:33 — 14 catégories analysées. Estimation : 1.8 Go.</div></div>
+  </div>
+</div>
+
+<!-- ═══════ TAB: OUTILS ═══════ -->
+<div class="tab-panel" id="tab-outils">
+  <h1 class="pt">Outils</h1>
+  <p class="ps">Analyse approfondie, nettoyage ciblé et gestion.</p>
+
+  <div class="qa-grid">
+    <div class="qa-card">Doublons</div>
+    <div class="qa-card">Grands fichiers</div>
+    <div class="qa-card">Espace disque</div>
+    <div class="qa-card">Installers</div>
+    <div class="qa-card">Cache WI</div>
+    <div class="qa-card">Dossiers vides</div>
+    <div class="qa-card">Orphelins</div>
+    <div class="qa-card">Registre</div>
+    <div class="qa-card">Raccourcis</div>
+    <div class="qa-card" style="border-color:var(--amber)"><span style="color:var(--amber)">Apps</span> <span style="font-size:9px;color:var(--text-dim)">7 cassées</span></div>
+    <div class="qa-card">UWP</div>
+    <div class="qa-card">Extensions</div>
+    <div class="qa-card">Données nav.</div>
+    <div class="qa-card">Mises à jour</div>
+    <div class="qa-card">Démarrage</div>
+    <div class="qa-card">Réparation</div>
+  </div>
+
+  <div class="card">
+    <div class="grp-head" style="border-left-color:var(--text)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><strong>Fichiers & Espace</strong><span class="meta">6 outils</span></div>
+    <div class="tool-item"><div><div class="name">Doublons fichiers & dossiers</div><div class="sub">Détecte les copies identiques dans un même dossier.</div></div><button class="btn-g">Analyser</button></div>
+    <div class="tool-item"><div><div class="name">Grands fichiers</div><div class="sub">Trouve les fichiers > 500 Mo sur votre disque.</div></div><button class="btn-g">Analyser</button></div>
+    <div class="tool-item"><div><div class="name">Analyse espace disque</div><div class="sub">Treemap interactif avec navigation par dossier.</div></div><button class="btn-g">Analyser</button></div>
+    <div class="tool-item"><div><div class="name">Anciens installers</div><div class="sub">.exe .msi .iso non utilisés dans Downloads.</div></div><button class="btn-g">Analyser</button></div>
+    <div class="tool-item"><div><div class="name">Cache Windows Installer <span style="font-size:11px;color:var(--text-dim);font-weight:400">15.3 Go</span></div><div class="sub">MSI/MSP → nettoyage via cleanmgr uniquement.</div></div><button class="btn-g">Analyser</button></div>
+    <div class="tool-item"><div><div class="name">Dossiers vides & orphelins</div><div class="sub">Résidus de désinstallations dans Program Files.</div></div><button class="btn-g">Analyser</button></div>
+  </div>
+
+  <div class="card">
+    <div class="grp-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg><strong>Système</strong><span class="meta">3 outils</span></div>
+  </div>
+  <div class="card">
+    <div class="grp-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg><strong>Applications</strong><span class="meta">3 outils · 69 apps · 7 cassées</span></div>
+  </div>
+  <div class="card">
+    <div class="grp-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg><strong>Navigateurs</strong><span class="meta">3 outils</span></div>
+  </div>
+</div>
+
+<!-- ═══════ TAB: SANTÉ ═══════ -->
+<div class="tab-panel" id="tab-sante">
+  <h1 class="pt">Santé du système</h1>
+  <p class="ps">Vue d'ensemble de l'état de votre PC.</p>
+  <div style="display:flex;gap:14px;margin-bottom:16px">
+    <div class="card" style="flex:1;margin:0;text-align:center;padding:20px">
+      <div class="health-score" style="color:var(--green)">85</div>
+      <div style="font-size:12px;color:var(--text-dim)">Score de santé</div>
+      <div class="health-bar"><div class="filled"></div><div class="filled"></div><div class="filled"></div><div class="filled"></div><div></div></div>
+    </div>
+    <div style="flex:2;display:flex;flex-direction:column;gap:8px">
+      <div class="card" style="margin:0;padding:12px 16px;display:flex;justify-content:space-between;align-items:center"><span>CPU</span><strong>12%</strong></div>
+      <div class="card" style="margin:0;padding:12px 16px;display:flex;justify-content:space-between;align-items:center"><span>RAM</span><strong>64% — 10.2 / 16 Go</strong></div>
+      <div class="card" style="margin:0;padding:12px 16px;display:flex;justify-content:space-between;align-items:center"><span>Disque C:</span><strong>86% utilisé</strong></div>
+      <div class="card" style="margin:0;padding:12px 16px;display:flex;justify-content:space-between;align-items:center"><span>Démarrage</span><strong>8 programmes</strong></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="grp-head"><strong>Top processus RAM</strong></div>
+    <div class="tool-item"><div class="name">chrome.exe (12)</div><span style="font-variant-numeric:tabular-nums;font-weight:600">1.4 Go</span></div>
+    <div class="tool-item"><div class="name">msedge.exe (5)</div><span style="font-variant-numeric:tabular-nums;font-weight:600">680 Mo</span></div>
+    <div class="tool-item"><div class="name">explorer.exe</div><span style="font-variant-numeric:tabular-nums;font-weight:600">320 Mo</span></div>
+    <div class="tool-item"><div class="name">Discord.exe</div><span style="font-variant-numeric:tabular-nums;font-weight:600">290 Mo</span></div>
+    <div class="tool-item"><div class="name">SearchHost.exe</div><span style="font-variant-numeric:tabular-nums;font-weight:600">190 Mo</span></div>
+  </div>
+</div>
+
+<!-- ═══════ TAB: PILOTES ═══════ -->
+<div class="tab-panel" id="tab-pilotes">
+  <h1 class="pt">Pilotes</h1>
+  <p class="ps">Nom, fabricant, version et date de chaque pilote matériel.</p>
+  <div style="display:flex;gap:6px;margin-bottom:12px;justify-content:flex-end">
+    <button class="btn-g">HTML</button>
+    <button class="btn-g">TXT</button>
+    <button class="btn-g">JSON</button>
+    <span style="width:8px"></span>
+    <button class="btn-g">Windows Update</button>
+    <button class="btn-p" style="font-size:12px;padding:6px 12px">Analyser</button>
+  </div>
+  <div class="card">
+    <div class="log" style="max-height:60px"><div>Cliquez sur « Analyser » pour lancer le scan.</div></div>
+    <div style="padding:20px;text-align:center;color:var(--text-dim);font-size:12px">Les résultats du scan apparaîtront ici.</div>
+  </div>
+</div>
+
+<!-- ═══════ TAB: PERSONNALISATION ═══════ -->
+<div class="tab-panel" id="tab-perso">
+  <h1 class="pt">Personnalisation Windows</h1>
+  <p class="ps">Désactivez les fonctionnalités inutiles. Tout est réversible.</p>
+
+  <div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap">
+    <div class="card" style="flex:3;min-width:340px;margin:0">
+      <div class="chart">
+        <div class="chart-title">Impact cumulé de vos réglages</div>
+        <div class="cb"><div class="cb-l">RAM</div><div class="cb-bar"><div class="cb-fill" style="width:35%"></div></div><div class="cb-v">533 Mo</div></div>
+        <div class="cb"><div class="cb-l">Processus</div><div class="cb-bar"><div class="cb-fill" style="width:20%"></div></div><div class="cb-v">4</div></div>
+        <div class="cb"><div class="cb-l">Services</div><div class="cb-bar"><div class="cb-fill" style="width:45%"></div></div><div class="cb-v">9 / 17</div></div>
+      </div>
+    </div>
+    <div style="flex:2;min-width:220px;display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:12px;font-weight:600">Appliquer un preset</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn-g">Standard</button>
+        <button class="btn-g">Agressif</button>
+        <button class="btn-g" style="border-color:var(--green);color:var(--green);font-weight:600">Perf. Max</button>
+        <button class="btn-g">Paranoïaque</button>
+      </div>
+      <div style="display:flex;gap:5px;margin-top:4px">
+        <button class="btn-g" style="font-size:10px">Sauvegarder</button>
+        <button class="btn-g" style="font-size:10px">Restaurer</button>
+        <button class="btn-g" style="font-size:10px">.reg</button>
+        <span style="color:var(--border2);line-height:26px">|</span>
+        <button class="btn-g" style="font-size:10px">Widgets</button>
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:auto">Réglages HKCU, réversibles.</div>
+    </div>
+  </div>
+
+  <div class="pills">
+    <button class="pill on">Tout <span style="font-weight:600">50</span></button>
+    <button class="pill">Performance <span style="font-weight:600">8</span></button>
+    <button class="pill">Télémétrie <span style="font-weight:600">12</span></button>
+    <button class="pill">Confidentialité <span style="font-weight:600">15</span></button>
+    <button class="pill">Publicités <span style="font-weight:600">6</span></button>
+    <button class="pill">Cosmétique <span style="font-weight:600">7</span></button>
+  </div>
+
+  <div class="card" style="margin-bottom:2px">
+    <div class="dsplit">
+      <div class="dlist">
+        <div class="tg"><div class="tgh open"><div class="tg-top"><svg class="tg-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span class="tg-n">IA & contenus</span><div class="tg-s"><span>500 Mo</span><span>1 proc.</span><span>9/9</span><span>2 absents</span></div><div class="tg-sw"><div class="sw"></div></div></div><div class="tg-d">Copilot, Edge IA. Libère RAM + réduit trafic.</div></div>
+          <div class="tgb"><div class="tw abs"><div class="tw-i"><div class="tw-l">Copilot<span class="abs-b">Absent</span></div></div><div class="sw"></div></div><div class="tw"><div class="tw-i"><div class="tw-l">Edge Startup Boost</div><div class="tw-d">Pré-lance Edge — ~350 Mo</div></div><div class="sw"></div></div><div class="tw"><div class="tw-i"><div class="tw-l">Edge arrière-plan</div><div class="tw-d">~150 Mo après fermeture</div></div><div class="sw"></div></div></div>
+        </div>
+        <div class="tg"><div class="tgh"><div class="tg-top"><svg class="tg-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span class="tg-n">Recherche & Cortana</span><div class="tg-s"><span>133 Mo</span><span>0/2</span></div><div class="tg-sw"><div class="sw on"></div></div></div></div></div>
+        <div class="tg"><div class="tgh"><div class="tg-top"><svg class="tg-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span class="tg-n">Menu Démarrer</span><div class="tg-s"><span>0/9</span></div><div class="tg-sw"><div class="sw on"></div></div></div></div></div>
+        <div class="tg"><div class="tgh"><div class="tg-top"><svg class="tg-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span class="tg-n">Notifications</span><div class="tg-s"><span>0/9</span></div><div class="tg-sw"><div class="sw on"></div></div></div></div></div>
+        <div class="tg"><div class="tgh"><div class="tg-top"><svg class="tg-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span class="tg-n">Vie privée</span><div class="tg-s"><span>15 Mo</span><span>0/4</span></div><div class="tg-sw"><div class="sw on"></div></div></div></div></div>
+        <div style="border-top:2px solid var(--border);margin:2px 12px"></div>
+        <div class="tg"><div class="tgh"><div class="tg-top"><svg class="tg-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span class="tg-n">Services</span><div class="tg-s"><span>14</span><span>admin</span></div><div class="tg-sw"><div class="sw on"></div></div></div></div></div>
+        <div class="tg"><div class="tgh"><div class="tg-top"><svg class="tg-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><span class="tg-n">Tâches planifiées</span><div class="tg-s"><span>13</span><span>admin</span></div><div class="tg-sw"><div class="sw on"></div></div></div></div></div>
+      </div>
+      <div class="dpanel">
+        <div class="dp-empty">Cliquez sur un élément pour voir ses détails.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /.main -->
+
+<!-- ═══════ ACTIVITY PANEL (mini, coin haut-droit) ═══════ -->
+<div class="activity-mini">
+  <div class="activity-head"><span>Activité</span><span style="font-weight:400;color:var(--text-dim);cursor:pointer">—</span></div>
+  <div class="activity-body">
+    <div class="activity-item"><div class="activity-dot ok"></div><span style="color:var(--text-mid)">Estimation terminée — 1.8 Go</span></div>
+    <div class="activity-item"><div class="activity-dot ok"></div><span style="color:var(--text-mid)">69 applications détectées</span></div>
+  </div>
+</div>
+
+</div><!-- /.app -->
+
+<script>
+const descs = {
+  '': 'A — Style Notion monochrome actuel, sobre et épuré. Sidebar 220px, contenu 960px max, polices IBM Plex. Layout E (chart+presets côte à côte), N3 (stats inline, tâches groupées), O3 (grille + accordéons).',
+  'variant-b': 'B — Sidebar réduite à 56px (icônes uniquement). Plus d\'espace pour le contenu. La sidebar se transforme en rail d\'icônes. Survol pour le tooltip du nom.',
+  'variant-c': 'C — Pas de sidebar. Navigation horizontale en haut (topbar). Contenu pleine largeur. Plus traditionnel, adapté aux écrans larges.',
+  'variant-d': 'D — Dark mode complet. Même structure que A mais couleurs inversées. Fond #1e1e1e, texte #e0e0e0, accents gris clair. Repose les yeux.',
+  'variant-e': 'E — Mode compact/dense. Padding réduit (20px au lieu de 36px), polices 12px au lieu de 13px, moins d\'espace entre les éléments. Idéal pour les power users ou les petits écrans.',
+  'variant-f': 'F — Panneau droit fixe (280px) qui regroupe activité + détail sélection + actions rapides. Le contenu principal est plus étroit mais tout est accessible sans modal.',
+};
+function setVariant(cls) {
+  document.body.className = cls;
+  document.getElementById('variant-desc').textContent = descs[cls] || '';
+  document.querySelectorAll('.variant-bar button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+function switchMockupTab(id, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelectorAll('.sb-item, .topbar .tb-item').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+</script>
+
+</body>
+</html>

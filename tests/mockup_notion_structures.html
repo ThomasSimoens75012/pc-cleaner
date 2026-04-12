@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>OpenCleaner — 6 structures Notion</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  --text: #37352f; --text-mid: #787774; --text-dim: #9b9a97;
+  --bg: #fff; --bg2: #fbfbfa; --bg3: #f1f1ef;
+  --border: #e9e9e7; --border2: #dfdedc;
+  --hover: #f7f6f3; --accent: #37352f;
+  --green: #0f7b6c; --green-bg: #e6f4ea;
+  --amber: #d9730d;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'IBM Plex Sans', -apple-system, sans-serif; background: #e8e8e6; color: var(--text); font-size: 13px; }
+
+/* Picker */
+.pk { position:fixed;top:0;left:0;right:0;z-index:9999;background:#37352f;color:#fff;padding:6px 14px;display:flex;align-items:center;gap:5px;font-size:11px;flex-wrap:wrap; }
+.pk button { background:rgba(255,255,255,.1);color:#ccc;border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:4px 10px;font-family:inherit;font-size:10px;cursor:pointer; }
+.pk button:hover { background:rgba(255,255,255,.18); }
+.pk button.on { background:var(--green);border-color:var(--green);color:#fff; }
+.pk .sp { flex:1; }
+.pk .d { font-size:9px;opacity:.5;max-width:500px; }
+
+.frame { display:none; max-width:1020px; margin:44px auto 20px; background:var(--bg); border-radius:6px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.12); }
+.frame.on { display:block; }
+
+/* ═══ Notion shared ═══ */
+.app { display:flex; min-height:720px; }
+.sb { width:220px; flex-shrink:0; background:var(--bg2); border-right:1px solid var(--border); padding:14px 10px; display:flex; flex-direction:column; }
+.sb-logo { display:flex;align-items:center;gap:8px;padding:4px 10px 14px;font-weight:700;font-size:15px; }
+.sb-logo svg { width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.5; }
+.sb-sec { font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);padding:10px 10px 4px;font-weight:600; }
+.sb-i { display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:4px;border:none;background:none;font-family:inherit;font-size:13px;color:var(--text-mid);cursor:pointer;width:100%;text-align:left; }
+.sb-i:hover { background:var(--hover);color:var(--text); }
+.sb-i.on { background:var(--hover);color:var(--text);font-weight:500; }
+.sb-i svg { width:16px;height:16px;flex-shrink:0;opacity:.5; }
+.sb-i.on svg { opacity:.8; }
+.sb-badge { font-size:10px;background:var(--bg3);padding:1px 6px;border-radius:3px;margin-left:auto;color:var(--text-dim); }
+.sb-sp { flex:1; }
+.sb-bot { padding-top:8px;border-top:1px solid var(--border);margin-top:8px; }
+.sb-bot .sb-i { font-size:12px; }
+
+.ct { flex:1;overflow-y:auto; }
+h1 { font-size:24px;font-weight:700;margin-bottom:4px; }
+.ps { font-size:13px;color:var(--text-mid);margin-bottom:14px; }
+.card { border:1px solid var(--border);border-radius:6px;margin-bottom:12px;overflow:hidden; }
+.callout { display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:6px;font-size:12px;background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--green);margin-bottom:12px; }
+.callout svg { flex-shrink:0;color:var(--green); }
+.btn-p { background:var(--accent);color:var(--bg);border:none;border-radius:4px;padding:8px 16px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px; }
+.btn-g { background:none;border:1px solid var(--border2);border-radius:4px;padding:5px 10px;font-family:inherit;font-size:11px;color:var(--text-mid);cursor:pointer; }
+.btn-g:hover { background:var(--hover);color:var(--text); }
+.pills { display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px; }
+.pill { font-size:11px;padding:4px 9px;border-radius:4px;background:var(--bg3);color:var(--text-dim);border:none;cursor:pointer;font-family:inherit; }
+.pill.on { background:var(--accent);color:var(--bg); }
+.sw { position:relative;width:32px;height:18px;background:var(--border2);border-radius:9px;cursor:pointer;flex-shrink:0; }
+.sw::after { content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fff;border-radius:50%;box-shadow:0 1px 2px rgba(0,0,0,.12); }
+.sw.on { background:var(--accent); }
+.sw.on::after { left:16px; }
+
+/* Chart */
+.chart { padding:12px 16px; }
+.chart-t { font-size:11px;font-weight:600;color:var(--text-mid);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px; }
+.cb { display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:11px; }
+.cb-l { width:65px;text-align:right;color:var(--text-dim); }
+.cb-bar { flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden; }
+.cb-fill { height:100%;background:var(--accent);border-radius:3px; }
+.cb-v { width:45px;font-weight:600;color:var(--text-mid);font-variant-numeric:tabular-nums; }
+
+/* Group accordion */
+.gh { display:flex;flex-direction:column;gap:2px;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);border-left:3px solid var(--text-dim);cursor:pointer; }
+.gh:hover { background:var(--hover); }
+.gh.open { border-left-color:var(--text); }
+.gt { display:flex;align-items:center;gap:7px;flex-wrap:wrap; }
+.gch { width:11px;height:11px;color:var(--text-dim);transition:.2s;flex-shrink:0; }
+.gh:not(.open) .gch { transform:rotate(-90deg); }
+.gn { font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.3px; }
+.gs { display:flex;gap:4px;flex-wrap:wrap;font-size:10px;color:var(--text-dim); }
+.gs span { background:var(--bg3);padding:1px 5px;border-radius:3px; }
+.gd { font-size:11px;color:var(--text-dim);padding-left:18px; }
+.gsw { margin-left:auto; }
+.gb { border-left:3px solid var(--border); }
+
+/* Rows */
+.rw { display:flex;align-items:center;gap:10px;padding:8px 12px 8px 22px;border-bottom:1px solid var(--border);cursor:pointer; }
+.rw:hover { background:var(--hover); }
+.rw:last-child { border:none; }
+.rw-i { flex:1; }
+.rw-l { font-weight:500; }
+.rw-d { font-size:11px;color:var(--text-dim);margin-top:1px; }
+.rw.abs { opacity:.4;pointer-events:none; }
+.abs-b { font-size:9px;background:var(--bg3);color:var(--text-dim);padding:1px 5px;border-radius:3px;font-weight:600;margin-left:4px; }
+
+/* Tasks */
+.tk { display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border); }
+.tk:hover { background:var(--hover); }
+.tk:last-child { border:none; }
+.tk input { width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0; }
+.tk-i { flex:1; }
+.tk-l { font-weight:500; }
+.tk-d { font-size:11px;color:var(--text-dim);margin-top:1px; }
+.tk-sz { font-weight:600;color:var(--text-mid);font-variant-numeric:tabular-nums;min-width:50px;text-align:right; }
+.tk-b { font-size:9px;background:var(--bg3);color:var(--text-dim);padding:1px 5px;border-radius:3px;margin-left:4px; }
+.tk-b.priv { background:#f3e8fd;color:#8430ce; }
+
+/* Detail panel */
+.dsplit { display:flex; }
+.dlist { flex:1;min-width:0; }
+.dpanel { width:250px;flex-shrink:0;border-left:1px solid var(--border);background:var(--bg2);padding:14px; }
+.dp-t { font-size:14px;font-weight:700;margin-bottom:3px; }
+.dp-d { font-size:12px;color:var(--text-mid);line-height:1.5;margin-bottom:10px; }
+.dp-s { display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px; }
+.dp-s:last-of-type { border:none; }
+.dp-sl { color:var(--text-dim); }
+.dp-sv { font-weight:600;font-variant-numeric:tabular-nums; }
+.dp-sv.no { color:var(--text-dim);font-weight:400; }
+.dp-tr { margin-top:10px;padding:8px 10px;background:var(--bg3);border-radius:4px;border-left:2px solid var(--text-dim);font-size:11px;color:var(--text-mid);line-height:1.4; }
+.dp-empty { color:var(--text-dim);font-size:12px;text-align:center;padding:30px 0; }
+
+/* Quick access grid */
+.qa { display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px; }
+.qa-c { border:1px solid var(--border);border-radius:4px;padding:8px 10px;cursor:pointer;text-align:center;font-size:11px;font-weight:500; }
+.qa-c:hover { background:var(--hover); }
+
+/* Stats inline */
+.si { display:flex;gap:12px;font-variant-numeric:tabular-nums;font-size:12px;flex-wrap:wrap; }
+.si-v { font-weight:700;font-size:16px; }
+.si-l { color:var(--text-dim);font-size:11px; }
+.si-sep { color:var(--border2);align-self:center; }
+
+/* Log */
+.log { padding:6px 10px;max-height:70px;overflow-y:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;color:var(--text-mid);background:var(--bg2);border-top:1px solid var(--border); }
+
+/* Grp head simple */
+.grph { display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);border-left:3px solid var(--text-dim);font-weight:600;cursor:pointer; }
+.grph:hover { background:var(--hover); }
+.grph .meta { margin-left:auto;font-size:11px;color:var(--text-dim);font-weight:400; }
+.grph svg { width:11px;height:11px;color:var(--text-dim);flex-shrink:0; }
+
+/* Tabs */
+.tabs { display:flex;border-bottom:2px solid var(--border); }
+.tab { padding:9px 16px;font-size:12px;font-weight:500;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px; }
+.tab.on { color:var(--text);border-bottom-color:var(--text); }
+
+/* Divider */
+.divider { border-top:2px solid var(--border);margin:2px 12px; }
+
+/* Sidebar (compact variant) */
+.sb-compact { width:56px;padding:12px 6px;align-items:center; }
+.sb-compact .sb-logo span, .sb-compact .sb-i span, .sb-compact .sb-sec, .sb-compact .sb-badge, .sb-compact .sb-bot .sb-i span { display:none; }
+.sb-compact .sb-logo { padding:8px 0 14px; }
+.sb-compact .sb-i { justify-content:center;padding:10px;border-radius:6px; }
+.sb-compact .sb-i svg { width:20px;height:20px;opacity:.6; }
+.sb-compact .sb-i.on svg { opacity:1; }
+</style>
+</head>
+<body>
+
+<div class="pk">
+  <span style="font-weight:700;margin-right:4px">Structure :</span>
+  <button class="on" onclick="show(1)">1 · Classique étendu</button>
+  <button onclick="show(2)">2 · Dashboard cards</button>
+  <button onclick="show(3)">3 · Sous-onglets internes</button>
+  <button onclick="show(4)">4 · Sidebar compacte + large</button>
+  <button onclick="show(5)">5 · Triple colonne</button>
+  <button onclick="show(6)">6 · Hub central</button>
+  <span class="sp"></span>
+  <span class="d" id="desc">Flux vertical classique : stats en haut, tâches groupées en accordéons, log en bas. Panneau détail sur Perso.</span>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     1. CLASSIQUE ÉTENDU
+     ═══════════════════════════════════════════ -->
+<div class="frame on" id="f1">
+<div class="app">
+  <div class="sb">
+    <div class="sb-logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg> OpenCleaner</div>
+    <div class="sb-sec">Espace de travail</div>
+    <button class="sb-i on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg><span>Nettoyage</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/></svg><span>Outils</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg><span>Santé</span><span class="sb-badge">85</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg><span>Pilotes</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg><span>Personnalisation</span></button>
+    <div class="sb-sec">Récents</div>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Historique</span><span class="sb-badge">3j</span></button>
+    <div class="sb-sp"></div>
+    <div class="sb-bot">
+      <button class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Diagnostic</span></button>
+      <button class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>Rapport</span></button>
+    </div>
+  </div>
+  <div class="ct" style="padding:28px 36px">
+    <h1>Nettoyage</h1>
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+      <span class="ps" style="margin:0">Supprimez les fichiers temporaires, caches et traces.</span>
+      <div class="si" style="margin-left:auto"><span><span class="si-v">1.8 Go</span> <span class="si-l">récupérables</span></span><span class="si-sep">|</span><span><strong>C:</strong> <span class="si-l">86%</span></span><span class="si-sep">|</span><span class="si-l">Dernier : <strong style="color:var(--text)">3j</strong></span></div>
+    </div>
+    <div class="callout"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> <strong>Mots de passe protégés</strong> — Identifiants et sessions intacts.</div>
+    <div class="card">
+      <div class="grph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="width:15px;height:15px;accent-color:var(--accent)"> Système <span class="meta">4 tâches · 620 Mo</span></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Fichiers temporaires <span class="tk-b">disque</span></div><div class="tk-d">Libère de l'espace. Sans effet sur les performances.</div></div><div class="tk-sz">512 Mo</div></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Corbeille <span class="tk-b">disque</span></div><div class="tk-d">Vide définitivement. Non récupérable.</div></div><div class="tk-sz">89 Mo</div></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Cache DNS</div><div class="tk-d">Se reconstruit automatiquement.</div></div><div class="tk-sz">—</div></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Fichiers récents <span class="tk-b priv">confid.</span></div><div class="tk-d">N'efface pas les fichiers, juste les raccourcis.</div></div><div class="tk-sz">18 Mo</div></div>
+    </div>
+    <div class="card">
+      <div class="grph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="width:15px;height:15px;accent-color:var(--accent)"> Navigateurs <span style="font-size:10px;color:var(--amber);margin-right:4px;font-weight:400">Chrome ouvert</span><span class="meta">922 Mo</span></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Cache navigateurs <span class="tk-b">disque</span></div><div class="tk-d">Sites plus lents la 1re visite. MdP protégés.</div></div><div class="tk-sz">890 Mo</div></div>
+      <div class="tk"><input type="checkbox"><div class="tk-i"><div class="tk-l">Historique <span class="tk-b priv">confid.</span></div></div><div class="tk-sz">24 Mo</div></div>
+      <div class="tk"><input type="checkbox"><div class="tk-i"><div class="tk-l">Cookies <span class="tk-b priv">confid.</span></div><div class="tk-d">Déconnexion de Gmail, Facebook…</div></div><div class="tk-sz">8 Mo</div></div>
+    </div>
+    <div class="card">
+      <div class="grph" style="border-left-color:var(--text-dim)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="width:15px;height:15px;accent-color:var(--accent)"> Applications <span class="meta">2 tâches · 95 Mo</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
+      <button class="btn-p">Lancer le nettoyage →</button>
+      <button class="btn-g">Tout cocher</button>
+      <button class="btn-g">Tout décocher</button>
+      <button class="btn-g">Réanalyser</button>
+      <span style="margin-left:auto;font-size:11px;color:var(--text-dim)">9 tâches · ~1.6 Go</span>
+    </div>
+    <div class="card">
+      <div style="padding:5px 10px;font-size:10px;font-weight:600;color:var(--text-dim);border-bottom:1px solid var(--border);display:flex;justify-content:space-between"><span>Journal</span><span style="font-weight:400;cursor:pointer">Effacer</span></div>
+      <div class="log"><div>09:14:32 — OpenCleaner prêt.</div><div>09:14:33 — 14 catégories analysées. 1.8 Go récupérables.</div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     2. DASHBOARD CARDS
+     ═══════════════════════════════════════════ -->
+<div class="frame" id="f2">
+<div class="app">
+  <div class="sb">
+    <div class="sb-logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg> OpenCleaner</div>
+    <div class="sb-sec">Espace de travail</div>
+    <button class="sb-i on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg><span>Nettoyage</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg><span>Outils</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg><span>Santé</span><span class="sb-badge">85</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg><span>Personnalisation</span></button>
+    <div class="sb-sp"></div>
+    <div class="sb-bot"><button class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Historique</span></button></div>
+  </div>
+  <div class="ct" style="padding:24px 28px">
+    <h1>Nettoyage</h1>
+    <p class="ps">Supprimez les fichiers temporaires, caches et traces.</p>
+
+    <!-- Dashboard top : 3 stat cards + action -->
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <div class="card" style="flex:1;margin:0;padding:16px;text-align:center"><div style="font-size:28px;font-weight:700;font-variant-numeric:tabular-nums">1.8 Go</div><div style="font-size:10px;color:var(--text-dim);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">Récupérables</div></div>
+      <div class="card" style="flex:1;margin:0;padding:16px;text-align:center"><div style="font-size:28px;font-weight:700">86%</div><div style="font-size:10px;color:var(--text-dim);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">Disque C:</div></div>
+      <div class="card" style="flex:1;margin:0;padding:16px;text-align:center"><div style="font-size:28px;font-weight:700">3j</div><div style="font-size:10px;color:var(--text-dim);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">Dernier nettoyage</div></div>
+    </div>
+
+    <div class="callout"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> <strong>Mots de passe protégés</strong></div>
+
+    <!-- 2 columns : tasks left, log+actions right -->
+    <div style="display:flex;gap:14px;align-items:flex-start">
+      <div style="flex:1">
+        <div class="card" style="margin-bottom:8px">
+          <div class="grph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="accent-color:var(--accent)"> Système <span class="meta">620 Mo</span></div>
+          <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Fichiers temporaires</div><div class="tk-d">Libère de l'espace disque.</div></div><div class="tk-sz">512 Mo</div></div>
+          <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Corbeille</div></div><div class="tk-sz">89 Mo</div></div>
+          <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Cache DNS</div></div><div class="tk-sz">—</div></div>
+          <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Fichiers récents</div></div><div class="tk-sz">18 Mo</div></div>
+        </div>
+        <div class="card" style="margin-bottom:8px">
+          <div class="grph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="accent-color:var(--accent)"> Navigateurs <span class="meta">922 Mo</span></div>
+          <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Cache</div></div><div class="tk-sz">890 Mo</div></div>
+          <div class="tk"><input type="checkbox"><div class="tk-i"><div class="tk-l">Historique</div></div><div class="tk-sz">24 Mo</div></div>
+          <div class="tk"><input type="checkbox"><div class="tk-i"><div class="tk-l">Cookies</div></div><div class="tk-sz">8 Mo</div></div>
+        </div>
+        <div class="card">
+          <div class="grph" style="border-left-color:var(--text-dim)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="accent-color:var(--accent)"> Applications <span class="meta">95 Mo</span></div>
+        </div>
+      </div>
+      <div style="width:220px;flex-shrink:0">
+        <button class="btn-p" style="width:100%;justify-content:center;padding:12px;margin-bottom:8px">Lancer le nettoyage →</button>
+        <div style="display:flex;gap:6px;margin-bottom:12px"><button class="btn-g" style="flex:1">Tout cocher</button><button class="btn-g" style="flex:1">Décocher</button></div>
+        <button class="btn-g" style="width:100%;margin-bottom:14px">Réanalyser</button>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">9 tâches sélectionnées · ~1.6 Go</div>
+        <div class="card" style="margin:0">
+          <div style="padding:5px 8px;font-size:10px;font-weight:600;color:var(--text-dim);border-bottom:1px solid var(--border)">Journal</div>
+          <div class="log" style="max-height:100px"><div>09:14:32 — Prêt.</div><div>09:14:33 — 1.8 Go récupérables.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     3. SOUS-ONGLETS INTERNES
+     ═══════════════════════════════════════════ -->
+<div class="frame" id="f3">
+<div class="app">
+  <div class="sb">
+    <div class="sb-logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg> OpenCleaner</div>
+    <div class="sb-sec">Navigation</div>
+    <button class="sb-i on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg><span>Nettoyage</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg><span>Outils</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg><span>Santé</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg><span>Personnalisation</span></button>
+    <div class="sb-sp"></div>
+    <div class="sb-bot"><button class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Historique</span></button></div>
+  </div>
+  <div class="ct" style="padding:24px 32px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+      <h1>Nettoyage</h1>
+      <div class="si"><span><span class="si-v">1.8 Go</span></span><span class="si-sep">|</span><span><strong>C:</strong> 86%</span></div>
+    </div>
+    <div class="tabs" style="margin-bottom:14px">
+      <div class="tab on">Nettoyage</div>
+      <div class="tab">Outils fichiers</div>
+      <div class="tab">Applications</div>
+      <div class="tab">Navigateurs</div>
+    </div>
+    <div class="callout"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> <strong>Mots de passe protégés</strong> — Identifiants intacts.</div>
+    <div class="card">
+      <div class="grph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="accent-color:var(--accent)"> Système <span class="meta">620 Mo</span></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Fichiers temporaires</div><div class="tk-d">Libère de l'espace. Sans effet sur les performances.</div></div><div class="tk-sz">512 Mo</div></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Corbeille</div></div><div class="tk-sz">89 Mo</div></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Cache DNS</div></div><div class="tk-sz">—</div></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Fichiers récents</div></div><div class="tk-sz">18 Mo</div></div>
+    </div>
+    <div class="card">
+      <div class="grph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="accent-color:var(--accent)"> Navigateurs <span class="meta">922 Mo</span></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Cache</div><div class="tk-d">MdP protégés.</div></div><div class="tk-sz">890 Mo</div></div>
+      <div class="tk"><input type="checkbox"><div class="tk-i"><div class="tk-l">Historique</div></div><div class="tk-sz">24 Mo</div></div>
+      <div class="tk"><input type="checkbox"><div class="tk-i"><div class="tk-l">Cookies</div><div class="tk-d">Déconnexion de tous les sites.</div></div><div class="tk-sz">8 Mo</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:12px 0">
+      <button class="btn-p">Lancer le nettoyage →</button>
+      <button class="btn-g">Tout cocher</button>
+      <button class="btn-g">Réanalyser</button>
+      <span style="margin-left:auto;font-size:11px;color:var(--text-dim)">~1.6 Go</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     4. SIDEBAR COMPACTE + CONTENU LARGE
+     ═══════════════════════════════════════════ -->
+<div class="frame" id="f4">
+<div class="app">
+  <div class="sb sb-compact">
+    <div class="sb-logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg><span>OC</span></div>
+    <button class="sb-i on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg><span>N</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg><span>O</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg><span>S</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg><span>P</span></button>
+    <div class="sb-sp"></div>
+    <div class="sb-bot"><button class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>D</span></button></div>
+  </div>
+  <div class="ct" style="padding:28px 40px;max-width:none">
+    <h1>Nettoyage</h1>
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:12px"><span class="ps" style="margin:0">Supprimez les fichiers temporaires, caches et traces.</span><div class="si" style="margin-left:auto"><span><span class="si-v">1.8 Go</span> <span class="si-l">récup.</span></span><span class="si-sep">|</span><span><strong>C:</strong> 86%</span><span class="si-sep">|</span><span class="si-l">3j</span></div></div>
+    <div class="callout"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> <strong>Mots de passe protégés</strong></div>
+    <div style="display:flex;gap:14px">
+      <div style="flex:1">
+        <div class="card" style="margin-bottom:8px"><div class="grph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="accent-color:var(--accent)"> Système <span class="meta">620 Mo</span></div><div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Fichiers temporaires</div><div class="tk-d">Libère de l'espace.</div></div><div class="tk-sz">512 Mo</div></div><div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Corbeille</div></div><div class="tk-sz">89 Mo</div></div><div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Cache DNS</div></div><div class="tk-sz">—</div></div><div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Fichiers récents</div></div><div class="tk-sz">18 Mo</div></div></div>
+      </div>
+      <div style="flex:1">
+        <div class="card" style="margin-bottom:8px"><div class="grph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="accent-color:var(--accent)"> Navigateurs <span class="meta">922 Mo</span></div><div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Cache</div></div><div class="tk-sz">890 Mo</div></div><div class="tk"><input type="checkbox"><div class="tk-i"><div class="tk-l">Historique</div></div><div class="tk-sz">24 Mo</div></div><div class="tk"><input type="checkbox"><div class="tk-i"><div class="tk-l">Cookies</div></div><div class="tk-sz">8 Mo</div></div></div>
+        <div class="card"><div class="grph" style="border-left-color:var(--text-dim)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="accent-color:var(--accent)"> Applications <span class="meta">95 Mo</span></div></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
+      <button class="btn-p">Lancer le nettoyage →</button>
+      <button class="btn-g">Tout cocher</button>
+      <button class="btn-g">Réanalyser</button>
+      <span style="margin-left:auto;font-size:11px;color:var(--text-dim)">9 tâches · ~1.6 Go</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     5. TRIPLE COLONNE (nav / contenu / détails)
+     ═══════════════════════════════════════════ -->
+<div class="frame" id="f5">
+<div class="app">
+  <div class="sb" style="width:180px">
+    <div class="sb-logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg> OpenCleaner</div>
+    <div class="sb-sec">Navigation</div>
+    <button class="sb-i on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg><span>Nettoyage</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg><span>Outils</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg><span>Santé</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg><span>Perso</span></button>
+    <div class="sb-sp"></div>
+    <div class="sb-bot"><button class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Historique</span></button></div>
+  </div>
+  <div class="ct" style="padding:24px 28px">
+    <h1>Nettoyage</h1>
+    <p class="ps">Supprimez les fichiers temporaires.</p>
+    <div class="callout"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> <strong>Mots de passe protégés</strong></div>
+    <div class="card">
+      <div class="grph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="accent-color:var(--accent)"> Système <span class="meta">620 Mo</span></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Fichiers temporaires</div><div class="tk-d">Libère de l'espace.</div></div><div class="tk-sz">512 Mo</div></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Corbeille</div></div><div class="tk-sz">89 Mo</div></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Cache DNS</div></div><div class="tk-sz">—</div></div>
+    </div>
+    <div class="card">
+      <div class="grph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><input type="checkbox" checked style="accent-color:var(--accent)"> Navigateurs <span class="meta">922 Mo</span></div>
+      <div class="tk"><input type="checkbox" checked><div class="tk-i"><div class="tk-l">Cache</div></div><div class="tk-sz">890 Mo</div></div>
+      <div class="tk"><input type="checkbox"><div class="tk-i"><div class="tk-l">Historique</div></div><div class="tk-sz">24 Mo</div></div>
+      <div class="tk"><input type="checkbox"><div class="tk-i"><div class="tk-l">Cookies</div></div><div class="tk-sz">8 Mo</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin:12px 0"><button class="btn-p">Nettoyage →</button><button class="btn-g">Tout cocher</button></div>
+  </div>
+  <!-- Right panel -->
+  <div style="width:240px;flex-shrink:0;border-left:1px solid var(--border);background:var(--bg2);padding:16px;overflow-y:auto">
+    <div style="font-size:12px;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim)">Résumé</div>
+    <div class="card" style="margin-bottom:10px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:700">1.8 Go</div><div style="font-size:10px;color:var(--text-dim);margin-top:2px">Récupérables</div></div>
+    <div style="font-size:12px;margin-bottom:4px;display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim)">Disque C:</span><strong>86%</strong></div>
+    <div style="font-size:12px;margin-bottom:4px;display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim)">Dernier</span><strong>il y a 3j</strong></div>
+    <div style="font-size:12px;margin-bottom:4px;display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim)">Tâches</span><strong>9 sélectionnées</strong></div>
+    <div style="border-top:1px solid var(--border);margin:12px 0;padding-top:10px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim)">Activité</div>
+      <div style="font-size:11px;color:var(--text-mid);padding:3px 0;display:flex;align-items:center;gap:6px"><div style="width:5px;height:5px;border-radius:50%;background:var(--green)"></div> Estimation terminée</div>
+      <div style="font-size:11px;color:var(--text-mid);padding:3px 0;display:flex;align-items:center;gap:6px"><div style="width:5px;height:5px;border-radius:50%;background:var(--green)"></div> 69 apps détectées</div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin:12px 0;padding-top:10px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim)">Journal</div>
+      <div class="log" style="max-height:80px;border:none;padding:0"><div>09:14:32 — Prêt.</div><div>09:14:33 — 1.8 Go.</div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     6. HUB CENTRAL (page d'accueil)
+     ═══════════════════════════════════════════ -->
+<div class="frame" id="f6">
+<div class="app">
+  <div class="sb">
+    <div class="sb-logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg> OpenCleaner</div>
+    <div class="sb-sec">Espace de travail</div>
+    <button class="sb-i on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><span>Tableau de bord</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg><span>Nettoyage</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg><span>Outils</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg><span>Santé</span></button>
+    <button class="sb-i"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.5v7H3V5.5zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7L3 18.5V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg><span>Personnalisation</span></button>
+    <div class="sb-sp"></div>
+    <div class="sb-bot"><button class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Historique</span></button></div>
+  </div>
+  <div class="ct" style="padding:28px 32px">
+    <h1>Tableau de bord</h1>
+    <p class="ps">Vue d'ensemble de votre PC — nettoyage, santé, personnalisation.</p>
+
+    <!-- Stat row -->
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div class="card" style="flex:1;margin:0;padding:16px"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Espace récupérable</div><div style="font-size:22px;font-weight:700">1.8 Go</div><div style="font-size:11px;color:var(--text-dim);margin-top:4px">14 catégories analysées</div><button class="btn-p" style="margin-top:10px;width:100%;justify-content:center;font-size:12px;padding:7px">Nettoyer →</button></div>
+      <div class="card" style="flex:1;margin:0;padding:16px"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Score santé</div><div style="font-size:22px;font-weight:700;color:var(--green)">85 / 100</div><div style="font-size:11px;color:var(--text-dim);margin-top:4px">CPU 12% · RAM 64% · Disque 86%</div><button class="btn-g" style="margin-top:10px;width:100%">Voir détails</button></div>
+      <div class="card" style="flex:1;margin:0;padding:16px"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Personnalisation</div><div style="font-size:22px;font-weight:700">533 Mo</div><div style="font-size:11px;color:var(--text-dim);margin-top:4px">RAM économisée par les tweaks</div><button class="btn-g" style="margin-top:10px;width:100%">Configurer</button></div>
+    </div>
+
+    <!-- Quick access -->
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Accès rapide</div>
+    <div class="qa" style="grid-template-columns:repeat(5,1fr)">
+      <div class="qa-c">Doublons</div>
+      <div class="qa-c">Grands fichiers</div>
+      <div class="qa-c">Espace disque</div>
+      <div class="qa-c" style="border-color:var(--amber)"><span style="color:var(--amber)">Apps</span></div>
+      <div class="qa-c">Démarrage</div>
+      <div class="qa-c">Registre</div>
+      <div class="qa-c">Mises à jour</div>
+      <div class="qa-c">Pilotes</div>
+      <div class="qa-c">Réparation</div>
+      <div class="qa-c">UWP</div>
+    </div>
+
+    <!-- Recent activity -->
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Activité récente</div>
+    <div class="card">
+      <div style="padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);font-size:12px"><div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div> Nettoyage — 820 Mo libérés <span style="margin-left:auto;color:var(--text-dim)">il y a 3 jours</span></div>
+      <div style="padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);font-size:12px"><div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div> Estimation — 1.8 Go récupérables <span style="margin-left:auto;color:var(--text-dim)">maintenant</span></div>
+      <div style="padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:12px"><div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div> 69 applications scannées <span style="margin-left:auto;color:var(--text-dim)">maintenant</span></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const D={
+1:"Classique étendu : flux vertical simple. Stats inline en haut, tâches groupées en accordéons, log en bas. Structure actuelle affinée.",
+2:"Dashboard cards : 3 grosses stat-cards en haut, puis 2 colonnes (tâches à gauche, actions+log à droite). Plus de contenu visible d'un coup.",
+3:"Sous-onglets internes : tabs Nettoyage/Outils/Apps/Navigateurs dans une barre. Réduit le scroll. Chaque onglet montre son contenu spécifique.",
+4:"Sidebar icônes + contenu large : sidebar 56px, 2 colonnes de tâches côte à côte. Plus d'espace horizontal exploité. Idéal écrans larges.",
+5:"Triple colonne : nav (180px) + contenu + panel droit (240px). Le panel droit = résumé stats + activité + journal. Tout visible sans modal.",
+6:"Hub central : page d'accueil avec 3 cards action (Nettoyage/Santé/Perso), grille accès rapide 5×2, activité récente. Point d'entrée unique vers toutes les features."
+};
+function show(n){
+  document.querySelectorAll('.frame').forEach(f=>f.classList.remove('on'));
+  document.getElementById('f'+n).classList.add('on');
+  document.querySelectorAll('.pk button').forEach(b=>b.classList.remove('on'));
+  event.target.classList.add('on');
+  document.getElementById('desc').textContent=D[n]||'';
+}
+</script>
+
+</body>
+</html>
