@@ -3255,13 +3255,19 @@ function _renderVersionBanner() {
 
   el.style.display = "inline-flex";
 
-  const incompatNote = incompatCount > 0
-    ? `<span class="vb-note">${incompatCount} option${incompatCount > 1 ? "s" : ""} réservée${incompatCount > 1 ? "s" : ""} à Windows 11</span>`
-    : "";
+  const notes = [];
+  if (incompatCount > 0 && detected < 11) {
+    notes.push(`${incompatCount} option${incompatCount > 1 ? "s" : ""} Windows 11 uniquement`);
+  }
+  const absentCount = _tweakItems.filter(i => i.present === false).length;
+  if (absentCount > 0) {
+    notes.push(`${absentCount} absent${absentCount > 1 ? "s" : ""} de ce PC`);
+  }
+  notes.push("certains changements nécessitent un redémarrage");
 
   el.innerHTML = `
     <span class="vb-chip"><strong>${_escapeHtml(caption)}</strong></span>
-    ${incompatNote}
+    <span class="vb-note">${notes.join(" · ")}</span>
   `;
 }
 
