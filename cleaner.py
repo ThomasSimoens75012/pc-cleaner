@@ -3434,6 +3434,7 @@ def generate_global_report():
     tasks = _safe(get_scheduled_tasks_state, [])
     autoruns = _safe(get_autorun_entries, [])
     browsers = _safe(get_browser_data_breakdown, [])
+    apps = _safe(lambda: get_installed_apps(deep=False), [])
 
     def _h(v):
         return escape(str(v)) if v is not None else ""
@@ -3451,42 +3452,100 @@ def generate_global_report():
 
     # Disques
     disk_rows = [
-        [_h(d.get("mountpoint")), _h(d.get("total_fmt")), _h(d.get("used_fmt")),
+        [_h(d.get("device")), _h(d.get("total_fmt")),
+         fmt_size(d.get("used", 0)) if d.get("used") else "—",
          _h(d.get("free_fmt")), f"{d.get('percent', 0):.0f}%"]
         for d in (disk or [])
     ]
     disk_html = _table(["Volume", "Total", "Utilisé", "Libre", "%"], disk_rows) if disk_rows else "<p>Aucun volume détecté.</p>"
 
+    # Santé
+    health_html = ""
+    if isinstance(health, dict):
+        cpu = health.get("cpu_percent")
+        ram_pct = health.get("ram_percent")
+        ram_used = health.get("ram_used_fmt") or ""
+        ram_total = health.get("ram_total_fmt") or ""
+        score = health.get("score")
+        if score is not None:
+            health_html += f"<p>Score de santé : <strong>{score}</strong>/100</p>"
+        parts = []
+        if cpu is not None:
+            parts.append(f"CPU : <strong>{cpu}%</strong>")
+        if ram_pct is not None:
+            parts.append(f"RAM : <strong>{ram_pct}%</strong>" + (f" ({ram_used} / {ram_total})" if ram_used else ""))
+        if disk:
+            d = disk[0]
+            parts.append(f"Disque : <strong>{d.get('percent', 0):.0f}%</strong> ({d.get('free_fmt', '')} libres)")
+        if parts:
+            health_html += "<p>" + " — ".join(parts) + "</p>"
+        top_procs = (health.get("top_processes") or [])[:10]
+        if top_procs:
+            tp_rows = [[_h(p.get("name")), f"{p.get('cpu', 0):.1f}", f"{p.get('memory_mb', 0):.0f}"] for p in top_procs]
+            health_html += _table(["Processus", "CPU %", "RAM (Mo)"], tp_rows)
+
     # Tweaks — actifs vs inactifs
-    tw_active = sum(1 for t in tweak_items if not t.get("active"))
+    tw_off = sum(1 for t in tweak_items if not t.get("active"))
     tw_total = len(tweak_items)
-    tweak_html = f"<p><strong>{tw_active}</strong> tweaks désactivés sur <strong>{tw_total}</strong>.</p>"
+    tw_absent = sum(1 for t in tweak_items if not t.get("present", True))
+    tweak_html = f"<p><strong>{tw_off}</strong> désactivés sur <strong>{tw_total}</strong>"
+    if tw_absent:
+        tweak_html += f" · {tw_absent} absent(s) de ce PC"
+    tweak_html += "</p>"
     tweak_rows = [
-        [_h(t.get("label")), _h(t.get("group")),
-         "✓ Désactivé" if not t.get("active") else "— Actif"]
-        for t in tweak_items[:100]
+        [_h(t.get("label")),
+         _h(t.get("group")),
+         "Absent" if not t.get("present", True) else ("✓ Désactivé" if not t.get("active") else "— Actif"),
+         f"{t.get('impact', {}).get('ram_mb', 0)} Mo" if t.get('impact', {}).get('ram_mb') else "—"]
+        for t in tweak_items
     ]
     if tweak_rows:
-        tweak_html += _table(["Tweak", "Groupe", "État"], tweak_rows)
+        tweak_html += _table(["Tweak", "Groupe", "État", "RAM"], tweak_rows)
 
     # Services
     svc_rows = [
-        [_h(s.get("display_name") or s.get("name")),
-         "✓ Activé" if s.get("enabled") else "✗ Désactivé"]
+        [_h(s.get("label") or s.get("name")),
+         _h(s.get("desc") or ""),
+         "✓ Actif" if s.get("active") else "✗ Désactivé",
+         f"{s.get('impact', {}).get('ram_mb', 0)} Mo" if s.get('impact', {}).get('ram_mb') else "—"]
         for s in (services or [])
     ]
-    svc_html = _table(["Service", "État"], svc_rows) if svc_rows else "<p>Pas de données services.</p>"
+    svc_html = _table(["Service", "Description", "État", "RAM"], svc_rows) if svc_rows else "<p>Pas de données.</p>"
+
+    # Tâches planifiées
+    task_rows = [
+        [_h(t.get("label") or t.get("path")),
+         _h(t.get("desc") or ""),
+         "✓ Actif" if t.get("active") else "✗ Désactivé"]
+        for t in (tasks or []) if t.get("exists")
+    ]
+    tasks_html = _table(["Tâche", "Description", "État"], task_rows) if task_rows else "<p>Pas de données.</p>"
 
     # Autoruns
     ar_enabled = sum(1 for a in autoruns if a.get("enabled"))
     ar_html = f"<p><strong>{len(autoruns)}</strong> entrées, <strong>{ar_enabled}</strong> actives.</p>"
     ar_rows = [
-        [_h(a.get("name")), _h(a.get("source")),
+        [_h(a.get("name")), _h(a.get("source")), _h(a.get("command", "")[:80]),
          "✓ Actif" if a.get("enabled") else "✗ Désactivé"]
         for a in (autoruns or [])
     ]
     if ar_rows:
-        ar_html += _table(["Nom", "Source", "État"], ar_rows)
+        ar_html += _table(["Nom", "Source", "Commande", "État"], ar_rows)
+
+    # Applications
+    apps_broken = sum(1 for a in (apps or []) if a.get("broken"))
+    apps_html = f"<p><strong>{len(apps or [])}</strong> applications installées"
+    if apps_broken:
+        apps_html += f" · <strong>{apps_broken} cassée(s)</strong>"
+    apps_html += "</p>"
+    app_rows = [
+        [_h(a.get("name")), _h(a.get("publisher") or "—"), _h(a.get("version") or "—"),
+         _h(a.get("size_fmt") or "—"), _h(a.get("category") or "—"),
+         "Cassée" if a.get("broken") else "OK"]
+        for a in (apps or [])[:80]
+    ]
+    if app_rows:
+        apps_html += _table(["Nom", "Éditeur", "Version", "Taille", "Catégorie", "État"], app_rows)
 
     # Browsers
     br_rows = [
@@ -3495,17 +3554,6 @@ def generate_global_report():
         for b in (browsers or [])
     ]
     br_html = _table(["Navigateur", "Profil", "Données"], br_rows) if br_rows else "<p>Aucun profil détecté.</p>"
-
-    # Santé — extraction light
-    cpu = health.get("cpu_percent") if isinstance(health, dict) else None
-    ram = health.get("ram_percent") if isinstance(health, dict) else None
-    top_procs = (health.get("top_processes") or [])[:10] if isinstance(health, dict) else []
-    health_html = ""
-    if cpu is not None or ram is not None:
-        health_html += f"<p>CPU : <strong>{_h(cpu)}%</strong> — RAM : <strong>{_h(ram)}%</strong></p>"
-    if top_procs:
-        tp_rows = [[_h(p.get("name")), _h(p.get("cpu")), _h(p.get("memory_mb"))] for p in top_procs]
-        health_html += _table(["Processus", "CPU %", "RAM (MB)"], tp_rows)
 
     style = """
     body { font-family: 'IBM Plex Sans', -apple-system, sans-serif; max-width: 980px; margin: 30px auto; padding: 0 20px; color: #37352f; background: #fff; }
@@ -3523,10 +3571,15 @@ def generate_global_report():
     @media print { body { margin: 0; } }
     """
 
+    win_caption = win_info.get("caption") or f"Windows {win_info.get('major', '?')}"
+    health_score = health.get("score") if isinstance(health, dict) else "—"
+
     summary_cards = f'''
     <div class="summary">
-      <div class="card"><div class="v">{_h(win_info.get("edition") or win_info.get("name") or "Windows")}</div><div class="l">Version</div></div>
-      <div class="card"><div class="v">{tw_active}/{tw_total}</div><div class="l">Tweaks désactivés</div></div>
+      <div class="card"><div class="v">{_h(win_caption)}</div><div class="l">Système</div></div>
+      <div class="card"><div class="v">{tw_off}/{tw_total}</div><div class="l">Tweaks désactivés</div></div>
+      <div class="card"><div class="v">{len(apps or [])}</div><div class="l">Applications</div></div>
+      <div class="card"><div class="v">{health_score}</div><div class="l">Score santé</div></div>
       <div class="card"><div class="v">{len(autoruns)}</div><div class="l">Autoruns</div></div>
       <div class="card"><div class="v">{len(browsers)}</div><div class="l">Profils nav.</div></div>
     </div>
@@ -3538,8 +3591,10 @@ def generate_global_report():
     {summary_cards}
     {_section("Disques", disk_html)}
     {_section("Santé système", health_html or "<p>Pas de données santé.</p>")}
+    {_section("Applications installées", apps_html)}
     {_section("Personnalisation Windows", tweak_html)}
     {_section("Services", svc_html)}
+    {_section("Tâches planifiées", tasks_html)}
     {_section("Démarrage (autoruns)", ar_html)}
     {_section("Navigateurs", br_html)}
     """
