@@ -119,7 +119,11 @@ function _logAppend(logId, msg) {
   if (!logEl) return;
   const d = document.createElement("div");
   d.className = "log-entry";
-  d.innerHTML = `<span class="log-ts">${new Date().toLocaleTimeString("fr-FR")}</span><span class="log-msg">${msg}</span>`;
+  const lower = (msg || "").toLowerCase();
+  let colorClass = "";
+  if (/erreur|échoué|échec|failed|error|impossible/.test(lower)) colorClass = " log-error";
+  else if (/succès|terminé|réussi|ok$|libérés|supprimé/.test(lower)) colorClass = " log-success";
+  d.innerHTML = `<span class="log-ts">${new Date().toLocaleTimeString("fr-FR")}</span><span class="log-msg${colorClass}">${msg}</span>`;
   logEl.appendChild(d);
   logEl.scrollTop = logEl.scrollHeight;
 }
@@ -555,10 +559,8 @@ async function uninstallApp(app, btn, silent) {
           if (btn) { btn.disabled = false; btn.textContent = silent ? "Silencieux" : "Désinstaller"; }
         } else {
           activityDone(actId, silent ? "Désinstallation silencieuse lancée" : "Désinstalleur ouvert");
-          if (!silent) {
-            showToast("Désinstallation lancée", `« ${app.name} »`, "success");
-          }
-          // Proposer le scan de résidus
+          showToast("Désinstallation lancée", `« ${app.name} »`, "success");
+          if (btn) { btn.disabled = false; btn.textContent = silent ? "Silencieux" : "Désinstaller"; }
           setTimeout(() => checkResiduals(app), 2000);
         }
       } catch (e) {
@@ -608,16 +610,20 @@ async function checkResiduals(app) {
     const data = await res.json();
     if (!data.items || !data.items.length) return;
     const paths = data.items.map(r => r.path).join("\n");
-    if (confirm(`Résidus trouvés pour "${app.name}" (${data.total_fmt}) :\n\n${paths}\n\nEnvoyer à la corbeille ?`)) {
-      const r = await fetch("/api/recycle-bin/send", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paths: data.items.map(i => i.path) }),
-      });
-      const rd = await r.json();
-      if (rd.moved) {
-        showToast("Résidus nettoyés", `${rd.moved} dossier(s) envoyés à la corbeille`, "success");
+    showConfirm(
+      `Résidus trouvés pour "${app.name}"`,
+      `${data.total_fmt} — ${data.items.length} dossier(s) :\n${paths}\n\nEnvoyer à la corbeille ?`,
+      async () => {
+        const r = await fetch("/api/recycle-bin/send", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paths: data.items.map(i => i.path) }),
+        });
+        const rd = await r.json();
+        if (rd.moved) {
+          showToast("Résidus nettoyés", `${rd.moved} dossier(s) envoyés à la corbeille`, "success");
+        }
       }
-    }
+    );
   } catch (e) {}
 }
 
@@ -2130,23 +2136,27 @@ async function cleanBrowserData() {
   const msg = hasSensitive
     ? "Vous allez supprimer des données SENSIBLES (mots de passe / auto-remplissage). Cette action est irréversible. Continuer ?"
     : "Supprimer les données sélectionnées ?";
-  if (!confirm(msg)) return;
-
-  const actId = activityPush("Nettoyage navigateurs", "run", "Suppression…", { tab: "outils" });
-  try {
-    const res = await fetch("/api/browser-data/clean", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ selections }),
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    activityDone(actId, `${data.deleted_fmt} libérés`);
-    loadBrowserData();
-  } catch (e) {
-    activityDone(actId, "Échec", "fail");
-    showToast("Nettoyage navigateurs", e.message, "warn");
-  }
+  showConfirm(
+    hasSensitive ? "Données sensibles" : "Nettoyage navigateurs",
+    msg,
+    async () => {
+      const actId = activityPush("Nettoyage navigateurs", "run", "Suppression…", { tab: "outils" });
+      try {
+        const res = await fetch("/api/browser-data/clean", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ selections }),
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        activityDone(actId, `${data.deleted_fmt} libérés`);
+        loadBrowserData();
+      } catch (e) {
+        activityDone(actId, "Échec", "fail");
+        showToast("Nettoyage navigateurs", e.message, "warn");
+      }
+    }
+  );
 }
 
 async function loadUpdateCenter() {
@@ -2319,426 +2329,6 @@ function deleteSelectedShortcuts() {
     endpoint:  "/api/shortcuts/delete",
     confirmBody: "Les fichiers .lnk sélectionnés seront définitivement supprimés. Cela n'affecte pas les applications elles-mêmes.",
   });
-}
-
-// ── Grands fichiers ───────────────────────────────────────────────────────────
-
-let _lfFiles = [], _lfTotalFmt = "", _lfSortKey = "size", _lfSortDir = -1;
-
-async function startLargeFileScan() {
-  const folder  = document.getElementById("lf-folder").value.trim();
-  const minGb   = parseFloat(document.getElementById("lf-minsize").value) || 0.5;
-  if (!folder) { showToast("Dossier requis", "Entrez un dossier à analyser.", "warn"); return; }
-
-  const resultEl = document.getElementById("lf-results");
-  const btnEl    = document.getElementById("btn-scan-lf");
-
-  document.getElementById("lf-log").innerHTML = "";
-  resultEl.innerHTML = "";
-  _btnScan(btnEl, "Analyse…");
-
-  const lfLog = (msg) => _logAppend("lf-log", msg);
-
-  try {
-    const res = await fetch("/api/largefiles", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ folder, min_size_gb: minGb }),
-    });
-    if (!res.ok) { const e = await res.json(); showToast("Erreur", e.error, "warn"); btnEl.disabled = false; btnEl.textContent = "Analyser"; return; }
-    const { job_id } = await res.json();
-
-    const es = new EventSource(`/api/stream/${job_id}`);
-    _activeStreams["lf"] = es;
-    _showCancelBtn(btnEl, "lf", () => { _btnReset(btnEl); document.getElementById("lf-log").innerHTML = ""; });
-    es.onmessage = (e) => {
-      const item = JSON.parse(e.data);
-      if (item.type === "log")    lfLog(item.msg);
-      if (item.type === "result") renderLargeFiles(item.files, item.total_fmt);
-      if (item.type === "done") {
-        es.close(); _removeCancelBtn("lf");
-        _btnReset(btnEl);
-      }
-    };
-    es.onerror = () => { es.close(); _removeCancelBtn("lf"); _btnReset(btnEl); };
-  } catch (err) {
-    lfLog("Erreur : " + err);
-    _btnReset(btnEl);
-  }
-}
-
-function renderLargeFiles(files, totalFmt) {
-  if (!files.length) {
-    document.getElementById("lf-results").innerHTML = "";
-    _logAppend("lf-log", "Aucun résultat.");
-    return;
-  }
-  _lfFiles = files; _lfTotalFmt = totalFmt;
-  _lfSortKey = "size"; _lfSortDir = -1;
-  _renderLargeFiles();
-}
-
-function _renderLargeFiles() {
-  const el = document.getElementById("lf-results");
-  const files = [..._lfFiles].sort((a, b) =>
-    _lfSortKey === "size" ? _lfSortDir * (b.size - a.size) : _lfSortDir * a.name.localeCompare(b.name)
-  );
-  el.innerHTML = "";
-  el.appendChild(_makeSelHeader(el, {
-    countText:   `${_lfFiles.length} fichier(s) — ${_lfTotalFmt} au total`,
-    deleteId:    "btn-delete-lf",
-    deleteFn:    deleteSelectedLargeFiles,
-    sortKeys:    [["size","Taille"],["name","Nom"]],
-    sortKey:     _lfSortKey, sortDir: _lfSortDir,
-    onSort: (key) => { _lfSortKey === key ? _lfSortDir *= -1 : (_lfSortKey = key, _lfSortDir = -1); _renderLargeFiles(); },
-  }));
-
-  _watchSelSize(el, document.getElementById("btn-delete-lf"));
-  _renderBatched(files, (f, i) => _makeFileRow(f, i, "lf", { showSize: true }), el);
-}
-
-function deleteSelectedLargeFiles() {
-  _deleteSelected({
-    resultsId: "lf-results",
-    btnId:     "btn-delete-lf",
-    endpoint:  "/api/recycle-bin/send",
-    confirmBody: (n, size) =>
-      `Ces fichiers seront envoyés à la corbeille. Espace récupéré estimé : ${fmtBytesTools(size)}.`,
-  });
-}
-
-// ── Analyse de l'espace disque ────────────────────────────────────────────────
-
-let _daHistory   = [];   // pile de navigation : [{folder, items, total}]
-let _daItems     = [];   // résultats courants
-let _daTotal     = 0;
-let _daEsActive  = null;
-let _daSortKey   = "size";   // "size" | "name"
-let _daSortDir   = -1;       // -1 desc, 1 asc
-let _daView      = "list";   // "list" | "treemap"
-
-function setDiskView(view) {
-  _daView = view;
-  document.querySelectorAll(".da-view-btn").forEach(b => {
-    b.classList.toggle("active", b.dataset.view === view);
-  });
-  const folder = document.getElementById("da-folder")?.value || "";
-  if (_daItems.length) _renderDiskItems(_daItems, _daTotal, folder);
-}
-
-function startDiskAnalysis(folder) {
-  const inputEl = document.getElementById("da-folder");
-  folder = folder || inputEl.value.trim() || "C:\\";
-  inputEl.value = folder;
-  _runDiskAnalysis(folder, true);
-}
-
-function _runDiskAnalysis(folder, resetHistory) {
-  if (_daEsActive) { _daEsActive.close(); _daEsActive = null; }
-  if (resetHistory) _daHistory = [];
-
-  const resultEl = document.getElementById("da-results");
-  const btnEl    = document.getElementById("btn-scan-da");
-  resultEl.innerHTML = _daSkeleton();
-  _btnScan(btnEl, "Analyse…");
-  _daItems = [];
-  _daTotal = 0;
-
-  _updateBreadcrumb(folder);
-
-  fetch("/api/disk-analysis", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ folder }),
-  })
-  .then(r => r.json())
-  .then(({ job_id }) => {
-    const es = new EventSource(`/api/stream/${job_id}`);
-    _daEsActive = es;
-    _activeStreams["da"] = es;
-    _showCancelBtn(btnEl, "da", () => {
-      _btnReset(btnEl);
-      document.getElementById("da-results").innerHTML = "";
-    });
-
-    es.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
-
-      if (msg.type === "item") {
-        _daItems.push(msg.item);
-        _daTotal += msg.item.size;
-        _renderDiskItems(_daItems, _daTotal, folder);
-      }
-      if (msg.type === "result") {
-        _daItems  = msg.items;
-        _daTotal  = msg.total;
-        _renderDiskItems(_daItems, _daTotal, folder);
-        _btnReset(btnEl);
-        es.close(); _daEsActive = null; _removeCancelBtn("da");
-      }
-      if (msg.type === "done" && !msg.items) {
-        _btnReset(btnEl);
-        es.close(); _daEsActive = null; _removeCancelBtn("da");
-      }
-    };
-    es.onerror = () => {
-      es.close(); _daEsActive = null; _btnReset(btnEl);
-    };
-  })
-  .catch(err => {
-    resultEl.innerHTML = `<div class="tool-error">Erreur : ${err.message}</div>`;
-    _btnReset(btnEl);
-  });
-}
-
-function _daSkeleton() {
-  return Array.from({length: 6}, (_, i) => `
-    <div class="da-loading">
-      <div class="da-icon"><svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M20 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
-      <div class="da-name" style="flex:1"><div class="skeleton-box" style="width:${35+i*8}%;height:12px"></div></div>
-      <div class="da-bar-wrap"><div class="da-bar" style="width:100%"></div></div>
-      <div class="da-size"><div class="skeleton-box" style="width:45px;height:11px"></div></div>
-    </div>`).join("");
-}
-
-function _daSortItems(items) {
-  return [...items].sort((a, b) => {
-    if (_daSortKey === "name") return _daSortDir * a.name.localeCompare(b.name);
-    // _daSortDir -1 = taille décroissante (défaut), 1 = croissante
-    return _daSortDir === -1 ? (b.size - a.size) : (a.size - b.size);
-  });
-}
-
-function _daSortBy(key) {
-  if (_daSortKey === key) { _daSortDir *= -1; }
-  else { _daSortKey = key; _daSortDir = key === "size" ? -1 : 1; }
-  _renderDiskItems(_daItems, _daTotal, document.getElementById("da-folder")?.value || "");
-}
-
-function _renderDiskItems(items, total, folder) {
-  const el = document.getElementById("da-results");
-  if (!items.length) {
-    el.innerHTML = `<div class="tool-empty">Aucun résultat.</div>`;
-    return;
-  }
-  if (_daView === "treemap") {
-    _renderDiskTreemap(items, total, folder);
-    return;
-  }
-
-  const sorted  = _daSortItems(items);
-  const maxSize = sorted[0]?.size || 1;
-  el.innerHTML = "";
-
-  // En-tête de tri
-  const hdr = document.createElement("div");
-  hdr.className = "tool-row tool-header";
-  hdr.style.cssText = "font-size:11px;padding:4px 10px;gap:8px";
-  [["name","Nom"],["size","Taille"]].forEach(([key, label]) => {
-    const span = document.createElement("span");
-    span.style.cssText = "cursor:pointer;user-select:none;" + (key === "name" ? "flex:1" : "min-width:70px;text-align:right");
-    span.innerHTML = `<strong>${label}</strong>${_daSortKey === key ? (_daSortDir === -1 ? " ↓" : " ↑") : ""}`;
-    span.addEventListener("click", () => _daSortBy(key));
-    hdr.appendChild(span);
-  });
-  el.appendChild(hdr);
-
-  sorted.forEach(item => {
-    const row = document.createElement("div");
-    row.className = "da-row" + (item.is_dir ? " da-dir" : "");
-
-    const icon = document.createElement("div");
-    icon.className = "da-icon";
-    icon.innerHTML = item.is_dir
-      ? '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M20 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
-      : '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
-
-    const name = document.createElement("div");
-    name.className = "da-name";
-    name.textContent = item.name;
-
-    const barWrap = document.createElement("div"); barWrap.className = "da-bar-wrap";
-    const bar     = document.createElement("div"); bar.className = "da-bar";
-    bar.style.width = maxSize > 0 ? (item.size / maxSize * 100) + "%" : "0%";
-    barWrap.appendChild(bar);
-
-    const sizeEl = document.createElement("div"); sizeEl.className = "da-size"; sizeEl.textContent = item.size_fmt;
-    const pct    = total > 0 ? (item.size / total * 100).toFixed(1) : 0;
-    const pctEl  = document.createElement("div"); pctEl.className = "da-pct"; pctEl.textContent = pct + "%";
-
-    row.append(icon, name, barWrap, sizeEl, pctEl);
-
-    if (item.is_dir) {
-      row.addEventListener("click", () => {
-        _daHistory.push({ folder, items: [..._daItems], total: _daTotal });
-        document.getElementById("da-folder").value = item.path;
-        _runDiskAnalysis(item.path, false);
-      });
-    }
-
-    el.appendChild(row);
-  });
-}
-
-function _updateBreadcrumb(folder) {
-  const el = document.getElementById("da-breadcrumb");
-  if (_daHistory.length === 0) { el.style.display = "none"; return; }
-
-  el.style.display = "block";
-  el.innerHTML = "";
-
-  // Bouton retour
-  const back = document.createElement("span");
-  back.style.cssText = "cursor:pointer;color:var(--accent);margin-right:8px";
-  back.textContent = "← Retour";
-  back.addEventListener("click", () => {
-    const prev = _daHistory.pop();
-    if (!prev) return;
-    document.getElementById("da-folder").value = prev.folder;
-    _daItems = prev.items;
-    _daTotal = prev.total;
-    _renderDiskItems(_daItems, _daTotal, prev.folder);
-    _updateBreadcrumb(prev.folder);
-  });
-  el.appendChild(back);
-
-  // Chemin complet
-  const parts = folder.replace(/\\/g, "/").split("/").filter(Boolean);
-  parts.forEach((part, i) => {
-    const sep = document.createTextNode(i === 0 ? "" : " › ");
-    el.appendChild(sep);
-    const span = document.createElement("span");
-    span.textContent = part;
-    span.style.color = i === parts.length - 1 ? "var(--text)" : "var(--text-dim)";
-    el.appendChild(span);
-  });
-}
-
-// Squarified treemap — Bruls, Huijbregts & van Wijk (2000)
-// Chaque item = { name, path, size, size_fmt, is_dir }
-function _renderDiskTreemap(items, total, folder) {
-  const el = document.getElementById("da-results");
-  el.innerHTML = "";
-  const container = document.createElement("div");
-  container.className = "da-treemap";
-  el.appendChild(container);
-
-  // Attendre le layout pour connaître la largeur réelle
-  requestAnimationFrame(() => {
-    const W = container.clientWidth;
-    const H = container.clientHeight;
-    if (W <= 0 || H <= 0) return;
-
-    // Ne garder que les items avec une taille > 0
-    const positive = items.filter(i => i.size > 0);
-    if (!positive.length) {
-      container.innerHTML = `<div class="tool-empty" style="padding:20px">Aucun contenu mesurable.</div>`;
-      return;
-    }
-
-    // Plafonner à ~80 items pour éviter un rendu illisible
-    const sorted = [...positive].sort((a, b) => b.size - a.size).slice(0, 80);
-    const sum = sorted.reduce((s, i) => s + i.size, 0);
-    // Quantiles pour intensité de couleur (w : 1 à 5)
-    const sizes = sorted.map(i => i.size).sort((a, b) => a - b);
-    const q = (p) => sizes[Math.min(sizes.length - 1, Math.floor(sizes.length * p))];
-    const qs = [q(0.2), q(0.4), q(0.6), q(0.8)];
-    const intensityOf = (size) => {
-      if (size >= qs[3]) return 5;
-      if (size >= qs[2]) return 4;
-      if (size >= qs[1]) return 3;
-      if (size >= qs[0]) return 2;
-      return 1;
-    };
-
-    // Surface totale du container normalisée à la somme des tailles
-    const scale = (W * H) / sum;
-    const scaled = sorted.map(i => ({ ...i, _a: i.size * scale }));
-
-    // Squarified layout
-    const rects = [];
-    _squarify(scaled, [], { x: 0, y: 0, w: W, h: H }, rects);
-
-    rects.forEach(r => {
-      const tile = document.createElement("div");
-      tile.className = "da-tile" + (r.item.is_dir ? " da-tile-dir" : "");
-      if (r.w < 80 || r.h < 40) tile.classList.add("da-small");
-      if (r.w < 40 || r.h < 24) tile.classList.add("da-tiny");
-      tile.style.left   = r.x + "px";
-      tile.style.top    = r.y + "px";
-      tile.style.width  = r.w + "px";
-      tile.style.height = r.h + "px";
-      tile.dataset.w = String(intensityOf(r.item.size));
-      tile.title = `${r.item.name}\n${r.item.size_fmt}${total > 0 ? ` — ${(r.item.size / total * 100).toFixed(1)}%` : ""}`;
-
-      const name = document.createElement("div");
-      name.className = "da-tile-name";
-      name.textContent = r.item.name;
-      const size = document.createElement("div");
-      size.className = "da-tile-size";
-      size.textContent = r.item.size_fmt;
-      tile.append(name, size);
-
-      if (r.item.is_dir) {
-        tile.addEventListener("click", () => {
-          _daHistory.push({ folder, items: [..._daItems], total: _daTotal });
-          document.getElementById("da-folder").value = r.item.path;
-          _runDiskAnalysis(r.item.path, false);
-        });
-      }
-      container.appendChild(tile);
-    });
-  });
-}
-
-function _squarify(children, row, rect, out) {
-  if (!children.length) {
-    _layoutRow(row, rect, out);
-    return;
-  }
-  const shortest = Math.min(rect.w, rect.h);
-  const next = children[0];
-  const newRow = row.concat([next]);
-  if (row.length === 0 || _worst(row, shortest) >= _worst(newRow, shortest)) {
-    _squarify(children.slice(1), newRow, rect, out);
-  } else {
-    const newRect = _layoutRow(row, rect, out);
-    _squarify(children, [], newRect, out);
-  }
-}
-
-function _worst(row, w) {
-  if (!row.length) return Infinity;
-  const s = row.reduce((a, r) => a + r._a, 0);
-  const rMax = Math.max(...row.map(r => r._a));
-  const rMin = Math.min(...row.map(r => r._a));
-  const w2 = w * w;
-  const s2 = s * s;
-  return Math.max((w2 * rMax) / s2, s2 / (w2 * rMin));
-}
-
-function _layoutRow(row, rect, out) {
-  if (!row.length) return rect;
-  const s = row.reduce((a, r) => a + r._a, 0);
-  if (rect.w >= rect.h) {
-    // On pose la row sur le côté gauche (colonne verticale)
-    const rowW = s / rect.h;
-    let yOff = 0;
-    row.forEach(r => {
-      const h = r._a / rowW;
-      out.push({ item: r, x: rect.x, y: rect.y + yOff, w: rowW, h });
-      yOff += h;
-    });
-    return { x: rect.x + rowW, y: rect.y, w: rect.w - rowW, h: rect.h };
-  } else {
-    // On pose la row sur le haut (ligne horizontale)
-    const rowH = s / rect.w;
-    let xOff = 0;
-    row.forEach(r => {
-      const w = r._a / rowH;
-      out.push({ item: r, x: rect.x + xOff, y: rect.y, w, h: rowH });
-      xOff += w;
-    });
-    return { x: rect.x, y: rect.y + rowH, w: rect.w, h: rect.h - rowH };
-  }
 }
 
 // ── Windows.old ──────────────────────────────────────────────────────────────
@@ -3452,37 +3042,40 @@ async function handleImportConfigFile(event) {
     return;
   }
 
-  const summary = `Restaurer cette configuration ?\n\n` +
+  const summary =
     `• ${counts.tweaks} tweaks\n` +
     `• ${counts.services} services\n` +
     `• ${counts.tasks} tâches planifiées\n` +
     `• ${counts.autoruns} autoruns\n\n` +
     `Date : ${snapshot.created_at || "inconnue"}\n` +
     `Hôte : ${snapshot.hostname || "inconnu"}`;
-  if (!confirm(summary)) return;
-
-  const actId = activityPush("Restauration configuration", "run", "Application en cours…", { tab: "outils" });
-  try {
-    const res = await fetch("/api/config/import", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ snapshot }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
-    activityDone(actId, `${data.applied} appliqués, ${data.skipped} ignorés`);
-    if (data.errors && data.errors.length) {
-      console.warn("[restore] errors:", data.errors);
+  showConfirm(
+    "Restaurer cette configuration ?",
+    summary,
+    async () => {
+      const actId = activityPush("Restauration configuration", "run", "Application en cours…", { tab: "outils" });
+      try {
+        const res = await fetch("/api/config/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ snapshot }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+        activityDone(actId, `${data.applied} appliqués, ${data.skipped} ignorés`);
+        if (data.errors && data.errors.length) {
+          console.warn("[restore] errors:", data.errors);
+        }
+        if (typeof loadWindowsTweaks === "function") loadWindowsTweaks();
+        if (typeof loadServices === "function") loadServices();
+        if (typeof loadScheduledTasks === "function") loadScheduledTasks();
+        if (typeof loadStartup === "function") loadStartup();
+      } catch (e) {
+        activityDone(actId, "Échec", "fail");
+        showToast("Restauration impossible", e.message, "warn");
+      }
     }
-    // Rafraîchit les panneaux impactés
-    if (typeof loadWindowsTweaks === "function") loadWindowsTweaks();
-    if (typeof loadServices === "function") loadServices();
-    if (typeof loadScheduledTasks === "function") loadScheduledTasks();
-    if (typeof loadStartup === "function") loadStartup();
-  } catch (e) {
-    activityDone(actId, "Échec", "fail");
-    showToast("Restauration impossible", e.message, "warn");
-  }
+  );
 }
 
 async function exportTweaksReg() {
@@ -4316,6 +3909,8 @@ async function startDriversScan() {
     } else {
       _logAppend("drivers-log", `${_drivers.length} pilote(s) trouvé(s).`);
       _renderDrivers();
+      const wuBar = document.getElementById("drivers-wu-bar");
+      if (wuBar) wuBar.style.display = "";
     }
   } catch (e) {
     _logAppend("drivers-log", "Erreur : " + e.message);
@@ -4589,4 +4184,206 @@ async function _deleteSelectedRestorePoints() {
       }
     }
   );
+}
+
+// ── Analyse intelligente ─────────────────────────────────────────────────────
+
+const _SA_CAT_LABELS = {
+  photos:              "Photos / Images",
+  videos:              "Vidéos",
+  musique:             "Musique",
+  archives:            "Archives",
+  documents:           "Documents",
+  jeux_iso:            "Jeux / ISOs",
+  sauvegardes:         "Sauvegardes",
+  projet_dev:          "Projet dev",
+  installer_installé:  "Installer inutile",
+  cache_jeux:          "Cache jeux",
+  mixte:               "Contenu mixte",
+  autre:               "Autre",
+};
+
+const _SA_CONFIDENCE_LABELS = {
+  "sûr":         { text: "Suppression sûre",  color: "#27ae60" },
+  "probable":    { text: "Probable",           color: "#f39c12" },
+  "à vérifier":  { text: "À vérifier",        color: "#c0392b" },
+};
+
+let _saItems = [];
+let _saSortKey = "size";
+let _saSortDir = -1;
+let _saFilterCat = null;   // null = toutes
+
+async function startSmartAnalysis() {
+  const minGb   = parseFloat(document.getElementById("sa-minsize").value) || 0.5;
+  const raw = parseInt(document.getElementById("sa-minage").value);
+  const minMois = isNaN(raw) ? 6 : Math.max(0, raw);
+  const resultEl = document.getElementById("sa-results");
+  const btnEl    = document.getElementById("btn-scan-sa");
+  const logEl    = document.getElementById("sa-log");
+
+  logEl.innerHTML = "";
+  resultEl.innerHTML = "";
+  _saItems = [];
+  _saFilterCat = null;
+  _btnScan(btnEl, "Analyse…");
+
+  const saLog = (msg) => _logAppend("sa-log", msg);
+
+  try {
+    const res = await fetch("/api/smart-analysis", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ min_size: Math.round(minGb * 1e9), min_age_days: minMois * 30 }),
+    });
+    if (!res.ok) { const e = await res.json(); showToast("Erreur", e.error, "warn"); _btnReset(btnEl); return; }
+    const { job_id } = await res.json();
+
+    const es = new EventSource(`/api/stream/${job_id}`);
+    _activeStreams["sa"] = es;
+    _showCancelBtn(btnEl, "sa", () => { _btnReset(btnEl); logEl.innerHTML = ""; resultEl.innerHTML = ""; });
+
+    es.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === "start") saLog(msg.msg);
+      if (msg.type === "log") saLog(msg.msg);
+      if (msg.type === "item") {
+        _saItems.push(msg.item);
+        const conf = msg.item.confidence === "sûr" ? " [sûr]" : msg.item.confidence === "à vérifier" ? " [à vérifier]" : "";
+        const hint = msg.item.hint ? ` (${msg.item.hint})` : "";
+        saLog(`${msg.item.name} — ${msg.item.size_fmt} — ${_SA_CAT_LABELS[msg.item.category] || msg.item.category}${conf}${hint}`);
+      }
+      if (msg.type === "result") {
+        _saItems = msg.items;
+        _saSortKey = "size"; _saSortDir = -1;
+        _renderSmartResults();
+      }
+      if (msg.type === "done") {
+        es.close(); _removeCancelBtn("sa");
+        _btnReset(btnEl);
+        if (!_saItems.length) saLog("Aucun gros dossier oublié détecté.");
+      }
+    };
+    es.onerror = () => { es.close(); _removeCancelBtn("sa"); _btnReset(btnEl); };
+  } catch (err) {
+    saLog("Erreur : " + err);
+    _btnReset(btnEl);
+  }
+}
+
+function _renderSmartResults() {
+  const el = document.getElementById("sa-results");
+  el.innerHTML = "";
+
+  const filtered = _saFilterCat
+    ? _saItems.filter(i => i.category === _saFilterCat)
+    : _saItems;
+
+  if (!filtered.length) {
+    el.innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:13px">Aucun résultat pour ce filtre.</div>';
+    return;
+  }
+
+  const sorted = [...filtered].sort((a, b) =>
+    _saSortKey === "size" ? _saSortDir * (b.size - a.size)
+      : _saSortKey === "age" ? _saSortDir * (b.days_ago - a.days_ago)
+      : _saSortDir * a.name.localeCompare(b.name)
+  );
+
+  const totalSize = filtered.reduce((s, i) => s + i.size, 0);
+
+  // Barre de filtres catégories
+  const cats = {};
+  _saItems.forEach(i => { cats[i.category] = (cats[i.category] || 0) + 1; });
+  const filterBar = document.createElement("div");
+  filterBar.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;padding:8px 0;border-bottom:1px solid var(--border)";
+
+  const allBtn = document.createElement("button");
+  allBtn.className = "btn-ghost" + (_saFilterCat === null ? " active" : "");
+  allBtn.textContent = `Tout (${_saItems.length})`;
+  allBtn.onclick = () => { _saFilterCat = null; _renderSmartResults(); };
+  filterBar.appendChild(allBtn);
+
+  for (const [cat, count] of Object.entries(cats).sort((a, b) => b[1] - a[1])) {
+    const btn = document.createElement("button");
+    btn.className = "btn-ghost" + (_saFilterCat === cat ? " active" : "");
+    btn.textContent = `${_SA_CAT_LABELS[cat] || cat} (${count})`;
+    btn.onclick = () => { _saFilterCat = cat; _renderSmartResults(); };
+    filterBar.appendChild(btn);
+  }
+  el.appendChild(filterBar);
+
+  // Header avec sélection + tri
+  el.appendChild(_makeSelHeader(el, {
+    countText:   `${filtered.length} dossier(s) — ${fmtBytesTools(totalSize)} au total`,
+    deleteId:    "btn-delete-sa",
+    deleteFn:    deleteSelectedSmartItems,
+    sortKeys:    [["size", "Taille"], ["age", "Ancienneté"], ["name", "Nom"]],
+    sortKey:     _saSortKey, sortDir: _saSortDir,
+    onSort: (key) => {
+      _saSortKey === key ? _saSortDir *= -1 : (_saSortKey = key, _saSortDir = -1);
+      _renderSmartResults();
+    },
+  }));
+
+  _watchSelSize(el, document.getElementById("btn-delete-sa"));
+
+  _renderBatched(sorted, (item, i) => {
+    const row = document.createElement("div"); row.className = "dupe-row";
+    const cbId = `sa-${i}`;
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.id = cbId; cb.dataset.path = item.path;
+    cb.dataset.size = item.size; cb.checked = true;
+
+    const lbl = document.createElement("label"); lbl.htmlFor = cbId; lbl.className = "sel-label";
+
+    const sizeSpan = document.createElement("span");
+    sizeSpan.className = "dupe-size"; sizeSpan.textContent = item.size_fmt;
+
+    const catBadge = document.createElement("span");
+    catBadge.style.cssText = "font-size:11px;padding:1px 6px;border-radius:3px;background:var(--bg-hover);color:var(--text-dim);margin-left:6px";
+    catBadge.textContent = _SA_CAT_LABELS[item.category] || item.category;
+
+    const ageBadge = document.createElement("span");
+    ageBadge.style.cssText = "font-size:11px;color:var(--text-dim);margin-left:6px";
+    const years = Math.floor(item.days_ago / 365);
+    const months = Math.floor((item.days_ago % 365) / 30);
+    ageBadge.textContent = years > 0
+      ? `${years} an${years > 1 ? "s" : ""}${months > 0 ? ` ${months} mois` : ""}`
+      : `${months || 1} mois`;
+
+    const detail = document.createElement("span");
+    detail.style.cssText = "font-size:11px;color:var(--text-dim);margin-left:6px";
+    detail.textContent = item.is_file
+      ? "fichier"
+      : `${item.file_count} fichier${item.file_count > 1 ? "s" : ""}`;
+
+    const nameSpan = document.createElement("span"); nameSpan.className = "sel-name";
+    nameSpan.textContent = item.name;
+
+    const confInfo = _SA_CONFIDENCE_LABELS[item.confidence] || _SA_CONFIDENCE_LABELS["probable"];
+    const confBadge = document.createElement("span");
+    confBadge.style.cssText = `font-size:10px;padding:1px 5px;border-radius:3px;margin-left:6px;border:1px solid ${confInfo.color};color:${confInfo.color}`;
+    confBadge.textContent = confInfo.text;
+
+    lbl.append(sizeSpan, " ", nameSpan, catBadge, confBadge, ageBadge, detail);
+
+    const pathSpan = document.createElement("span"); pathSpan.className = "sel-dim";
+    const hintText = item.hint ? ` — ${item.hint}` : "";
+    pathSpan.textContent = item.path + hintText;
+    lbl.append(document.createElement("br"), pathSpan);
+
+    row.append(cb, lbl);
+    _applyAdminLock(row, cb, item.needs_admin);
+    return row;
+  }, el);
+}
+
+function deleteSelectedSmartItems() {
+  _deleteSelected({
+    resultsId:   "sa-results",
+    btnId:       "btn-delete-sa",
+    endpoint:    "/api/recycle-bin/send",
+    confirmBody: (n, size) =>
+      `${n} dossier(s) seront envoyés à la corbeille. Espace récupéré estimé : ${fmtBytesTools(size)}.`,
+  });
 }

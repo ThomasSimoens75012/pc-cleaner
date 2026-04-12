@@ -956,6 +956,8 @@
     .log-entry { display: flex; gap: 12px; padding: 1px 0; }
     .log-ts   { color: var(--text-dim); flex-shrink: 0; font-size: 11px; padding-top: 1px; }
     .log-msg  { color: var(--text-mid); }
+    .log-msg.log-error   { color: #c0392b; }
+    .log-msg.log-success { color: #27ae60; }
     .log-ok   { color: var(--green); }
     .log-warn { color: var(--amber); }
 
@@ -2188,51 +2190,30 @@
     <div class="tools-group-desc">Identifiez ce qui prend de la place et récupérez de l'espace sur votre disque.</div>
   </div>
 
-  <!-- Analyse de l'espace disque -->
+  <!-- Analyse intelligente -->
   <div>
     <div class="section-head">
       <div>
-        <div class="tool-section-title">Analyse de l'espace disque</div>
-        <div class="tool-section-sub">Visualisez ce qui occupe de la place sur votre disque</div>
+        <div class="tool-section-title">Analyse intelligente</div>
+        <div class="tool-section-sub">Scanne tous vos disques et détecte les gros dossiers oubliés et fichiers volumineux</div>
       </div>
     </div>
     <div class="card">
       <div class="card-body">
         <div class="dupe-scan-bar">
-          <input class="dupe-folder-input" id="da-folder" value="C:\">
-          <button class="btn-ghost" onclick="browseFolder('da-folder')">Parcourir…</button>
-          <button class="btn-primary" id="btn-scan-da" data-activity="Analyse de l'espace disque" onclick="startDiskAnalysis()">Analyser</button>
-          <div class="da-view-toggle" style="display:flex;gap:4px;margin-left:auto">
-            <button class="btn-ghost da-view-btn active" data-view="list" onclick="setDiskView('list')" title="Vue liste">Liste</button>
-            <button class="btn-ghost da-view-btn" data-view="treemap" onclick="setDiskView('treemap')" title="Vue treemap">Treemap</button>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input class="dupe-size-input" id="sa-minsize" type="number" value="0.5" step="0.1" min="0.1" title="Taille minimale en Go" style="width:60px">
+            <span style="font-size:12px;color:var(--text-dim);white-space:nowrap">Go min.</span>
           </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input class="dupe-size-input" id="sa-minage" type="number" value="6" step="1" min="0" title="Ancienneté minimale en mois (0 = pas de filtre)" style="width:50px">
+            <span style="font-size:12px;color:var(--text-dim);white-space:nowrap">mois min.</span>
+          </div>
+          <button class="btn-primary" id="btn-scan-sa" data-activity="Analyse intelligente" onclick="startSmartAnalysis()">Analyser</button>
         </div>
       </div>
-      <div id="da-breadcrumb" style="font-size:12px;color:var(--text-dim);display:none;padding:8px 0"></div>
-      <div id="da-results"></div>
-    </div>
-  </div>
-
-  <!-- Grands fichiers -->
-  <div>
-    <div class="section-head">
-      <div>
-        <div class="tool-section-title">Grands fichiers</div>
-        <div class="tool-section-sub">Repérez les fichiers volumineux qui occupent inutilement de l'espace</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-body">
-        <div class="dupe-scan-bar">
-          <input class="dupe-folder-input" id="lf-folder" placeholder="Ex: C:\" value="C:\">
-          <button class="btn-ghost" onclick="browseFolder('lf-folder')">Parcourir…</button>
-          <input class="dupe-size-input" id="lf-minsize" type="number" value="0.5" step="0.1" min="0.1" title="Taille minimale en Go">
-          <span style="font-size:12px;color:var(--text-dim);white-space:nowrap">Go min.</span>
-          <button class="btn-primary" id="btn-scan-lf" data-activity="Gros fichiers" data-log-target="lf-log" onclick="startLargeFileScan()">Analyser</button>
-        </div>
-      </div>
-      <div class="log-body" id="lf-log"></div>
-      <div id="lf-results" class="results-scroll"></div>
+      <div class="log-body" id="sa-log"></div>
+      <div id="sa-results" class="results-scroll"></div>
     </div>
   </div>
 
@@ -2251,7 +2232,7 @@
           <button class="dupe-mode-btn" id="dupe-mode-folders" onclick="setDupeMode('folders')">Dossiers</button>
         </div>
         <div class="dupe-scan-bar">
-          <input class="dupe-folder-input" id="dupe-folder" placeholder="Ex: C:\Users\thoma\Documents" value="C:\Users\thoma\Downloads">
+          <input class="dupe-folder-input" id="dupe-folder" placeholder="Ex: C:\Users\Documents" value="{{ downloads_folder }}">
           <button class="btn-ghost" onclick="browseFolder('dupe-folder')">Parcourir…</button>
           <input class="dupe-size-input" id="dupe-minsize" type="number" value="100" title="Taille minimale en Ko">
           <span id="dupe-minsize-label" style="font-size:12px;color:var(--text-dim);white-space:nowrap">Ko min.</span>
@@ -2764,12 +2745,15 @@
   <button class="btn-ghost" onclick="exportDriversReport('txt')" title="Texte brut, lisible partout">TXT</button>
   <button class="btn-ghost" onclick="exportDriversReport('json')" title="Données structurées pour traitement automatique">JSON</button>
   <span style="width:8px"></span>
-  <button class="btn-ghost" id="btn-wu-scan" data-activity="Recherche pilotes (Windows Update)" onclick="scanWindowsUpdateDrivers()" title="Rechercher des mises à jour de pilotes via Windows Update">Chercher via Windows Update</button>
   <button class="btn-primary" id="btn-scan-drivers" data-activity="Analyse des pilotes" data-log-target="drivers-log" onclick="startDriversScan()">Analyser</button>
 </div>
 <div class="card">
   <div class="log-body" id="drivers-log"><div class="tool-empty">Cliquez sur « Analyser » pour lancer le scan.</div></div>
   <div id="drivers-results" class="results-scroll"></div>
+  <div id="drivers-wu-bar" style="display:none;padding:10px 14px;border-top:1px solid var(--border)">
+    <button class="btn-ghost" id="btn-wu-scan" data-activity="Recherche pilotes (Windows Update)" onclick="scanWindowsUpdateDrivers()" title="Rechercher des mises à jour de pilotes via Windows Update">Chercher des mises à jour via Windows Update</button>
+    <div id="wu-drivers-results" style="margin-top:8px"></div>
+  </div>
 </div>
 
 </div>

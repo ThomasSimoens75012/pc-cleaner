@@ -17,6 +17,11 @@ gaming_mode.json
 tests/screenshots/
 tests/sandbox/
 
+# PyInstaller
+build/
+dist/
+*.spec.bak
+
 # OS
 .DS_Store
 Thumbs.db

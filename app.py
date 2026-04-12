@@ -27,14 +27,13 @@ from cleaner import (
     get_browser_extensions, remove_browser_extension,
     get_health_data,
     scan_shortcuts, delete_shortcuts,
-    find_large_files,
     find_empty_folders, delete_empty_folders,
     find_orphan_folders, delete_orphan_folders,
     list_restore_points, delete_restore_points,
     get_software_updates,
     get_privacy_items, clean_privacy_items,
     get_hibernation_info, disable_hibernation,
-    scan_disk_level,
+    scan_smart_analysis,
     get_windows_old_info, delete_windows_old,
     find_old_installers, delete_installer_files,
     scan_windows_installer_cache, launch_disk_cleanup,
@@ -73,7 +72,12 @@ def _reject_if_admin_paths(paths):
         }), 403
     return None
 
-app = Flask(__name__)
+# ── Support PyInstaller : les fichiers embarqués sont dans sys._MEIPASS ──────
+_BASE_DIR = getattr(sys, '_MEIPASS', Path(__file__).resolve().parent)
+
+app = Flask(__name__,
+            template_folder=str(Path(_BASE_DIR) / "templates"),
+            static_folder=str(Path(_BASE_DIR) / "static"))
 
 
 @app.before_request
@@ -689,44 +693,6 @@ def api_shortcuts_delete():
     return jsonify({"deleted": deleted, "errors": errors})
 
 
-@app.route("/api/largefiles", methods=["POST"])
-def api_largefiles():
-    data     = request.get_json(force=True) or {}
-    folder   = data.get("folder", "")
-    min_gb   = float(data.get("min_size_gb", 0.5))
-    min_bytes = int(min_gb * 1024 ** 3)
-    if not folder or not Path(folder).exists():
-        return jsonify({"error": "Dossier invalide ou introuvable."}), 400
-    job_id = _create_job()
-    threading.Thread(target=_run_largefiles, args=(job_id, folder, min_bytes), daemon=True).start()
-    return jsonify({"job_id": job_id})
-
-
-def _run_largefiles(job_id, folder, min_bytes):
-    with JOBS_LOCK:
-        job = JOBS.get(job_id)
-    if not job:
-        return
-    q = job["queue"]
-
-    def log(msg):
-        q.put({"type": "log", "msg": msg})
-
-    try:
-        results = find_large_files(folder, min_bytes, log)
-        total = sum(f["size"] for f in results)
-        q.put({"type": "result", "files": results,
-               "total_fmt": fmt_size(total), "count": len(results)})
-        q.put({"type": "done", "msg": f"{len(results)} fichier(s) — {fmt_size(total)} au total.",
-               "freed_bytes": 0, "freed_fmt": "—"})
-    except Exception as e:
-        app.logger.exception("largefiles scan error")
-        log(f"Erreur : {e}")
-        q.put({"type": "done", "msg": f"Erreur : {e}", "freed_bytes": 0, "freed_fmt": "0 o"})
-    finally:
-        job["done"] = True
-
-
 @app.route("/api/empty-folders", methods=["POST"])
 def api_empty_folders():
     data   = request.get_json(force=True) or {}
@@ -842,40 +808,49 @@ def api_hibernation_disable():
     return jsonify({"ok": ok, "error": err if not ok else None})
 
 
-@app.route("/api/disk-analysis", methods=["POST"])
-def api_disk_analysis():
-    data   = request.get_json(force=True) or {}
-    folder = data.get("folder", "C:\\")
-    if not Path(folder).exists():
-        return jsonify({"error": "Dossier introuvable."}), 400
+@app.route("/api/smart-analysis", methods=["POST"])
+def api_smart_analysis():
+    data = request.get_json(force=True) or {}
+    min_size = int(data.get("min_size", 500_000_000))
+    min_age_days = int(data.get("min_age_days", 180))
     job_id = _create_job()
-    threading.Thread(target=_run_disk_analysis, args=(job_id, folder), daemon=True).start()
+    threading.Thread(target=_run_smart_analysis,
+                     args=(job_id, min_size, min_age_days), daemon=True).start()
     return jsonify({"job_id": job_id})
 
 
-def _run_disk_analysis(job_id, folder):
+def _run_smart_analysis(job_id, min_size, min_age_days):
     with JOBS_LOCK:
         job = JOBS.get(job_id)
     if not job:
         return
     q = job["queue"]
-    q.put({"type": "start", "msg": f"Analyse de {folder}…"})
+    q.put({"type": "start", "msg": "Analyse intelligente en cours…"})
     results = []
 
     def on_item(item):
         results.append(item)
         q.put({"type": "item", "item": item})
 
+    def on_log(msg):
+        q.put({"type": "log", "msg": msg})
+
     try:
-        scan_disk_level(folder, on_item=on_item)
+        scan_smart_analysis(min_size=min_size, min_age_days=min_age_days,
+                            on_item=on_item, on_log=on_log)
         total = sum(r["size"] for r in results)
-        # Recalcule les pourcentages maintenant qu'on a le total
+        # Grouper par catégorie
+        cats = {}
         for r in results:
-            r["pct"] = round(r["size"] / total * 100, 1) if total else 0
-        q.put({"type": "result", "items": results,
-               "total": total, "total_fmt": fmt_size(total), "folder": folder})
-        q.put({"type": "done", "msg": f"Analyse terminée — {fmt_size(total)} analysés.",
-               "freed_bytes": 0, "freed_fmt": "—"})
+            c = r["category"]
+            cats.setdefault(c, {"items": [], "size": 0})
+            cats[c]["items"].append(r)
+            cats[c]["size"] += r["size"]
+        q.put({"type": "result", "items": results, "categories": cats,
+               "total": total, "total_fmt": fmt_size(total), "count": len(results)})
+        q.put({"type": "done",
+               "msg": f"Analyse terminée — {len(results)} dossier(s) trouvé(s), {fmt_size(total)} récupérables.",
+               "freed_bytes": total, "freed_fmt": fmt_size(total)})
     except Exception as e:
         q.put({"type": "done", "msg": f"Erreur : {e}", "freed_bytes": 0, "freed_fmt": "—"})
     finally:
@@ -1397,11 +1372,15 @@ def _run_duplicates(job_id, folder, min_size_kb):
 
 def _relaunch_as_admin():
     import ctypes, sys
-    ctypes.windll.shell32.ShellExecuteW(
-        None, "runas", sys.executable,
-        " ".join(f'"{Path(a).resolve() if i == 0 else a}"' for i, a in enumerate(sys.argv)),
-        None, 1,
-    )
+    if getattr(sys, 'frozen', False):
+        # Mode .exe (PyInstaller) : relancer le .exe lui-même
+        exe = sys.executable
+        args = " ".join(f'"{a}"' for a in sys.argv[1:])
+    else:
+        # Mode développement : relancer python app.py
+        exe = sys.executable
+        args = " ".join(f'"{Path(a).resolve() if i == 0 else a}"' for i, a in enumerate(sys.argv))
+    ctypes.windll.shell32.ShellExecuteW(None, "runas", exe, args, None, 1)
 
 
 @app.route("/api/quit", methods=["POST"])
@@ -1423,19 +1402,22 @@ def _run():
     url = f"http://127.0.0.1:{port}/"
     mode = "[Administrateur]" if is_admin() else "[Mode standard]"
 
-    print()
-    print("  ╔══════════════════════════════════════════════╗")
-    print("  ║                                              ║")
-    print(f"  ║   OpenCleaner {mode:<30} ║")
-    print("  ║                                              ║")
-    print(f"  ║   Ouvrez votre navigateur sur :              ║")
-    print(f"  ║   {url:<42} ║")
-    print("  ║                                              ║")
-    print("  ║   Pour arrêter : cliquez sur « Quitter »     ║")
-    print("  ║   dans l'application, ou Ctrl+C ici.         ║")
-    print("  ║                                              ║")
-    print("  ╚══════════════════════════════════════════════╝")
-    print()
+    try:
+        print()
+        print("  ╔══════════════════════════════════════════════╗")
+        print("  ║                                              ║")
+        print(f"  ║   OpenCleaner {mode:<30} ║")
+        print("  ║                                              ║")
+        print(f"  ║   Ouvrez votre navigateur sur :              ║")
+        print(f"  ║   {url:<42} ║")
+        print("  ║                                              ║")
+        print("  ║   Pour arrêter : cliquez sur « Quitter »     ║")
+        print("  ║   dans l'application, ou Ctrl+C ici.         ║")
+        print("  ║                                              ║")
+        print("  ╚══════════════════════════════════════════════╝")
+        print()
+    except (UnicodeEncodeError, OSError):
+        pass  # Mode --noconsole (PyInstaller) : stdout indisponible
 
     import webbrowser as _wb, threading as _th
     _th.Timer(1.0, lambda: _wb.open(url)).start()

@@ -45,6 +45,18 @@ def _ps_json(ps_command, timeout=10):
     return data if isinstance(data, list) else []
 
 
+def _decode_output(raw):
+    """Décode la sortie brute d'un subprocess Windows.
+
+    Essaie UTF-8 d'abord (PowerShell forcé en UTF-8), puis MBCS (cp1252 sur
+    Windows FR) pour les outils natifs (DISM, SFC, schtasks, reg.exe, etc.).
+    """
+    try:
+        return raw.decode("utf-8")
+    except (UnicodeDecodeError, LookupError):
+        return raw.decode("mbcs", errors="replace")
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Utilitaires
 # ──────────────────────────────────────────────────────────────────────────────
@@ -262,8 +274,8 @@ def restore_recycle_session(session_id):
             ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
             capture_output=True, timeout=60, creationflags=0x08000000,
         )
-        out = r.stdout.decode("utf-8", errors="replace")
-        err = r.stderr.decode("utf-8", errors="replace")
+        out = _decode_output(r.stdout)
+        err = _decode_output(r.stderr)
     except Exception as e:
         return {"restored": 0, "not_found": 0, "errors": [str(e)]}
     finally:
@@ -1041,24 +1053,29 @@ def task_windows_update(log):
 
 _APP_CATEGORIES = [
     # (label, [mots-clés publisher/name — case-insensitive])
-    ("Développement",  ["jetbrains", "microsoft visual", "visual studio code", "git ", "git for windows",
-                        "python", "node", "npm", "docker", "github", "gitlab", "android studio", "cursor",
-                        "sublime", "notepad++", "postman", "insomnia", "wireshark", "openssl", "terminal"]),
-    ("Jeux",           ["steam", "epic", "riot", "ubisoft", "ea app", "origin", "battle.net",
-                        "blizzard", "gog", "roblox", "minecraft", "league of legends", "valorant",
-                        "discord"]),
-    ("Multimédia",     ["spotify", "vlc", "obs", "audacity", "gimp", "inkscape", "blender", "davinci",
-                        "adobe", "netflix", "plex", "kodi", "handbrake", "mkvtoolnix", "paint.net",
-                        "photoshop", "lightroom", "premiere", "after effects"]),
-    ("Productivité",   ["office", "word", "excel", "powerpoint", "outlook", "teams", "slack", "zoom",
+    # Les catégories les plus spécifiques d'abord pour éviter les faux positifs
+    ("Développement",  ["jetbrains", "visual studio code", "microsoft visual c++",
+                        "microsoft visual studio", "git for windows",
+                        "python", "node.js", "nodejs", "npm", "docker", "github desktop",
+                        "gitlab", "android studio", "cursor",
+                        "sublime", "notepad++", "postman", "insomnia", "wireshark", "openssl"]),
+    ("Jeux",           ["steam", "epic games", "riot", "ubisoft", "ea app", "origin", "battle.net",
+                        "blizzard", "gog galaxy", "roblox", "minecraft", "league of legends",
+                        "valorant"]),
+    ("Multimédia",     ["spotify", "vlc", "obs studio", "audacity", "gimp", "inkscape", "blender",
+                        "davinci", "adobe", "netflix", "plex", "kodi", "handbrake", "mkvtoolnix",
+                        "paint.net", "photoshop", "lightroom", "premiere", "after effects"]),
+    ("Productivité",   ["office", "microsoft word", "microsoft excel", "microsoft powerpoint",
+                        "microsoft outlook", "microsoft teams", "slack", "zoom",
                         "notion", "obsidian", "libreoffice", "onenote", "todoist", "trello",
                         "1password", "bitwarden", "lastpass", "keepass", "evernote"]),
-    ("Navigateurs",    ["chrome", "firefox", "edge", "brave", "opera", "vivaldi", "tor browser"]),
-    ("Sécurité",       ["antivirus", "defender", "bitdefender", "kaspersky", "norton", "mcafee",
+    ("Communication",  ["discord", "telegram", "whatsapp", "signal", "skype", "thunderbird"]),
+    ("Navigateurs",    ["google chrome", "mozilla firefox", "microsoft edge", "brave", "opera",
+                        "vivaldi", "tor browser"]),
+    ("Sécurité",       ["antivirus", "bitdefender", "kaspersky", "norton", "mcafee",
                         "avast", "avg", "malwarebytes", "avira", "eset"]),
-    ("Système",        ["microsoft corporation", "microsoft .net", "microsoft visual c++",
-                        "windows ", "nvidia", "amd ", "intel(r)", "realtek", "driver", "sdk",
-                        "redistributable", "runtime", "framework"]),
+    ("Système",        ["microsoft .net", "redistributable", "runtime", "framework",
+                        "nvidia", "amd software", "intel(r)", "realtek", "driver", "sdk"]),
 ]
 
 
@@ -1191,7 +1208,7 @@ def _detect_winget_apps():
             ["winget", "list", "--accept-source-agreements", "--disable-interactivity"],
             capture_output=True, timeout=30, creationflags=0x08000000,
         )
-        out = r.stdout.decode("utf-8", errors="replace")
+        out = _decode_output(r.stdout)
     except Exception:
         return result
 
@@ -3197,7 +3214,7 @@ def _get_active_power_plan():
             ["powercfg", "/GETACTIVESCHEME"],
             capture_output=True, timeout=5, creationflags=0x08000000,
         )
-        out = r.stdout.decode("utf-8", errors="replace")
+        out = _decode_output(r.stdout)
         m = re.search(r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})", out, re.I)
         return m.group(1) if m else None
     except Exception:
@@ -4283,7 +4300,7 @@ def set_windows_tweak(tweak_id, active):
         )
         if r.returncode == 0:
             return True, None
-        err = r.stderr.decode("utf-8", errors="replace").strip() or "reg.exe a échoué"
+        err = _decode_output(r.stderr).strip() or "reg.exe a échoué"
         return False, err
     except Exception as e:
         return False, str(e)
@@ -4361,8 +4378,8 @@ def _run_repair_simple(cmd, timeout=60):
             cmd, capture_output=True, timeout=timeout,
             creationflags=0x08000000,
         )
-        out = r.stdout.decode("utf-8", errors="replace").strip()
-        err = r.stderr.decode("utf-8", errors="replace").strip()
+        out = _decode_output(r.stdout).strip()
+        err = _decode_output(r.stderr).strip()
         return r.returncode == 0, out, err
     except subprocess.TimeoutExpired:
         return False, "", f"Timeout après {timeout}s"
@@ -4469,11 +4486,10 @@ def run_repair_action_stream(action_id):
         proc = subprocess.Popen(
             action["cmd"],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, encoding="utf-8", errors="replace",
             creationflags=0x08000000,
         )
-        for line in proc.stdout:
-            line = line.rstrip()
+        for raw_line in proc.stdout:
+            line = _decode_output(raw_line).rstrip()
             if line:
                 yield {"type": "log", "msg": line}
         proc.wait()
@@ -4802,7 +4818,7 @@ def set_service_enabled(service_name, enabled):
         )
         if r.returncode == 0:
             return True, None
-        err = r.stderr.decode("utf-8", errors="replace").strip()
+        err = _decode_output(r.stderr).strip()
         return False, err or "Set-Service a échoué"
     except Exception as e:
         return False, str(e)
@@ -4821,7 +4837,7 @@ def get_scheduled_tasks_state():
             )
             if r.returncode == 0:
                 exists = True
-                out = r.stdout.decode("oem", errors="replace")
+                out = _decode_output(r.stdout)
                 # CSV format: "TaskName","Next Run Time","Status" — tolérant FR/EN
                 if "Disabled" in out or "sactiv" in out.lower():
                     state = "disabled"
@@ -4867,8 +4883,8 @@ def get_all_scheduled_tasks_dynamic():
             capture_output=True, timeout=30, creationflags=0x08000000,
         )
         if r.returncode != 0:
-            return {"items": [], "error": r.stderr.decode("oem", errors="replace")}
-        out = r.stdout.decode("oem", errors="replace")
+            return {"items": [], "error": _decode_output(r.stderr)}
+        out = _decode_output(r.stdout)
     except Exception as e:
         return {"items": [], "error": str(e)}
 
@@ -4964,7 +4980,7 @@ def set_scheduled_task_enabled(task_path, enabled):
         )
         if r.returncode == 0:
             return True, None
-        err = r.stderr.decode("oem", errors="replace").strip()
+        err = _decode_output(r.stderr).strip()
         return False, err or "schtasks a échoué"
     except Exception as e:
         return False, str(e)
@@ -5157,7 +5173,7 @@ def remove_uwp_app(package_full_name):
         )
         if r.returncode == 0:
             return True, None
-        err = r.stderr.decode("utf-8", errors="replace").strip()
+        err = _decode_output(r.stderr).strip()
         return False, err or "Échec Remove-AppxPackage"
     except subprocess.TimeoutExpired:
         return False, "Timeout (>120 s)"
@@ -5639,7 +5655,7 @@ def get_software_updates():
              "--accept-source-agreements", "--disable-interactivity"],
             capture_output=True, timeout=30
         )
-        output = r.stdout.decode("utf-8", errors="replace")
+        output = _decode_output(r.stdout)
         lines  = output.splitlines()
 
         # Trouver la ligne séparateur : uniquement des tirets, au moins 20 caractères
@@ -5874,7 +5890,7 @@ def disable_hibernation():
             ["powercfg", "/hibernate", "off"],
             capture_output=True, timeout=10,
         )
-        return r.returncode == 0, r.stderr.decode("utf-8", errors="replace").strip()
+        return r.returncode == 0, _decode_output(r.stderr).strip()
     except Exception as e:
         return False, str(e)
 
@@ -5955,6 +5971,547 @@ def scan_disk_level(folder, on_item=None):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Analyse intelligente — détection complète de l'espace récupérable
+# ──────────────────────────────────────────────────────────────────────────────
+
+_SMART_SKIP_NAMES = {
+    # Système / OS
+    "$Recycle.Bin", "System Volume Information", "Recovery", "Config.Msi",
+    "MSOCache", "Windows", "PerfLogs", "ProgramData",
+    "Program Files", "Program Files (x86)",
+    # Profils techniques
+    "AppData", "Default", "Public", "All Users", "Default User",
+    # Caches déjà couverts par les tâches de nettoyage
+    ".cache", ".npm", ".nuget", ".gradle", ".m2", ".cargo",
+}
+
+# Dossiers qu'on ne SKIP pas mais qu'on détecte spécialement comme projets dev
+_DEV_MARKERS = {"package.json", "requirements.txt", "Cargo.toml", "go.mod",
+                "pom.xml", "build.gradle", "composer.json", "Gemfile", "*.sln"}
+_DEV_BLOAT_DIRS = {"node_modules", ".venv", "venv", "__pycache__", ".tox",
+                   "dist", "build", "target", "bin", "obj", ".next", ".nuxt"}
+
+# Patterns connus de caches jeux/apps
+_GAME_CACHE_PATTERNS = {
+    # Steam
+    "userdata":             "cache_jeux",
+    "screenshots":          "cache_jeux",
+    "Steam/steamapps/shadercache": "cache_jeux",
+    # OBS
+    "OBS Studio":           "cache_jeux",
+    # Windows GameDVR / Captures
+    "Captures":             "cache_jeux",
+    "GameDVR":              "cache_jeux",
+    # NVIDIA
+    "NVIDIA Corporation/NV_Cache": "cache_jeux",
+    "NVIDIA/GeForce Experience/CameraRecording": "cache_jeux",
+}
+
+_SMART_CATEGORY_MAP = {
+    "photos": {
+        ".jpg", ".jpeg", ".png", ".heic", ".heif", ".raw", ".cr2", ".nef",
+        ".arw", ".dng", ".tiff", ".tif", ".bmp", ".webp", ".svg",
+    },
+    "videos": {
+        ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v",
+        ".mpeg", ".mpg", ".3gp", ".ts", ".vob",
+    },
+    "musique": {
+        ".mp3", ".flac", ".wav", ".aac", ".ogg", ".wma", ".m4a", ".opus",
+    },
+    "archives": {
+        ".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz", ".iso", ".img",
+    },
+    "documents": {
+        ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+        ".odt", ".ods", ".odp", ".txt", ".csv", ".rtf",
+    },
+    "jeux_iso": {
+        ".iso", ".img", ".bin", ".cue", ".nrg", ".mdf",
+    },
+    "sauvegardes": {
+        ".bak", ".old", ".backup", ".bkp", ".tmp",
+    },
+}
+
+_INSTALLER_EXTS = {".exe", ".msi", ".msp"}
+
+# Inversé : extension → catégorie (première correspondance gagne)
+_EXT_TO_CAT = {}
+for _cat, _exts in _SMART_CATEGORY_MAP.items():
+    for _ext in _exts:
+        _EXT_TO_CAT.setdefault(_ext, _cat)
+
+
+def _confidence_for(item):
+    """Attribue un score de confiance : 'sûr', 'probable', 'à vérifier'."""
+    cat = item.get("category", "")
+    # Sûr : caches régénérables, installers déjà installés, caches jeux
+    if cat in ("projet_dev", "cache_jeux", "installer_installé"):
+        return "sûr"
+    # À vérifier : contenu personnel potentiellement important
+    if cat in ("photos", "documents", "musique"):
+        return "à vérifier"
+    # Probable : le reste (vidéos, archives, ISOs, sauvegardes, mixte)
+    return "probable"
+
+
+def _detect_dev_project(folder_path):
+    """Détecte si un dossier est un projet dev avec du bloat régénérable.
+
+    Retourne (is_dev, bloat_size) — bloat_size = taille des node_modules/.venv/etc.
+    """
+    is_dev = False
+    bloat_size = 0
+    try:
+        children = set(os.listdir(folder_path))
+    except (OSError, PermissionError):
+        return False, 0
+    # Vérifier les marqueurs de projet
+    for marker in _DEV_MARKERS:
+        if marker.startswith("*"):
+            if any(f.endswith(marker[1:]) for f in children):
+                is_dev = True
+                break
+        elif marker in children:
+            is_dev = True
+            break
+    if not is_dev:
+        return False, 0
+    # Mesurer le bloat (node_modules, .venv, etc.)
+    for bloat_name in _DEV_BLOAT_DIRS:
+        bloat_path = os.path.join(folder_path, bloat_name)
+        if os.path.isdir(bloat_path):
+            try:
+                import time as _t
+                deadline = _t.monotonic() + 5.0
+                for dp, ds, fs in os.walk(bloat_path):
+                    if _t.monotonic() > deadline:
+                        ds.clear()
+                        break
+                    for f in fs:
+                        try:
+                            bloat_size += os.path.getsize(os.path.join(dp, f))
+                        except OSError:
+                            pass
+            except OSError:
+                pass
+    return True, bloat_size
+
+
+def _classify_folder(folder_path, deadline):
+    """Parcourt un dossier et retourne (taille, last_access, catégorie dominante, nb_fichiers)."""
+    import time as _time
+    counts = {}   # catégorie → taille cumulée
+    total_size = 0
+    latest_access = 0
+    file_count = 0
+    try:
+        for dirpath, dirs, filenames in os.walk(folder_path):
+            if _time.monotonic() > deadline:
+                dirs.clear()
+                break
+            # Sauter les sous-dossiers techniques mais PAS node_modules/.venv (on les mesure)
+            dirs[:] = [d for d in dirs if d not in _SMART_SKIP_NAMES]
+            for fname in filenames:
+                fpath = os.path.join(dirpath, fname)
+                try:
+                    st = os.stat(fpath)
+                    size = st.st_size
+                    total_size += size
+                    file_count += 1
+                    atime = st.st_mtime
+                    if atime > latest_access:
+                        latest_access = atime
+                    ext = os.path.splitext(fname)[1].lower()
+                    cat = _EXT_TO_CAT.get(ext, "autre")
+                    counts[cat] = counts.get(cat, 0) + size
+                except (OSError, PermissionError):
+                    pass
+    except (OSError, PermissionError):
+        pass
+    # Catégorie dominante = celle qui pèse le plus
+    if counts:
+        dominant = max(counts, key=counts.get)
+        if dominant == "autre" and counts[dominant] > total_size * 0.6:
+            dominant = "mixte"
+    else:
+        dominant = "mixte"
+    return total_size, latest_access, dominant, file_count
+
+
+def _get_installed_app_names():
+    """Récupère les noms d'apps installées (cache léger pour le scan)."""
+    try:
+        apps = get_installed_apps()
+        return {a["name"].lower() for a in apps if a.get("name")}
+    except Exception:
+        return set()
+
+
+def _scan_installers_in_downloads(min_age_days, installed_names, on_item, results):
+    """Scanne le dossier Downloads pour les .exe/.msi déjà installés."""
+    import time as _time
+    downloads = Path.home() / "Downloads"
+    if not downloads.is_dir():
+        return
+    cutoff = _time.time() - (min_age_days * 86400)
+    already = {r["path"] for r in results}
+    try:
+        for entry in os.scandir(downloads):
+            try:
+                if not entry.is_file(follow_symlinks=False):
+                    continue
+                ext = os.path.splitext(entry.name)[1].lower()
+                if ext not in _INSTALLER_EXTS:
+                    continue
+                st = entry.stat(follow_symlinks=False)
+                if st.st_size < 1_000_000:  # < 1 Mo, pas intéressant
+                    continue
+                atime = st.st_mtime
+                if atime >= cutoff or atime == 0:
+                    continue
+                if entry.path in already:
+                    continue
+                # Vérifier si le nom du fichier matche une app installée
+                name_lower = os.path.splitext(entry.name)[0].lower()
+                # Nettoyage du nom : retirer version, tirets, underscores
+                clean = re.sub(r'[-_]?(v?\d[\d.]*|setup|install|x64|x86|win|installer).*', '',
+                               name_lower, flags=re.I).strip(" -_")
+                matched = any(clean and clean in app_name for app_name in installed_names)
+                if not matched:
+                    continue
+                days_ago = int((_time.time() - atime) / 86400)
+                item = {
+                    "name":        entry.name,
+                    "path":        entry.path,
+                    "size":        st.st_size,
+                    "size_fmt":    fmt_size(st.st_size),
+                    "category":    "installer_installé",
+                    "file_count":  1,
+                    "is_file":     True,
+                    "last_access": atime,
+                    "days_ago":    days_ago,
+                    "needs_admin": False,
+                    "confidence":  "sûr",
+                    "hint":        "Logiciel déjà installé",
+                }
+                if on_item:
+                    on_item(item)
+            except (OSError, PermissionError):
+                pass
+    except (OSError, PermissionError):
+        pass
+
+
+def _scan_game_caches(min_size, on_item, results):
+    """Détecte les caches jeux/captures connus."""
+    import time as _time
+    already = {r["path"] for r in results}
+    # Chemins à vérifier
+    home = str(Path.home())
+    candidates = [
+        os.path.join(home, "Videos", "Captures"),
+        os.path.join(home, "Videos", "OBS"),
+        os.path.join(home, "Videos", "Radeon ReLive"),
+        os.path.join(home, "Videos", "NVIDIA"),
+        os.path.join(home, "Pictures", "Screenshots"),
+        os.path.join(home, "AppData", "Local", "NVIDIA Corporation", "NV_Cache"),
+        os.path.join(home, "AppData", "Local", "NVIDIA", "GLCache"),
+        os.path.join(home, "AppData", "LocalLow", "NVIDIA", "PerDriverVersion", "DXCache"),
+    ]
+    # Steam screenshots
+    steam_path = os.path.join("C:\\", "Program Files (x86)", "Steam", "userdata")
+    if os.path.isdir(steam_path):
+        try:
+            for uid in os.listdir(steam_path):
+                ss = os.path.join(steam_path, uid, "760", "remote")
+                if os.path.isdir(ss):
+                    candidates.append(ss)
+        except OSError:
+            pass
+
+    for path in candidates:
+        if not os.path.isdir(path) or path in already:
+            continue
+        deadline = _time.monotonic() + 5.0
+        size, last_access, _, file_count = _classify_folder(path, deadline)
+        if size < min_size:
+            continue
+        days_ago = int((_time.time() - last_access) / 86400) if last_access > 0 else 0
+        item = {
+            "name":        os.path.basename(path),
+            "path":        path,
+            "size":        size,
+            "size_fmt":    fmt_size(size),
+            "category":    "cache_jeux",
+            "file_count":  file_count,
+            "is_file":     False,
+            "last_access": last_access,
+            "days_ago":    days_ago,
+            "needs_admin": is_admin_path(path),
+            "confidence":  "sûr",
+            "hint":        "Cache régénérable automatiquement",
+        }
+        already.add(path)
+        if on_item:
+            on_item(item)
+
+
+def scan_smart_analysis(min_size=500_000_000, min_age_days=180, on_item=None, on_log=None):
+    """Scan multi-disques intelligent — walk récursif complet.
+
+    Parcourt TOUS les fichiers de TOUS les disques en un seul os.walk par racine.
+    Accumule taille + dernier accès + catégorie par dossier, puis émet ceux qui
+    dépassent les seuils. Détecte aussi les gros fichiers isolés, les projets dev
+    abandonnés, les installers inutiles et les caches jeux.
+    """
+    import time as _time
+    import psutil
+
+    def _log(msg):
+        if on_log:
+            on_log(msg)
+
+    cutoff = _time.time() - (min_age_days * 86400)
+    results = []
+    already = set()
+
+    _log("Chargement de la liste des logiciels installés…")
+    installed_names = _get_installed_app_names()
+    _log(f"{len(installed_names)} logiciel(s) détecté(s)")
+
+    roots = []
+    try:
+        for part in psutil.disk_partitions(all=False):
+            if part.fstype:
+                roots.append(part.mountpoint)
+    except Exception:
+        roots = ["C:\\"]
+
+    def _emit(item):
+        if item["path"] in already:
+            return
+        if "confidence" not in item:
+            item["confidence"] = _confidence_for(item)
+        already.add(item["path"])
+        results.append(item)
+        if on_item:
+            on_item(item)
+
+    # ── Walk récursif complet ────────────────────────────────────────────────
+    for root in roots:
+        _log(f"Scan {root}")
+        # dir_info[path] = {size, latest, counts{cat→bytes}, file_count, depth}
+        dir_info = {}
+        big_files = []   # (fpath, fname, size, atime, cat) — émis après les dossiers
+        log_counter = 0
+
+        try:
+            for dirpath, dirnames, filenames in os.walk(root, topdown=True):
+                # Filtrer les dossiers à ignorer
+                dirnames[:] = [
+                    d for d in dirnames
+                    if d not in _SMART_SKIP_NAMES
+                    and not _is_junction(os.path.join(dirpath, d))
+                ]
+
+                depth = dirpath.replace(root, "").count(os.sep)
+
+                # Log de progression (pas trop fréquent)
+                log_counter += 1
+                if log_counter % 200 == 0 or depth <= 1:
+                    rel = dirpath.replace(root, "") or "\\"
+                    if len(rel) > 60:
+                        rel = rel[:28] + "…" + rel[-28:]
+                    _log(f"  {root}{rel}  ({len(results)} trouvaille(s))")
+
+                # Accumuler les fichiers de ce dossier
+                dir_size = 0
+                dir_latest = 0
+                dir_counts = {}
+                dir_fcount = 0
+
+                for fname in filenames:
+                    fpath = os.path.join(dirpath, fname)
+                    try:
+                        st = os.stat(fpath)
+                        size = st.st_size
+                        atime = st.st_mtime
+                    except (OSError, PermissionError):
+                        continue
+
+                    dir_size += size
+                    dir_fcount += 1
+                    if atime > dir_latest:
+                        dir_latest = atime
+
+                    ext = os.path.splitext(fname)[1].lower()
+                    cat = _EXT_TO_CAT.get(ext, "autre")
+                    dir_counts[cat] = dir_counts.get(cat, 0) + size
+
+                    # Gros fichier isolé ? (collecté, émis après les dossiers)
+                    if size >= min_size and 0 < atime < cutoff:
+                        big_files.append((fpath, fname, size, atime, cat))
+
+                dir_info[dirpath] = {
+                    "size": dir_size, "latest": dir_latest,
+                    "counts": dir_counts, "fcount": dir_fcount,
+                }
+
+        except (OSError, PermissionError):
+            pass
+
+        # ── Remonter les tailles bottom-up ───────────────────────────────────
+        # Trier les chemins du plus profond au plus court
+        sorted_dirs = sorted(dir_info.keys(), key=len, reverse=True)
+        for d in sorted_dirs:
+            parent = os.path.dirname(d)
+            if parent in dir_info and parent != d:
+                dir_info[parent]["size"] += dir_info[d]["size"]
+                dir_info[parent]["fcount"] += dir_info[d]["fcount"]
+                p_latest = dir_info[parent]["latest"]
+                c_latest = dir_info[d]["latest"]
+                if c_latest > p_latest:
+                    dir_info[parent]["latest"] = c_latest
+                for cat, sz in dir_info[d]["counts"].items():
+                    dir_info[parent]["counts"][cat] = dir_info[parent]["counts"].get(cat, 0) + sz
+
+        # ── Émettre les gros dossiers dormants ───────────────────────────────
+        # Passe 1 : projets dev (du plus court au plus long — le projet
+        #           absorbe tout son sous-arbre y compris node_modules)
+        emitted = set()
+        for d in sorted(dir_info.keys(), key=len):
+            info = dir_info[d]
+            if d == root or d in already:
+                continue
+            if info["latest"] >= cutoff or info["latest"] == 0:
+                continue
+            # Skip si déjà couvert par un parent émis
+            if any(d.startswith(ed + os.sep) for ed in emitted):
+                continue
+            is_dev, bloat_size = _detect_dev_project(d)
+            if is_dev and bloat_size >= min_size:
+                days_ago = int((_time.time() - info["latest"]) / 86400)
+                _emit({
+                    "name":        os.path.basename(d),
+                    "path":        d,
+                    "size":        bloat_size,
+                    "size_fmt":    fmt_size(bloat_size),
+                    "category":    "projet_dev",
+                    "file_count":  info["fcount"],
+                    "is_file":     False,
+                    "last_access": info["latest"],
+                    "days_ago":    days_ago,
+                    "needs_admin": is_admin_path(d),
+                    "confidence":  "sûr",
+                    "hint":        "node_modules / .venv régénérables",
+                })
+                emitted.add(d)
+                _subtract_from_ancestors(d, bloat_size, dir_info, root)
+
+        # Passe 2 : dossiers + gros fichiers, bottom-up.
+        # On insère les gros fichiers dans dir_info comme pseudo-entrées
+        # pour qu'ils participent à la soustraction.
+        for fpath, fname, size, atime, cat in big_files:
+            dir_info[fpath] = {
+                "size": size, "latest": atime,
+                "counts": {cat: size}, "fcount": 1,
+                "_is_file": True, "_name": fname,
+            }
+
+        for d in sorted(dir_info.keys(), key=len, reverse=True):
+            info = dir_info[d]
+            if d == root or d in already:
+                continue
+            if info["size"] < min_size:
+                continue
+            if info["latest"] >= cutoff or info["latest"] == 0:
+                continue
+            # Skip si couvert par un parent déjà émis
+            if any(d.startswith(ed + os.sep) for ed in emitted):
+                continue
+
+            is_file = info.get("_is_file", False)
+
+            if is_file:
+                fname = info["_name"]
+                ext = os.path.splitext(fname)[1].lower()
+                cat = _EXT_TO_CAT.get(ext, "autre")
+                days_ago = int((_time.time() - info["latest"]) / 86400)
+                _emit({
+                    "name":        fname,
+                    "path":        d,
+                    "size":        info["size"],
+                    "size_fmt":    fmt_size(info["size"]),
+                    "category":    cat,
+                    "file_count":  1,
+                    "is_file":     True,
+                    "last_access": info["latest"],
+                    "days_ago":    days_ago,
+                    "needs_admin": is_admin_path(d),
+                })
+            else:
+                counts = info["counts"]
+                if counts:
+                    dominant = max(counts, key=counts.get)
+                    if dominant == "autre" and counts[dominant] > info["size"] * 0.6:
+                        dominant = "mixte"
+                else:
+                    dominant = "mixte"
+
+                days_ago = int((_time.time() - info["latest"]) / 86400)
+                _emit({
+                    "name":        os.path.basename(d),
+                    "path":        d,
+                    "size":        info["size"],
+                    "size_fmt":    fmt_size(info["size"]),
+                    "category":    dominant,
+                    "file_count":  info["fcount"],
+                    "is_file":     False,
+                    "last_access": info["latest"],
+                    "days_ago":    days_ago,
+                    "needs_admin": is_admin_path(d),
+                })
+
+            emitted.add(d)
+            # Soustraire du parent pour ne pas double-compter
+            _subtract_from_ancestors(d, info["size"], dir_info, root)
+
+        _log(f"Scan {root} terminé — {len(results)} trouvaille(s) au total")
+
+    # ── Scans spécialisés ────────────────────────────────────────────────────
+    _log("Recherche d'installers inutiles dans Downloads…")
+    _scan_installers_in_downloads(min_age_days, installed_names,
+                                  lambda item: _emit(item), results)
+
+    _log("Recherche de caches jeux et captures…")
+    _scan_game_caches(min_size, lambda item: _emit(item), results)
+
+    results.sort(key=lambda x: x["size"], reverse=True)
+    return results
+
+
+def _subtract_from_ancestors(path, size, dir_info, root):
+    """Soustrait une taille de tous les ancêtres d'un chemin."""
+    parent = os.path.dirname(path)
+    while parent and parent != root and parent in dir_info:
+        dir_info[parent]["size"] -= size
+        next_parent = os.path.dirname(parent)
+        if next_parent == parent:
+            break
+        parent = next_parent
+
+
+def _is_junction(path):
+    """Vérifie si un chemin est un junction/reparse point."""
+    try:
+        return bool(os.stat(path, follow_symlinks=False).st_file_attributes & 0x400)
+    except (OSError, PermissionError):
+        return True  # en cas de doute, skip
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Windows.old
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -5976,7 +6533,7 @@ def delete_windows_old():
         )
         if r.returncode == 0:
             return True, None
-        err = r.stderr.decode("utf-8", errors="replace").strip()
+        err = _decode_output(r.stderr).strip()
         return False, err or "Suppression échouée."
     except Exception as e:
         return False, str(e)
