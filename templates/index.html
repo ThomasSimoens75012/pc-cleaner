@@ -2791,7 +2791,7 @@
 </div>
 </div>
 
-<!-- ══════════════════ ONGLET PERSONNALISATION ══════════════════ -->
+<!-- ══════════════════ ONGLET PERSONNALISATION (layout E) ══════════════════ -->
 <div id="tab-perso" class="tab-panel">
 <div class="tools-main">
 
@@ -2800,79 +2800,51 @@
     <svg class="icon icon-2xl" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.479 10.5 4.45v7.05H3V5.479zM11.5 4.3 21 3v8.5h-9.5V4.3zM3 12.5h7.5v7.05L3 18.521V12.5zm8.5 0H21V21l-9.5-1.3V12.5z"/></svg>
   </div>
   <h1 class="page-title">Personnalisation Windows</h1>
-  <p class="page-sub">Désactivez les fonctionnalités les plus énervantes de Windows — widgets, pubs, suggestions, Cortana. Tout est réversible en un clic.</p>
+  <p class="page-sub">Désactivez les fonctionnalités inutiles. Tout est réversible.</p>
 </div>
 
 <!-- Bandeau de version Windows détectée -->
 <div id="version-banner" class="version-banner" style="display:none"></div>
 
-<!-- Widgets & actualités — deep-link ms-settings (W11 24H2+) -->
-<div class="card" style="margin-bottom:14px">
-  <div class="card-body">
-    <div class="section-head" style="padding:0">
+<!-- ── Ligne 1 : Chart + Presets côte à côte ── -->
+<div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap">
+  <!-- Chart impact -->
+  <div class="card" style="flex:3;min-width:340px;margin:0">
+    <div class="tweak-chart-head">
       <div>
-        <div class="tool-section-title">Widgets &amp; actualités de la barre des tâches</div>
-        <div class="tool-section-sub">Depuis Windows 11 24H2, ces options ne sont plus modifiables par le registre — Microsoft les gère désormais uniquement via l'application Paramètres.</div>
+        <div class="tool-section-title">Impact cumulé de vos réglages</div>
+        <div class="tool-section-sub">Évolue en temps réel à chaque toggle.</div>
       </div>
+      <div class="tweak-chart-note" id="tweak-chart-note">Chargement…</div>
     </div>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button class="btn-ghost" onclick="openSettingsUri('ms-settings:taskbar')">Ouvrir les paramètres Barre des tâches</button>
-      <button class="btn-ghost" onclick="openSettingsUri('ms-settings:widgets')">Paramètres Widgets</button>
+    <div id="tweak-chart" class="tweak-chart-body">
+      <div class="tool-empty">Chargement du chart…</div>
     </div>
   </div>
-</div>
-
-<div class="callout callout-blue" style="margin-bottom:14px">
-  <div class="callout-icon">
-    <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-  </div>
-  <div class="callout-content">
-    <strong>Note :</strong> certains changements nécessitent un redémarrage de l'Explorateur Windows ou de Windows pour être visibles. Tous les réglages sont stockés dans votre profil utilisateur (HKCU) et peuvent être réactivés à tout moment.
-  </div>
-</div>
-
-<!-- Chart prédictif (bar chart variant 4) -->
-<div class="card" style="margin-bottom:14px">
-  <div class="tweak-chart-head">
-    <div>
-      <div class="tool-section-title">Impact estimé</div>
-      <div class="tool-section-sub">Baseline « tout activé » comparé à ta configuration actuelle. Le chart évolue en temps réel à chaque toggle.</div>
-    </div>
-    <div class="tweak-chart-note" id="tweak-chart-note">Chargement…</div>
-  </div>
-  <div id="tweak-chart" class="tweak-chart-body">
-    <div class="tool-empty">Chargement du chart…</div>
-  </div>
-</div>
-
-<!-- Presets one-click -->
-<div class="card" style="margin-bottom:10px">
-  <div class="card-body">
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px">
-        <div style="font-size:13px;font-weight:600">Profil recommandé</div>
-        <div style="font-size:11px;color:var(--text-dim)">Applique un ensemble de désactivations en un clic. Réversible.</div>
-      </div>
-      <div id="tweak-presets" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-      <button class="btn-ghost" onclick="exportConfigSnapshot()" title="Télécharge un fichier JSON contenant l'état complet (tweaks, services, tâches, autoruns) restaurable dans OpenCleaner" style="font-size:11px">
-        Sauvegarder
-      </button>
-      <button class="btn-ghost" onclick="triggerImportConfig()" title="Restaure un fichier JSON OpenCleaner précédemment sauvegardé" style="font-size:11px">
-        Restaurer
-      </button>
+  <!-- Presets + Actions -->
+  <div style="flex:2;min-width:240px;display:flex;flex-direction:column;gap:8px">
+    <div style="font-size:13px;font-weight:600">Appliquer un preset</div>
+    <div id="tweak-presets" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+      <button class="btn-ghost" onclick="exportConfigSnapshot()" style="font-size:11px" title="Sauvegarde JSON complète">Sauvegarder</button>
+      <button class="btn-ghost" onclick="triggerImportConfig()" style="font-size:11px" title="Restaurer un fichier JSON">Restaurer</button>
       <input type="file" id="config-import-file" accept="application/json" style="display:none" onchange="handleImportConfigFile(event)">
-      <button class="btn-ghost" onclick="exportTweaksReg()" title="Exporter un fichier .reg avec la config actuelle (importable sur un autre PC sans OpenCleaner)" style="font-size:11px">
-        Exporter .reg
-      </button>
+      <button class="btn-ghost" onclick="exportTweaksReg()" style="font-size:11px" title="Fichier .reg importable sans OpenCleaner">.reg</button>
+      <span style="color:var(--border2);line-height:28px">|</span>
+      <button class="btn-ghost" onclick="openSettingsUri('ms-settings:taskbar')" style="font-size:11px" title="Widgets non modifiables par registre depuis 24H2">Widgets</button>
+    </div>
+    <div style="font-size:10px;color:var(--text-dim);margin-top:auto;line-height:1.4">
+      Réglages HKCU, réversibles. Certains nécessitent un redémarrage de l'Explorateur.
     </div>
   </div>
 </div>
 
-<!-- Filtres par catégorie d'effet -->
+<!-- ── Filtres par catégorie d'effet ── -->
 <div class="tweak-filters" id="tweak-filters">
   <button class="tweak-filter-btn active" data-filter="all">Tout voir <span class="c"></span></button>
 </div>
 
+<!-- ── Card principale : tweaks + services + tâches + panneau détail ── -->
 <div class="card">
   <div class="detail-split">
     <div class="detail-split-list" id="tweaks-list"><div class="tool-loading">Chargement…</div></div>
@@ -2882,38 +2854,37 @@
   </div>
 </div>
 
-<!-- Services Windows (admin requis) -->
-<div class="card" style="margin-top:14px">
-  <div class="section-head" style="padding:14px 16px">
+<!-- Services et tâches intégrés dans le flux (séparateur visuel) -->
+<div class="card" style="margin-top:2px;border-top:2px solid var(--border)">
+  <div class="section-head" style="padding:12px 16px">
     <div>
-      <div class="tool-section-title">Services en arrière-plan</div>
-      <div class="tool-section-sub">Services non essentiels (télémétrie, Xbox, legacy). <strong>Nécessite les droits administrateur.</strong></div>
+      <div class="tool-section-title" style="font-size:13px">Services en arrière-plan</div>
+      <div class="tool-section-sub">Télémétrie, Xbox, legacy. <strong>Admin requis.</strong></div>
     </div>
     <div style="display:flex;gap:6px;align-items:center">
-      <button class="btn-ghost svc-mode-btn active" data-mode="curated" onclick="loadServices('curated')" style="font-size:11px" title="Liste curée — services non essentiels recommandés">Curé</button>
-      <button class="btn-ghost svc-mode-btn" data-mode="all" onclick="loadServices('all')" style="font-size:11px" title="Tous les services Windows (mode expert, soyez prudent)">Tous (expert)</button>
-      <button class="btn-primary" id="btn-load-services" data-activity="Services Windows" onclick="loadServices()">Analyser</button>
+      <button class="btn-ghost svc-mode-btn active" data-mode="curated" onclick="loadServices('curated')" style="font-size:10px">Curé</button>
+      <button class="btn-ghost svc-mode-btn" data-mode="all" onclick="loadServices('all')" style="font-size:10px">Tous</button>
+      <button class="btn-primary" id="btn-load-services" data-activity="Services Windows" onclick="loadServices()" style="font-size:12px;padding:6px 12px">Analyser</button>
     </div>
   </div>
-  <div class="tweak-filters" id="services-filters" style="margin:0 16px 10px;display:none"></div>
-  <div id="services-list"><div class="tool-empty" style="padding:20px">Cliquez sur « Analyser » pour lister les services détectés.</div></div>
+  <div class="tweak-filters" id="services-filters" style="margin:0 16px 8px;display:none"></div>
+  <div id="services-list"><div class="tool-empty" style="padding:14px;font-size:12px">Cliquez sur « Analyser »</div></div>
 </div>
 
-<!-- Tâches planifiées (admin requis) -->
-<div class="card" style="margin-top:14px">
-  <div class="section-head" style="padding:14px 16px">
+<div class="card" style="margin-top:2px;border-top:2px solid var(--border)">
+  <div class="section-head" style="padding:12px 16px">
     <div>
-      <div class="tool-section-title">Tâches planifiées</div>
-      <div class="tool-section-sub">Tâches Windows récurrentes (télémétrie, CEIP, maps). <strong>Nécessite les droits administrateur.</strong></div>
+      <div class="tool-section-title" style="font-size:13px">Tâches planifiées</div>
+      <div class="tool-section-sub">CEIP, Maps, Error Reporting. <strong>Admin requis.</strong></div>
     </div>
     <div style="display:flex;gap:6px;align-items:center">
-      <button class="btn-ghost task-mode-btn active" data-mode="curated" onclick="loadScheduledTasks('curated')" style="font-size:11px" title="Liste curée — tâches non essentielles recommandées">Curé</button>
-      <button class="btn-ghost task-mode-btn" data-mode="all" onclick="loadScheduledTasks('all')" style="font-size:11px" title="Toutes les tâches planifiées (mode expert)">Toutes (expert)</button>
-      <button class="btn-primary" id="btn-load-tasks" data-activity="Tâches planifiées" onclick="loadScheduledTasks()">Analyser</button>
+      <button class="btn-ghost task-mode-btn active" data-mode="curated" onclick="loadScheduledTasks('curated')" style="font-size:10px">Curé</button>
+      <button class="btn-ghost task-mode-btn" data-mode="all" onclick="loadScheduledTasks('all')" style="font-size:10px">Toutes</button>
+      <button class="btn-primary" id="btn-load-tasks" data-activity="Tâches planifiées" onclick="loadScheduledTasks()" style="font-size:12px;padding:6px 12px">Analyser</button>
     </div>
   </div>
-  <div class="tweak-filters" id="tasks-filters" style="margin:0 16px 10px;display:none"></div>
-  <div id="tasks-list"><div class="tool-empty" style="padding:20px">Cliquez sur « Analyser » pour lister les tâches planifiées.</div></div>
+  <div class="tweak-filters" id="tasks-filters" style="margin:0 16px 8px;display:none"></div>
+  <div id="tasks-list"><div class="tool-empty" style="padding:14px;font-size:12px">Cliquez sur « Analyser »</div></div>
 </div>
 
 </div>
