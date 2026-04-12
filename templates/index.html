@@ -1051,6 +1051,7 @@
     .tweak-group-title:hover { background: var(--hover); }
     .tweak-group-top {
       display: flex; align-items: center; gap: 8px; width: 100%;
+      flex-wrap: wrap;
     }
     .tweak-group-chevron {
       flex-shrink: 0;
@@ -1064,7 +1065,7 @@
       flex-shrink: 0;
     }
     .tweak-group-stats {
-      display: flex; gap: 8px; margin-left: auto; margin-right: 8px;
+      display: flex; gap: 5px; flex-wrap: wrap;
       font-weight: 400; font-size: 10px; text-transform: none; letter-spacing: 0;
       color: var(--text-dim);
     }
@@ -1072,22 +1073,14 @@
       background: var(--bg3); padding: 1px 6px; border-radius: 3px;
       white-space: nowrap;
     }
+    .bulk {
+      margin-left: auto;
+      flex-shrink: 0;
+    }
     .tweak-group-desc {
       font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0;
       color: var(--text-dim); line-height: 1.4;
       padding-left: 22px;
-    }
-    .bulk-btn {
-      font-size: 10px !important;
-      padding: 3px 10px !important;
-      text-transform: none;
-      letter-spacing: 0;
-      border: 1px solid var(--border2) !important;
-      border-radius: 4px !important;
-    }
-    .bulk-btn:hover {
-      background: var(--bg3) !important;
-      border-color: var(--text-dim) !important;
     }
     .tweak-group-title .bulk {
       display: inline-flex;

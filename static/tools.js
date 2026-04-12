@@ -3724,10 +3724,9 @@ function _renderTweaks() {
         <span>${offCount}/${compatItems.length} désactivé${offCount > 1 ? "s" : ""}</span>
         ${absentCount ? `<span>${absentCount} absent${absentCount > 1 ? "s" : ""}</span>` : ""}
       </span>
-      <span class="bulk" onclick="event.stopPropagation()">
-        <button class="btn-ghost bulk-btn" onclick="bulkToggleGroup('${g.id}', false)">Tout désactiver</button>
-        <button class="btn-ghost bulk-btn" onclick="bulkToggleGroup('${g.id}', true)">Tout activer</button>
-      </span>
+      <div class="bulk" onclick="event.stopPropagation()">
+        <div class="switch${offCount < compatItems.length ? ' on' : ''}" title="${offCount < compatItems.length ? 'Tout désactiver' : 'Tout activer'}" data-group-sw="${g.id}"></div>
+      </div>
     `;
 
     gh.appendChild(topLine);
@@ -3746,6 +3745,15 @@ function _renderTweaks() {
       gh.classList.toggle("open", open);
       if (body) body.style.display = open ? "" : "none";
     });
+
+    // Click handler pour le switch bulk du groupe
+    const groupSw = gh.querySelector(`[data-group-sw="${g.id}"]`);
+    if (groupSw) {
+      groupSw.addEventListener("click", () => {
+        const isOn = groupSw.classList.contains("on");
+        bulkToggleGroup(g.id, !isOn);
+      });
+    }
 
     section.appendChild(gh);
 
@@ -3777,9 +3785,9 @@ async function bulkToggleGroup(groupId, targetActive) {
   }
   if (!changes.length) return;
 
-  // Trouve et désactive temporairement les boutons bulk du groupe
-  const btns = document.querySelectorAll(`#tweaks-list .tweak-group-title[data-group="${groupId}"] .bulk button`);
-  btns.forEach(b => b.disabled = true);
+  // Trouve et désactive temporairement le switch bulk du groupe
+  const groupSw = document.querySelector(`[data-group-sw="${groupId}"]`);
+  if (groupSw) groupSw.dataset.busy = "1";
 
   try {
     const res = await fetch("/api/windows-tweaks/set-batch", {
@@ -3807,7 +3815,12 @@ async function bulkToggleGroup(groupId, targetActive) {
   } catch (e) {
     showToast("Erreur batch", e.message, "warn");
   } finally {
-    btns.forEach(b => b.disabled = false);
+    if (groupSw) {
+      delete groupSw.dataset.busy;
+      const anyActive = _tweakItems.filter(i => i.group === groupId).some(i => i.active);
+      groupSw.classList.toggle("on", anyActive);
+      groupSw.title = anyActive ? "Tout désactiver" : "Tout activer";
+    }
   }
 }
 
