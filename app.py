@@ -50,7 +50,7 @@ from cleaner import (
     export_config_snapshot, import_config_snapshot,
     get_gaming_mode_state, set_gaming_mode,
     get_update_center,
-    get_browser_data_breakdown, clean_browser_data,
+    get_browser_data_breakdown, clean_browser_data, get_locked_browsers_info,
     generate_global_report,
     send_to_recycle_bin, open_recycle_bin, get_last_cleanup_info,
     list_recycle_sessions, restore_recycle_session, delete_recycle_session,
@@ -323,6 +323,11 @@ def api_report():
     resp = Response(report["html"], mimetype="text/html; charset=utf-8")
     resp.headers["Content-Disposition"] = f'attachment; filename="{report["filename"]}"'
     return resp
+
+
+@app.route("/api/locked-browsers")
+def api_locked_browsers():
+    return jsonify(get_locked_browsers_info())
 
 
 @app.route("/api/browser-data")

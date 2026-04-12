@@ -557,11 +557,68 @@ def estimate_temp():
     return total
 
 
+_BROWSER_PROCESS_MAP = {
+    # Nom exe processus → noms de dossier profiles correspondants
+    "chrome.exe":  ["Chrome"],
+    "msedge.exe":  ["Edge"],
+    "brave.exe":   ["Brave-Browser"],
+    "firefox.exe": ["Firefox"],
+    "opera.exe":   ["Opera"],
+    "vivaldi.exe": ["Vivaldi"],
+}
+
+
+def _get_running_browsers():
+    """Détecte les navigateurs actuellement ouverts. Retourne un set de noms de dossier."""
+    try:
+        import psutil
+    except ImportError:
+        return set()
+    running = set()
+    try:
+        for proc in psutil.process_iter(["name"]):
+            pname = (proc.info.get("name") or "").lower()
+            for exe, folder_names in _BROWSER_PROCESS_MAP.items():
+                if pname == exe:
+                    running.update(folder_names)
+    except Exception:
+        pass
+    return running
+
+
+def _is_browser_profile_locked(profile_path, running_browsers):
+    """Vérifie si un profil navigateur est verrouillé (navigateur ouvert)."""
+    if not running_browsers:
+        return False
+    path_str = str(profile_path)
+    for browser_dir in running_browsers:
+        if browser_dir in path_str:
+            return True
+    return False
+
+
+def get_locked_browsers_info():
+    """Retourne des infos sur les navigateurs ouverts pour le frontend.
+
+    Retourne {"locked": ["Chrome", ...], "message": str|None}.
+    """
+    running = _get_running_browsers()
+    if not running:
+        return {"locked": [], "message": None}
+    names = sorted(running)
+    return {
+        "locked": names,
+        "message": f"Navigateur(s) ouvert(s) : {', '.join(names)}. Fermez-les pour un nettoyage complet.",
+    }
+
+
 def estimate_browser_cache():
     local   = Path(os.environ.get("LOCALAPPDATA", ""))
-    appdata = Path(os.environ.get("APPDATA", ""))
+    running = _get_running_browsers()
     total = 0
     for _, profile in _browser_profile_paths():
+        if _is_browser_profile_locked(profile, running):
+            continue  # Skip les profils verrouillés — pas comptés dans l'estimation
         for sub in ["Cache", "Code Cache", "GPUCache", "cache2"]:
             total += get_folder_size(profile / sub)
     return total
@@ -598,7 +655,10 @@ def estimate_windows_update():
 
 def estimate_history():
     total = 0
+    running = _get_running_browsers()
     for kind, profile in _browser_profile_paths():
+        if _is_browser_profile_locked(profile, running):
+            continue
         if kind == "chromium":
             total += (profile / "History").stat().st_size if (profile / "History").exists() else 0
         elif kind == "firefox":
@@ -608,7 +668,10 @@ def estimate_history():
 
 def estimate_cookies():
     total = 0
+    running = _get_running_browsers()
     for kind, profile in _browser_profile_paths():
+        if _is_browser_profile_locked(profile, running):
+            continue
         if kind == "chromium":
             total += (profile / "Cookies").stat().st_size if (profile / "Cookies").exists() else 0
         elif kind == "firefox":
@@ -702,9 +765,15 @@ def task_temp(log):
 def task_browser_cache(log):
     total = 0
     browser_totals = {}
+    running = _get_running_browsers()
+    skipped = []
     for kind, profile in _browser_profile_paths():
-        freed = 0
         browser = profile.parent.parent.name if kind == "chromium" else "Firefox"
+        if _is_browser_profile_locked(profile, running):
+            if browser not in skipped:
+                skipped.append(browser)
+            continue
+        freed = 0
         if kind == "chromium":
             for sub in ["Cache", "Code Cache", "GPUCache"]:
                 f, _ = delete_folder_contents(profile / sub)
@@ -715,10 +784,12 @@ def task_browser_cache(log):
         if freed:
             browser_totals[browser] = browser_totals.get(browser, 0) + freed
         total += freed
+    if skipped:
+        log(f"Cache navigateurs — {', '.join(skipped)} ouvert(s), nettoyage impossible")
     if browser_totals:
         for browser, freed in browser_totals.items():
             log(f"Cache {browser} — {fmt_size(freed)} libérés")
-    else:
+    elif not skipped:
         log("Cache navigateurs — déjà propre")
     return total
 
@@ -726,8 +797,14 @@ def task_browser_cache(log):
 def task_browser_history(log):
     total = 0
     browser_totals = {}
+    running = _get_running_browsers()
+    skipped = []
     for kind, profile in _browser_profile_paths():
         browser = profile.parent.parent.name if kind == "chromium" else "Firefox"
+        if _is_browser_profile_locked(profile, running):
+            if browser not in skipped:
+                skipped.append(browser)
+            continue
         if kind == "chromium":
             freed = _sqlite_clean(profile / "History", [
                 "DELETE FROM urls",
@@ -748,10 +825,12 @@ def task_browser_history(log):
         if freed:
             browser_totals[browser] = browser_totals.get(browser, 0) + freed
         total += freed
+    if skipped:
+        log(f"Historique navigateurs — {', '.join(skipped)} ouvert(s), nettoyage impossible")
     if browser_totals:
         for browser, freed in browser_totals.items():
             log(f"Historique {browser} — {fmt_size(freed)} libérés")
-    else:
+    elif not skipped:
         log("Historique navigateurs — déjà propre")
     return total
 
@@ -759,8 +838,14 @@ def task_browser_history(log):
 def task_browser_cookies(log):
     total = 0
     browser_totals = {}
+    running = _get_running_browsers()
+    skipped = []
     for kind, profile in _browser_profile_paths():
         browser = profile.parent.parent.name if kind == "chromium" else "Firefox"
+        if _is_browser_profile_locked(profile, running):
+            if browser not in skipped:
+                skipped.append(browser)
+            continue
         if kind == "chromium":
             freed = _sqlite_clean(profile / "Cookies", ["DELETE FROM cookies"], log)
         elif kind == "firefox":
@@ -770,10 +855,12 @@ def task_browser_cookies(log):
         if freed:
             browser_totals[browser] = browser_totals.get(browser, 0) + freed
         total += freed
+    if skipped:
+        log(f"Cookies navigateurs — {', '.join(skipped)} ouvert(s), nettoyage impossible")
     if browser_totals:
         for browser, freed in browser_totals.items():
             log(f"Cookies {browser} — {fmt_size(freed)} libérés")
-    else:
+    elif not skipped:
         log("Cookies navigateurs — déjà propres")
     return total
 

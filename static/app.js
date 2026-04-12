@@ -818,13 +818,28 @@ async function loadHealthBadge() {
 }
 
 // ── Modal aperçu ──────────────────────────────────────────────────────────────
-function showCleanPreview(selected) {
+async function showCleanPreview(selected) {
   const listEl    = document.getElementById("modal-list");
   const totalEl   = document.getElementById("modal-total-val");
   const overlayEl = document.getElementById("modal-overlay");
 
   listEl.innerHTML = "";
   let total = 0;
+
+  // Vérifie si des navigateurs sont ouverts (bloque le nettoyage de leurs données)
+  const hasBrowserTask = selected.some(t => ["browser", "history", "cookies"].includes(t.id));
+  if (hasBrowserTask) {
+    try {
+      const res = await fetch("/api/locked-browsers");
+      const info = await res.json();
+      if (info.locked && info.locked.length) {
+        const warn = document.createElement("div");
+        warn.style.cssText = "padding:10px 14px;margin-bottom:8px;border-radius:4px;background:var(--amber-bg);border:1px solid var(--amber);font-size:12px;color:var(--text)";
+        warn.innerHTML = `<strong>⚠ ${info.locked.join(", ")}</strong> ouvert(s) — leur cache/historique/cookies sera ignoré et non comptabilisé. Fermez-les pour un nettoyage complet.`;
+        listEl.appendChild(warn);
+      }
+    } catch (e) {}
+  }
 
   selected.forEach(t => {
     const bytes = sizes[t.id]?.bytes || 0;
