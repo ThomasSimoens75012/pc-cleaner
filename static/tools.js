@@ -870,9 +870,8 @@ function _renderServices(isAdmin) {
     if (!items.length) return "";
     const bulkHtml = isAdmin
       ? `<span class="bulk">
-          <button onclick="bulkToggleServicesCategory('${cat}', false)">tout désactiver</button>
-          <span class="sep">·</span>
-          <button onclick="bulkToggleServicesCategory('${cat}', true)">tout activer</button>
+          <button class="btn-ghost bulk-btn" onclick="bulkToggleServicesCategory('${cat}', false)">Tout désactiver</button>
+          <button class="btn-ghost bulk-btn" onclick="bulkToggleServicesCategory('${cat}', true)">Tout activer</button>
         </span>`
       : "";
     return `
@@ -1039,9 +1038,8 @@ function _renderScheduledTasks(isAdmin) {
     if (!items.length) return "";
     const bulkHtml = isAdmin
       ? `<span class="bulk">
-          <button onclick="bulkToggleTasksCategory('${cat}', false)">tout désactiver</button>
-          <span class="sep">·</span>
-          <button onclick="bulkToggleTasksCategory('${cat}', true)">tout activer</button>
+          <button class="btn-ghost bulk-btn" onclick="bulkToggleTasksCategory('${cat}', false)">Tout désactiver</button>
+          <button class="btn-ghost bulk-btn" onclick="bulkToggleTasksCategory('${cat}', true)">Tout activer</button>
         </span>`
       : "";
     return `
@@ -3727,9 +3725,8 @@ function _renderTweaks() {
         ${absentCount ? `<span>${absentCount} absent${absentCount > 1 ? "s" : ""}</span>` : ""}
       </span>
       <span class="bulk" onclick="event.stopPropagation()">
-        <button onclick="bulkToggleGroup('${g.id}', false)">tout désactiver</button>
-        <span class="sep">·</span>
-        <button onclick="bulkToggleGroup('${g.id}', true)">tout activer</button>
+        <button class="btn-ghost bulk-btn" onclick="bulkToggleGroup('${g.id}', false)">Tout désactiver</button>
+        <button class="btn-ghost bulk-btn" onclick="bulkToggleGroup('${g.id}', true)">Tout activer</button>
       </span>
     `;
 
