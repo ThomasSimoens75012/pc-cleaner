@@ -3760,7 +3760,9 @@ function _renderTweaks() {
     // Click handler pour le switch bulk du groupe
     const groupSw = gh.querySelector(`[data-group-sw="${g.id}"]`);
     if (groupSw) {
-      groupSw.addEventListener("click", () => {
+      groupSw.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (groupSw.dataset.busy) return; // anti-double-clic
         const isOn = groupSw.classList.contains("on");
         bulkToggleGroup(g.id, !isOn);
       });
@@ -3790,9 +3792,11 @@ async function bulkToggleGroup(groupId, targetActive) {
     const id = row.dataset.id;
     const item = _tweakItems.find(i => i.id === id);
     if (!item) continue;
-    if (item.active !== targetActive) {
-      changes.push({ id, active: targetActive });
-    }
+    // Skip les items absents, incompatibles, ou déjà dans l'état cible
+    if (item.present === false) continue;
+    if (!_isTweakCompatible(item)) continue;
+    if (item.active === targetActive) continue;
+    changes.push({ id, active: targetActive });
   }
   if (!changes.length) return;
 
