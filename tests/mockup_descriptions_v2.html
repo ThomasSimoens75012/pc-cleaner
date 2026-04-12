@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Mockups v2 — Descriptions monochrome OpenCleaner</title>
+<style>
+  :root {
+    --text: #37352f;
+    --text-mid: #787774;
+    --text-dim: #9b9a97;
+    --bg: #ffffff;
+    --bg2: #fbfbfa;
+    --bg3: #f1f1ef;
+    --border: #e9e9e7;
+    --border2: #dfdedc;
+    --hover: #f7f6f3;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'IBM Plex Sans', -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 40px 60px; }
+  h1 { font-size: 22px; margin-bottom: 30px; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+  h2 { font-size: 15px; margin: 40px 0 14px; color: var(--text-mid); }
+  .note { color: var(--text-dim); font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
+  .mockup { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 40px; }
+  .mockup-title { background: var(--bg2); padding: 12px 18px; font-weight: 600; font-size: 12px; border-bottom: 1px solid var(--border); color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .row { display: flex; align-items: flex-start; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .row:last-child { border-bottom: none; }
+  .row:hover { background: var(--hover); }
+  .row-info { flex: 1; min-width: 0; }
+  .row-label { font-size: 14px; font-weight: 600; color: var(--text); }
+  .row-desc { font-size: 12px; color: var(--text-mid); margin-top: 3px; line-height: 1.5; }
+  .sw { width: 36px; height: 20px; background: var(--border2); border-radius: 10px; position: relative; cursor: pointer; flex-shrink: 0; margin-top: 2px; transition: .2s; }
+  .sw.on { background: var(--text); }
+  .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: .2s; }
+  .sw.on::after { left: 18px; }
+  .absent { opacity: 0.4; pointer-events: none; }
+  .absent-badge { font-size: 9px; background: var(--bg3); color: var(--text-dim); padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-left: 6px; }
+
+  /* ════════ V4 : Badges monochrome compacts ════════ */
+  .tag { display: inline-block; font-size: 10px; font-weight: 500; color: var(--text-dim); background: var(--bg3); padding: 2px 7px; border-radius: 3px; margin-right: 4px; margin-top: 5px; }
+  .tag-val { font-weight: 700; color: var(--text-mid); }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+
+  /* ════════ V5 : Ligne secondaire texte pur ════════ */
+  .impact-line { font-size: 11px; color: var(--text-dim); margin-top: 5px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .impact-line span { white-space: nowrap; }
+  .impact-line .val { font-weight: 600; color: var(--text-mid); font-variant-numeric: tabular-nums; }
+  .impact-line .sep { color: var(--border2); }
+  .tradeoff-line { font-size: 11px; color: var(--text-dim); margin-top: 4px; font-style: italic; border-left: 2px solid var(--border2); padding-left: 8px; }
+
+  /* ════════ V6 : Panneau latéral monochrome ════════ */
+  .v6-container { display: flex; }
+  .v6-list { flex: 1; }
+  .v6-panel { width: 280px; border-left: 1px solid var(--border); background: var(--bg2); padding: 18px; }
+  .v6-panel-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .v6-panel-desc { font-size: 12px; color: var(--text-mid); line-height: 1.55; margin-bottom: 14px; }
+  .v6-stat { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .v6-stat:last-of-type { border-bottom: none; }
+  .v6-stat-label { color: var(--text-dim); }
+  .v6-stat-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+  .v6-stat-val.none { color: var(--text-dim); font-weight: 400; }
+  .v6-tradeoff { margin-top: 14px; padding: 10px 12px; background: var(--bg3); border-radius: 4px; border-left: 2px solid var(--text-dim); font-size: 11px; color: var(--text-mid); line-height: 1.5; }
+  .v6-source { margin-top: 10px; font-size: 10px; color: var(--text-dim); }
+  .v6-list .row.selected { background: var(--bg3); }
+
+  /* ════════ V7 : Inline étendu monochrome (accordéon) ════════ */
+  .v7-expand { display: none; padding: 10px 18px 14px; background: var(--bg2); border-bottom: 1px solid var(--border); }
+  .v7-expand.open { display: block; }
+  .v7-grid { display: flex; gap: 20px; flex-wrap: wrap; }
+  .v7-metric { min-width: 80px; }
+  .v7-metric-val { font-size: 18px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .v7-metric-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-dim); margin-top: 2px; }
+  .v7-metric-val.empty { color: var(--text-dim); font-size: 14px; font-weight: 400; }
+  .v7-tradeoff { margin-top: 10px; font-size: 11px; color: var(--text-dim); border-left: 2px solid var(--border2); padding-left: 10px; line-height: 1.5; }
+  .v7-toggle { font-size: 10px; color: var(--text-dim); cursor: pointer; margin-top: 4px; text-decoration: underline; }
+  .v7-toggle:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<h1>Descriptions — variantes monochrome</h1>
+<p class="note">Toutes les couleurs restent dans la palette Notion (--text, --text-mid, --text-dim, --bg2, --bg3, --border). Aucun bleu/orange/rouge/vert.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>Variante 4 — Badges monochrome compacts</h2>
+<p class="note">Badges gris sur fond gris clair. Lisibles sans crier.</p>
+
+<div class="mockup">
+  <div class="mockup-title">Personnalisation Windows</div>
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Windows Search — indexation</div>
+      <div class="row-desc">Désactive l'indexation en arrière-plan et les suggestions de recherche.</div>
+      <div class="tags">
+        <span class="tag"><span class="tag-val">190 Mo</span> RAM</span>
+        <span class="tag"><span class="tag-val">3</span> processus</span>
+        <span class="tag">réduit I/O disque</span>
+        <span class="tag">meilleure autonomie</span>
+      </div>
+    </div>
+    <div class="sw on"></div>
+  </div>
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Widgets et actualités</div>
+      <div class="row-desc">Panneau météo, news et bourse de la barre des tâches.</div>
+      <div class="tags">
+        <span class="tag"><span class="tag-val">33 Mo</span> RAM</span>
+        <span class="tag"><span class="tag-val">1</span> processus</span>
+      </div>
+    </div>
+    <div class="sw on"></div>
+  </div>
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Cache navigateurs</div>
+      <div class="row-desc">Fichiers temporaires web de Chrome, Edge, Brave et Firefox.</div>
+      <div class="tags">
+        <span class="tag"><span class="tag-val">~800 Mo</span> disque</span>
+        <span class="tag">sites plus lents au 1er chargement</span>
+      </div>
+    </div>
+    <div class="sw on"></div>
+  </div>
+
+  <div class="row absent">
+    <div class="row-info">
+      <div class="row-label">Copilot Windows <span class="absent-badge">Absent de ce PC</span></div>
+      <div class="row-desc">Assistant IA intégré à la barre des tâches.</div>
+      <div class="tags">
+        <span class="tag"><span class="tag-val">~250 Mo</span> RAM</span>
+        <span class="tag"><span class="tag-val">2</span> processus</span>
+      </div>
+    </div>
+    <div class="sw"></div>
+  </div>
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Identifiant publicitaire</div>
+      <div class="row-desc">Empêche Windows de suivre vos centres d'intérêt pour les publicités ciblées.</div>
+      <div class="tags">
+        <span class="tag">confidentialité</span>
+      </div>
+    </div>
+    <div class="sw on"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>Variante 5 — Ligne secondaire texte pur + compromis</h2>
+<p class="note">Pas de badge, juste une ligne de texte sous la description avec les métriques séparées par des tirets. Plus discret.</p>
+
+<div class="mockup">
+  <div class="mockup-title">Personnalisation Windows</div>
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Windows Search — indexation</div>
+      <div class="row-desc">Désactive l'indexation en arrière-plan et les suggestions de recherche dans le menu Démarrer.</div>
+      <div class="impact-line">
+        <span><span class="val">190 Mo</span> RAM</span>
+        <span class="sep">|</span>
+        <span><span class="val">3</span> processus</span>
+        <span class="sep">|</span>
+        <span>réduit les lectures disque</span>
+        <span class="sep">|</span>
+        <span>meilleure autonomie batterie</span>
+      </div>
+      <div class="tradeoff-line">Compromis : la recherche sera plus lente (pas d'index, recherche à la volée).</div>
+    </div>
+    <div class="sw on"></div>
+  </div>
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Widgets et actualités</div>
+      <div class="row-desc">Panneau météo, actualités et bourse dans la barre des tâches.</div>
+      <div class="impact-line">
+        <span><span class="val">33 Mo</span> RAM</span>
+        <span class="sep">|</span>
+        <span><span class="val">1</span> processus</span>
+      </div>
+      <div class="tradeoff-line">Compromis : aucun. Accessible via navigateur web.</div>
+    </div>
+    <div class="sw on"></div>
+  </div>
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Service SysMain (Superfetch)</div>
+      <div class="row-desc">Pré-charge en RAM les applications que vous utilisez fréquemment.</div>
+      <div class="impact-line">
+        <span><span class="val">80 Mo</span> RAM</span>
+        <span class="sep">|</span>
+        <span><span class="val">1</span> processus</span>
+        <span class="sep">|</span>
+        <span>réduit les pics de lecture disque</span>
+      </div>
+      <div class="tradeoff-line">Compromis : le lancement des apps fréquentes peut être légèrement plus lent.</div>
+    </div>
+    <div class="sw on"></div>
+  </div>
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Identifiant publicitaire</div>
+      <div class="row-desc">Empêche Windows de suivre vos centres d'intérêt pour la publicité ciblée.</div>
+      <div class="impact-line">
+        <span>confidentialité uniquement</span>
+        <span class="sep">|</span>
+        <span>aucun impact performance</span>
+      </div>
+    </div>
+    <div class="sw on"></div>
+  </div>
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Cache navigateurs</div>
+      <div class="row-desc">Supprime les fichiers temporaires de Chrome, Edge, Brave et Firefox.</div>
+      <div class="impact-line">
+        <span><span class="val">~800 Mo</span> disque libéré</span>
+        <span class="sep">|</span>
+        <span>aucun effet sur la RAM ou le CPU</span>
+      </div>
+      <div class="tradeoff-line">Compromis : les sites se rechargent plus lentement la première visite.</div>
+    </div>
+    <div class="sw on"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>Variante 6 — Panneau latéral monochrome</h2>
+<p class="note">La liste reste compacte (1 ligne par item), le panneau de droite affiche le détail quand on sélectionne un item. 100% dans la palette --text/--bg.</p>
+
+<div class="mockup">
+  <div class="mockup-title">Personnalisation Windows</div>
+  <div class="v6-container">
+    <div class="v6-list">
+      <div class="row">
+        <div class="row-info">
+          <div class="row-label">Windows Search</div>
+          <div class="row-desc">Indexation en arrière-plan.</div>
+        </div>
+        <div class="sw on"></div>
+      </div>
+      <div class="row selected">
+        <div class="row-info">
+          <div class="row-label">Widgets et actualités</div>
+          <div class="row-desc">Panneau météo/news de la barre des tâches.</div>
+        </div>
+        <div class="sw on"></div>
+      </div>
+      <div class="row absent">
+        <div class="row-info">
+          <div class="row-label">Copilot <span class="absent-badge">Absent</span></div>
+          <div class="row-desc">Assistant IA.</div>
+        </div>
+        <div class="sw"></div>
+      </div>
+      <div class="row">
+        <div class="row-info">
+          <div class="row-label">Identifiant publicitaire</div>
+          <div class="row-desc">Suivi des centres d'intérêt.</div>
+        </div>
+        <div class="sw on"></div>
+      </div>
+      <div class="row">
+        <div class="row-info">
+          <div class="row-label">SysMain (Superfetch)</div>
+          <div class="row-desc">Pré-chargement des apps fréquentes.</div>
+        </div>
+        <div class="sw on"></div>
+      </div>
+      <div class="row">
+        <div class="row-info">
+          <div class="row-label">Cache navigateurs</div>
+          <div class="row-desc">Chrome, Edge, Brave, Firefox.</div>
+        </div>
+        <div class="sw on"></div>
+      </div>
+    </div>
+
+    <div class="v6-panel">
+      <div class="v6-panel-title">Widgets et actualités</div>
+      <div class="v6-panel-desc">
+        Désactive le panneau de widgets accessible depuis la barre des tâches
+        (météo, actualités, cours de bourse). Le contenu est fourni par
+        Microsoft Start (MSN).
+      </div>
+
+      <div class="v6-stat">
+        <span class="v6-stat-label">RAM libérée</span>
+        <span class="v6-stat-val">33 Mo</span>
+      </div>
+      <div class="v6-stat">
+        <span class="v6-stat-label">Processus arrêtés</span>
+        <span class="v6-stat-val">1</span>
+      </div>
+      <div class="v6-stat">
+        <span class="v6-stat-label">Espace disque</span>
+        <span class="v6-stat-val none">—</span>
+      </div>
+      <div class="v6-stat">
+        <span class="v6-stat-label">Impact CPU</span>
+        <span class="v6-stat-val none">—</span>
+      </div>
+      <div class="v6-stat">
+        <span class="v6-stat-label">Autonomie batterie</span>
+        <span class="v6-stat-val">+5 min (estimé)</span>
+      </div>
+
+      <div class="v6-source">
+        Mesuré sur ce PC il y a 12 min via psutil<br>
+        Processus : WidgetService.exe
+      </div>
+
+      <div class="v6-tradeoff">
+        <strong>Compromis :</strong> la météo et les actualités ne seront
+        plus accessibles depuis la barre des tâches. Vous pouvez toujours
+        y accéder via un navigateur web.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>Variante 7 — Accordéon monochrome (clic pour déplier)</h2>
+<p class="note">Chaque item a un lien "Détails" qui déplie un panneau inline en dessous. La liste reste compacte par défaut, le détail n'apparaît que sur demande.</p>
+
+<div class="mockup">
+  <div class="mockup-title">Personnalisation Windows</div>
+
+  <div class="row" style="flex-direction:column;gap:0">
+    <div style="display:flex;align-items:flex-start;gap:14px;width:100%">
+      <div class="row-info">
+        <div class="row-label">Windows Search — indexation</div>
+        <div class="row-desc">Désactive l'indexation en arrière-plan.</div>
+        <div class="v7-toggle" onclick="this.closest('.row').querySelector('.v7-expand').classList.toggle('open')">Voir l'impact</div>
+      </div>
+      <div class="sw on"></div>
+    </div>
+    <div class="v7-expand open">
+      <div class="v7-grid">
+        <div class="v7-metric">
+          <div class="v7-metric-val">190 Mo</div>
+          <div class="v7-metric-label">RAM libérée</div>
+        </div>
+        <div class="v7-metric">
+          <div class="v7-metric-val">3</div>
+          <div class="v7-metric-label">Processus</div>
+        </div>
+        <div class="v7-metric">
+          <div class="v7-metric-val empty">—</div>
+          <div class="v7-metric-label">Disque</div>
+        </div>
+        <div class="v7-metric">
+          <div class="v7-metric-val">+15 min</div>
+          <div class="v7-metric-label">Batterie</div>
+        </div>
+      </div>
+      <div class="v7-tradeoff">La recherche dans le menu Démarrer et l'Explorateur sera plus lente (pas d'index, recherche à la volée).</div>
+    </div>
+  </div>
+
+  <div class="row" style="flex-direction:column;gap:0">
+    <div style="display:flex;align-items:flex-start;gap:14px;width:100%">
+      <div class="row-info">
+        <div class="row-label">Widgets et actualités</div>
+        <div class="row-desc">Panneau météo/news de la barre des tâches.</div>
+        <div class="v7-toggle" onclick="this.closest('.row').querySelector('.v7-expand').classList.toggle('open')">Voir l'impact</div>
+      </div>
+      <div class="sw on"></div>
+    </div>
+    <div class="v7-expand">
+      <div class="v7-grid">
+        <div class="v7-metric">
+          <div class="v7-metric-val">33 Mo</div>
+          <div class="v7-metric-label">RAM libérée</div>
+        </div>
+        <div class="v7-metric">
+          <div class="v7-metric-val">1</div>
+          <div class="v7-metric-label">Processus</div>
+        </div>
+        <div class="v7-metric">
+          <div class="v7-metric-val empty">—</div>
+          <div class="v7-metric-label">Disque</div>
+        </div>
+      </div>
+      <div class="v7-tradeoff">Aucun compromis. Accessible via navigateur web si besoin.</div>
+    </div>
+  </div>
+
+  <div class="row" style="flex-direction:column;gap:0">
+    <div style="display:flex;align-items:flex-start;gap:14px;width:100%">
+      <div class="row-info">
+        <div class="row-label">Identifiant publicitaire</div>
+        <div class="row-desc">Suivi des centres d'intérêt pour la publicité ciblée.</div>
+        <div class="v7-toggle" onclick="this.closest('.row').querySelector('.v7-expand').classList.toggle('open')">Voir l'impact</div>
+      </div>
+      <div class="sw on"></div>
+    </div>
+    <div class="v7-expand">
+      <div class="v7-grid">
+        <div class="v7-metric">
+          <div class="v7-metric-val empty">—</div>
+          <div class="v7-metric-label">RAM</div>
+        </div>
+        <div class="v7-metric">
+          <div class="v7-metric-val empty">—</div>
+          <div class="v7-metric-label">Disque</div>
+        </div>
+      </div>
+      <div class="v7-tradeoff">Confidentialité uniquement. Aucun impact sur les performances. Les publicités dans les apps Microsoft seront moins ciblées.</div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:40px;padding:20px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text-mid);line-height:1.6">
+  <strong style="color:var(--text)">Comparaison</strong><br><br>
+  <strong>V4 (badges monochrome)</strong> — Le plus compact. Informations visibles d'un coup d'oeil sans cliquer nulle part. Pas de compromis affiché par défaut. Bon pour les utilisateurs qui savent ce qu'ils font.<br><br>
+  <strong>V5 (texte pur + compromis)</strong> — Le plus lisible. Tout est en texte fluide sous la description. Le compromis est toujours visible. Idéal pour les utilisateurs qui découvrent. Prend un peu plus de hauteur par ligne.<br><br>
+  <strong>V6 (panneau latéral monochrome)</strong> — Le plus riche sans encombrer. La liste reste courte, le détail est à côté. Idéal pour les power users. Demande plus de code (panel qui suit la sélection).<br><br>
+  <strong>V7 (accordéon)</strong> — Compromis entre V5 et V4. Par défaut compact (juste "Voir l'impact"), se déplie au clic. Le détail n'apparaît que quand on le demande. Moins de surcharge visuelle que V5.
+</div>
+
+</body>
+</html>

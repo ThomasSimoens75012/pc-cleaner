@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Mockups — Textes descriptifs OpenCleaner</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'IBM Plex Sans', -apple-system, sans-serif; background: #fff; color: #37352f; padding: 40px 60px; }
+  h1 { font-size: 22px; margin-bottom: 30px; border-bottom: 2px solid #e9e9e7; padding-bottom: 10px; }
+  h2 { font-size: 16px; margin: 40px 0 16px; color: #787774; text-transform: uppercase; letter-spacing: 0.5px; }
+  .mockup { border: 1px solid #e9e9e7; border-radius: 8px; padding: 0; margin-bottom: 40px; overflow: hidden; }
+  .mockup-title { background: #f7f6f3; padding: 12px 18px; font-weight: 600; font-size: 13px; border-bottom: 1px solid #e9e9e7; color: #787774; }
+
+  /* Shared */
+  .row { display: flex; align-items: flex-start; gap: 14px; padding: 14px 18px; border-bottom: 1px solid #f1f1ef; }
+  .row:last-child { border-bottom: none; }
+  .row-info { flex: 1; min-width: 0; }
+  .row-label { font-size: 14px; font-weight: 600; color: #37352f; }
+  .row-desc { font-size: 12px; color: #787774; margin-top: 3px; line-height: 1.5; }
+  .sw { width: 36px; height: 20px; background: #e0dfdc; border-radius: 10px; position: relative; cursor: pointer; flex-shrink: 0; margin-top: 2px; }
+  .sw.on { background: #37352f; }
+  .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: .2s; }
+  .sw.on::after { left: 18px; }
+
+  /* ════════ MOCKUP 1 : Badges inline ════════ */
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
+  .badge-ram  { background: #e8f0fe; color: #1a73e8; }
+  .badge-disk { background: #fef7e0; color: #e37400; }
+  .badge-cpu  { background: #fce8e6; color: #d93025; }
+  .badge-bat  { background: #e6f4ea; color: #1e8e3e; }
+  .badge-io   { background: #f3e8fd; color: #8430ce; }
+  .badge svg { width: 11px; height: 11px; }
+  .badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+
+  /* ════════ MOCKUP 2 : Description étendue avec impact structuré ════════ */
+  .impact-grid { display: flex; gap: 16px; margin-top: 8px; padding: 8px 12px; background: #f7f6f3; border-radius: 4px; flex-wrap: wrap; }
+  .impact-item { display: flex; flex-direction: column; align-items: center; min-width: 60px; }
+  .impact-val { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .impact-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; color: #787774; margin-top: 2px; }
+  .impact-val.ram  { color: #1a73e8; }
+  .impact-val.disk { color: #e37400; }
+  .impact-val.cpu  { color: #d93025; }
+  .impact-val.bat  { color: #1e8e3e; }
+  .tradeoff { font-size: 11px; color: #787774; margin-top: 6px; padding-left: 2px; font-style: italic; }
+  .tradeoff::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #fef7e0; margin-right: 6px; vertical-align: middle; }
+
+  /* ════════ MOCKUP 3 : Tooltip card au hover ════════ */
+  .m3-container { display: flex; gap: 0; }
+  .m3-list { flex: 1; }
+  .m3-panel { width: 260px; border-left: 1px solid #e9e9e7; padding: 16px 18px; background: #fafaf9; min-height: 300px; position: sticky; top: 0; }
+  .m3-panel-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .m3-panel-desc { font-size: 12px; color: #787774; line-height: 1.5; margin-bottom: 12px; }
+  .m3-meter { margin-bottom: 10px; }
+  .m3-meter-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; color: #787774; margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .m3-meter-bar { height: 6px; background: #e9e9e7; border-radius: 3px; overflow: hidden; }
+  .m3-meter-fill { height: 100%; border-radius: 3px; }
+  .m3-meter-fill.ram  { background: #1a73e8; }
+  .m3-meter-fill.disk { background: #e37400; }
+  .m3-meter-fill.bat  { background: #1e8e3e; }
+  .m3-tradeoff { font-size: 11px; color: #37352f; background: #fef7e0; padding: 8px 10px; border-radius: 4px; border-left: 3px solid #e37400; margin-top: 12px; line-height: 1.5; }
+
+  .row:hover { background: #fafaf9; }
+  .m3-list .row.active-row { background: #f0f0ef; }
+</style>
+</head>
+<body>
+
+<h1>Textes descriptifs — 3 approches visuelles</h1>
+<p style="color:#787774;margin-bottom:30px;font-size:14px">
+  Objectif : aider l'utilisateur à comprendre l'impact de chaque action (RAM, disque, CPU, batterie)
+  et les compromis éventuels.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>Variante 1 — Badges inline</h2>
+<p style="color:#787774;font-size:12px;margin-bottom:12px">
+  Petits badges colorés par type d'impact directement sous la description.
+  Compact, scannable rapidement, ne prend pas de place verticale.
+</p>
+
+<div class="mockup">
+  <div class="mockup-title">PERSONNALISATION WINDOWS</div>
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Windows Search — indexation</div>
+      <div class="row-desc">Désactive l'indexation en arrière-plan. La recherche dans le menu Démarrer et l'Explorateur sera plus lente.</div>
+      <div class="badges">
+        <span class="badge badge-ram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></svg> 190 Mo RAM</span>
+        <span class="badge badge-io"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12H3M12 3v18"/></svg> Réduit I/O disque</span>
+        <span class="badge badge-bat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="7" width="12" height="10" rx="1"/><line x1="10" y1="7" x2="10" y2="4"/><line x1="14" y1="7" x2="14" y2="4"/></svg> Améliore autonomie</span>
+      </div>
+    </div>
+    <div class="sw on"></div>
+  </div>
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Widgets et actualités</div>
+      <div class="row-desc">Supprime le panneau de widgets de la barre des tâches (météo, actualités, bourse).</div>
+      <div class="badges">
+        <span class="badge badge-ram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></svg> 33 Mo RAM</span>
+      </div>
+    </div>
+    <div class="sw on"></div>
+  </div>
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Cache navigateurs</div>
+      <div class="row-desc">Supprime les fichiers temporaires web de Chrome, Edge, Brave et Firefox.</div>
+      <div class="badges">
+        <span class="badge badge-disk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> ~800 Mo disque</span>
+      </div>
+    </div>
+    <div class="sw on"></div>
+  </div>
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Service SysMain (Superfetch)</div>
+      <div class="row-desc">Pré-charge les applications fréquentes en mémoire pour les ouvrir plus vite.</div>
+      <div class="badges">
+        <span class="badge badge-ram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></svg> ~80 Mo RAM</span>
+        <span class="badge badge-io"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12H3M12 3v18"/></svg> Réduit I/O disque</span>
+        <span class="badge badge-cpu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Réduit pics CPU</span>
+      </div>
+    </div>
+    <div class="sw on"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>Variante 2 — Détail étendu avec grille d'impact + compromis</h2>
+<p style="color:#787774;font-size:12px;margin-bottom:12px">
+  Sous chaque item, une barre d'impact structurée montrant les gains chiffrés
+  et un texte de compromis en italique. Plus informatif, prend plus de place.
+</p>
+
+<div class="mockup">
+  <div class="mockup-title">PERSONNALISATION WINDOWS</div>
+
+  <div class="row" style="flex-direction:column">
+    <div style="display:flex;align-items:flex-start;gap:14px;width:100%">
+      <div class="row-info">
+        <div class="row-label">Windows Search — indexation</div>
+        <div class="row-desc">Désactive le service d'indexation des fichiers et l'affichage des suggestions de recherche dans le menu Démarrer.</div>
+      </div>
+      <div class="sw on"></div>
+    </div>
+    <div class="impact-grid">
+      <div class="impact-item">
+        <div class="impact-val ram">190 Mo</div>
+        <div class="impact-label">RAM libérée</div>
+      </div>
+      <div class="impact-item">
+        <div class="impact-val cpu">3 proc.</div>
+        <div class="impact-label">Processus stoppés</div>
+      </div>
+      <div class="impact-item">
+        <div class="impact-val bat">+15 min</div>
+        <div class="impact-label">Autonomie estimée</div>
+      </div>
+      <div class="impact-item">
+        <div class="impact-val disk">—</div>
+        <div class="impact-label">Disque</div>
+      </div>
+    </div>
+    <div class="tradeoff">La recherche dans le menu Démarrer et l'Explorateur de fichiers sera plus lente (pas d'index, recherche à la volée).</div>
+  </div>
+
+  <div class="row" style="flex-direction:column">
+    <div style="display:flex;align-items:flex-start;gap:14px;width:100%">
+      <div class="row-info">
+        <div class="row-label">Cache navigateurs</div>
+        <div class="row-desc">Supprime les fichiers temporaires web de tous vos navigateurs installés.</div>
+      </div>
+      <div class="sw on"></div>
+    </div>
+    <div class="impact-grid">
+      <div class="impact-item">
+        <div class="impact-val disk">~800 Mo</div>
+        <div class="impact-label">Disque libéré</div>
+      </div>
+      <div class="impact-item">
+        <div class="impact-val ram">—</div>
+        <div class="impact-label">RAM</div>
+      </div>
+      <div class="impact-item">
+        <div class="impact-val cpu">—</div>
+        <div class="impact-label">CPU</div>
+      </div>
+      <div class="impact-item">
+        <div class="impact-val bat">—</div>
+        <div class="impact-label">Autonomie</div>
+      </div>
+    </div>
+    <div class="tradeoff">Les sites web se rechargeront plus lentement la première visite (le cache sera reconstruit automatiquement).</div>
+  </div>
+
+  <div class="row" style="flex-direction:column">
+    <div style="display:flex;align-items:flex-start;gap:14px;width:100%">
+      <div class="row-info">
+        <div class="row-label">Service SysMain (Superfetch)</div>
+        <div class="row-desc">Pré-charge en RAM les applications que vous utilisez le plus souvent pour accélérer leur ouverture.</div>
+      </div>
+      <div class="sw on"></div>
+    </div>
+    <div class="impact-grid">
+      <div class="impact-item">
+        <div class="impact-val ram">80 Mo</div>
+        <div class="impact-label">RAM libérée</div>
+      </div>
+      <div class="impact-item">
+        <div class="impact-val cpu">1 proc.</div>
+        <div class="impact-label">Processus stoppé</div>
+      </div>
+      <div class="impact-item">
+        <div class="impact-val disk">I/O -30%</div>
+        <div class="impact-label">Lecture disque</div>
+      </div>
+      <div class="impact-item">
+        <div class="impact-val bat">+10 min</div>
+        <div class="impact-label">Autonomie estimée</div>
+      </div>
+    </div>
+    <div class="tradeoff">Le lancement des applications fréquemment utilisées peut être légèrement plus lent (pas de pré-chargement).</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>Variante 3 — Panneau latéral contextuel</h2>
+<p style="color:#787774;font-size:12px;margin-bottom:12px">
+  Un panneau fixe à droite qui affiche les détails de l'item survolé/sélectionné.
+  La liste reste compacte. Idéal pour les utilisateurs avancés qui veulent explorer.
+</p>
+
+<div class="mockup">
+  <div class="mockup-title">PERSONNALISATION WINDOWS</div>
+  <div class="m3-container">
+    <div class="m3-list">
+      <div class="row">
+        <div class="row-info">
+          <div class="row-label">Windows Search — indexation</div>
+          <div class="row-desc">Désactive l'indexation en arrière-plan.</div>
+        </div>
+        <div class="sw on"></div>
+      </div>
+      <div class="row active-row">
+        <div class="row-info">
+          <div class="row-label">Widgets et actualités</div>
+          <div class="row-desc">Panneau météo/news de la barre des tâches.</div>
+        </div>
+        <div class="sw on"></div>
+      </div>
+      <div class="row">
+        <div class="row-info">
+          <div class="row-label">Copilot Windows</div>
+          <div class="row-desc" style="opacity:.4">Absent de ce PC</div>
+        </div>
+        <div class="sw" style="opacity:.3"></div>
+      </div>
+      <div class="row">
+        <div class="row-info">
+          <div class="row-label">Service SysMain</div>
+          <div class="row-desc">Pré-chargement des applications fréquentes.</div>
+        </div>
+        <div class="sw on"></div>
+      </div>
+      <div class="row">
+        <div class="row-info">
+          <div class="row-label">Cache navigateurs</div>
+          <div class="row-desc">Fichiers temporaires Chrome, Edge, Brave, Firefox.</div>
+        </div>
+        <div class="sw on"></div>
+      </div>
+    </div>
+
+    <div class="m3-panel">
+      <div class="m3-panel-title">Widgets et actualités</div>
+      <div class="m3-panel-desc">
+        Désactive le panneau de widgets accessible depuis la barre des tâches
+        (météo, actualités, cours de bourse, flux sportifs). Le contenu est
+        fourni par Microsoft Start (MSN).
+      </div>
+
+      <div class="m3-meter">
+        <div class="m3-meter-label"><span>RAM libérée</span><span style="font-weight:600;color:#1a73e8">33 Mo</span></div>
+        <div class="m3-meter-bar"><div class="m3-meter-fill ram" style="width:12%"></div></div>
+      </div>
+
+      <div class="m3-meter">
+        <div class="m3-meter-label"><span>Espace disque</span><span style="font-weight:600;color:#787774">—</span></div>
+        <div class="m3-meter-bar"><div class="m3-meter-fill disk" style="width:0%"></div></div>
+      </div>
+
+      <div class="m3-meter">
+        <div class="m3-meter-label"><span>Autonomie batterie</span><span style="font-weight:600;color:#1e8e3e">+5 min</span></div>
+        <div class="m3-meter-bar"><div class="m3-meter-fill bat" style="width:8%"></div></div>
+      </div>
+
+      <div style="margin-top:12px;font-size:11px;color:#787774">
+        <strong>Source :</strong> mesuré sur ce PC<br>
+        <strong>Processus :</strong> WidgetService.exe (1)<br>
+        <strong>Dernière mesure :</strong> il y a 12 min
+      </div>
+
+      <div class="m3-tradeoff">
+        <strong>Compromis :</strong> la météo et les actualités ne seront plus
+        accessibles depuis la barre des tâches. Vous pourrez toujours y accéder
+        via un navigateur web.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:40px;padding:20px;background:#f7f6f3;border-radius:6px;font-size:13px;color:#787774;line-height:1.6">
+  <strong style="color:#37352f">Comparaison rapide</strong><br><br>
+  <strong>Variante 1 (badges inline)</strong> — Compact, rapide à scanner. Idéal pour les utilisateurs qui veulent juste voir "RAM ? disque ? CPU ?" d'un coup d'oeil sans ouvrir quoi que ce soit.<br><br>
+  <strong>Variante 2 (grille d'impact)</strong> — Le plus informatif. Montre les chiffres exacts + le compromis. Prend 2-3x plus de hauteur par item. Bien pour un mode "détaillé" opt-in.<br><br>
+  <strong>Variante 3 (panneau latéral)</strong> — Meilleur des deux mondes : la liste reste compacte, le détail apparaît au hover/clic. Demande plus de travail d'implémentation (panel persistant, suivi du focus).
+</div>
+
+</body>
+</html>

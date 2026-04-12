@@ -3986,6 +3986,126 @@ function _renderTweakChart() {
   }
 }
 
+// ── Panneau latéral de détail V6 ──────────────────────────────────────────────
+
+const _TWEAK_DETAILS = {
+  // IA
+  copilot:                     { tradeoff: "L'assistant IA Copilot ne sera plus accessible. Pas d'impact si déjà absent du PC.", extra: "Économie significative de RAM si Copilot était actif." },
+  copilot_button:              { tradeoff: "Le bouton Copilot disparaît de la barre des tâches. Purement cosmétique.", extra: "" },
+  // Edge
+  edge_startup_boost:          { tradeoff: "Edge mettra 1-2 secondes de plus à s'ouvrir au premier lancement. Libère ~350 Mo de RAM quand Edge est fermé.", extra: "Edge pré-charge des processus au démarrage de Windows." },
+  edge_background:             { tradeoff: "Les notifications web d'Edge ne fonctionneront plus quand le navigateur est fermé.", extra: "Réduit les processus msedge.exe en arrière-plan." },
+  edge_hub_sidebar:            { tradeoff: "La barre latérale Bing/Discover d'Edge disparaît. Aucun impact performance.", extra: "Confidentialité : réduit les requêtes vers Microsoft." },
+  edge_shopping:               { tradeoff: "Les suggestions de prix et coupons dans Edge sont désactivées.", extra: "Confidentialité uniquement." },
+  edge_personalization_reporting: { tradeoff: "Edge n'envoie plus de données de navigation à Microsoft pour la personnalisation.", extra: "Confidentialité uniquement, aucun impact performance." },
+  // Télémétrie
+  ad_id:                       { tradeoff: "Les publicités dans les apps Microsoft seront moins ciblées. Aucun impact performance.", extra: "Confidentialité : Windows ne suit plus vos centres d'intérêt." },
+  tailored_experiences:        { tradeoff: "Les suggestions personnalisées de Windows (tips, recommandations) disparaissent.", extra: "Confidentialité uniquement." },
+  app_launch_tracking:         { tradeoff: "Le menu Démarrer ne triera plus les apps par fréquence d'utilisation.", extra: "Confidentialité : Microsoft ne sait plus quelles apps vous lancez." },
+  diagnostic_data:             { tradeoff: "Windows envoie uniquement les données de diagnostic obligatoires au lieu de l'ensemble complet.", extra: "Réduit légèrement le trafic réseau." },
+  feedback_frequency:          { tradeoff: "Windows ne vous demandera plus votre avis via des pop-ups de feedback.", extra: "" },
+  // Notifications
+  tips_suggestions:            { tradeoff: "Plus de tips 'Saviez-vous que...' ni de suggestions d'apps Microsoft.", extra: "Réduit les distractions." },
+  lockscreen_tips:             { tradeoff: "L'écran de verrouillage n'affiche plus de suggestions ni de publicités.", extra: "" },
+  start_suggestions:           { tradeoff: "Le menu Démarrer ne suggère plus d'apps du Microsoft Store.", extra: "Réduit les publicités intégrées." },
+  // IA - Notepad
+  notepad_ai:                  { tradeoff: "Désactive les fonctions IA dans le Bloc-notes Windows 11.", extra: "Confidentialité." },
+  // Recherche & widgets
+  search_highlights:           { tradeoff: "La recherche dans le menu Démarrer sera plus lente (pas d'index). Réduit significativement l'activité disque en arrière-plan.", extra: "Impact fort sur les portables (I/O disque + batterie)." },
+  widgets:                     { tradeoff: "Le panneau météo/actualités disparaît de la barre des tâches. Accessible via navigateur web.", extra: "" },
+  // UI / Cosmétique
+  taskbar_center:              { tradeoff: "La barre des tâches s'aligne à gauche au lieu du centre (style Windows 10).", extra: "Purement cosmétique." },
+  start_recommended:           { tradeoff: "Masque la section 'Recommandé' du menu Démarrer.", extra: "Cosmétique." },
+  start_iris_recommendations:  { tradeoff: "Supprime les recommandations Iris (publicités) du menu Démarrer.", extra: "" },
+  start_irisxp:                { tradeoff: "Supprime les suggestions IA du menu Démarrer.", extra: "" },
+  explorer_recommended:        { tradeoff: "L'accueil de l'Explorateur ne montre plus les fichiers recommandés.", extra: "Confidentialité." },
+  // Explorateur
+  show_frequent:               { tradeoff: "L'Explorateur ne montre plus les dossiers fréquemment accédés.", extra: "Confidentialité." },
+  hide_file_ext:               { tradeoff: "Les extensions de fichiers (.exe, .pdf, .docx) deviennent visibles. Recommandé pour la sécurité.", extra: "Sécurité : évite les pièges type document.pdf.exe." },
+  hide_hidden_files:           { tradeoff: "Les fichiers cachés deviennent visibles dans l'Explorateur.", extra: "Utile pour le dépannage et le développement." },
+  launch_to_home:              { tradeoff: "L'Explorateur s'ouvre sur 'Ce PC' au lieu de la page d'accueil.", extra: "Cosmétique." },
+  // Vie privée
+  activity_history:            { tradeoff: "Windows ne garde plus l'historique des apps et fichiers ouverts.", extra: "Confidentialité : la timeline est désactivée." },
+  cloud_clipboard:             { tradeoff: "Le presse-papiers ne se synchronise plus entre vos appareils Microsoft.", extra: "Confidentialité." },
+  inking_typing:               { tradeoff: "Windows n'envoie plus de données de frappe clavier à Microsoft.", extra: "Télémétrie uniquement." },
+  online_speech:               { tradeoff: "La reconnaissance vocale en ligne est désactivée. Cortana/dictée ne fonctionneront plus.", extra: "Confidentialité." },
+  // Gaming
+  game_dvr:                    { tradeoff: "L'enregistrement automatique des jeux en arrière-plan est désactivé. Vous pouvez toujours enregistrer manuellement.", extra: "Libère ~80 Mo de RAM et réduit l'utilisation GPU pendant le jeu." },
+  game_bar:                    { tradeoff: "La Xbox Game Bar (Win+G) est désactivée. Plus d'overlay en jeu.", extra: "Libère ~100 Mo de RAM en jeu." },
+  // OneDrive
+  onedrive_startup:            { tradeoff: "OneDrive ne démarre plus avec Windows. Vos fichiers ne seront plus synchronisés automatiquement.", extra: "Libère de la RAM et réduit l'activité réseau/disque." },
+  // Phone Link
+  phone_link:                  { tradeoff: "Lien avec le téléphone ne démarre plus. Les notifications et SMS de votre téléphone ne s'afficheront plus sur le PC.", extra: "" },
+};
+
+// Détails pour les services (enrichis à partir de la liste curée)
+const _SERVICE_DETAILS = {
+  SysMain:     { tradeoff: "Le lancement des applications fréquentes peut être légèrement plus lent (pas de pré-chargement en RAM).", extra: "Réduit significativement l'activité disque en arrière-plan." },
+  WSearch:     { tradeoff: "La recherche dans l'Explorateur et Outlook sera plus lente (pas d'index).", extra: "Libère de la RAM et réduit les lectures disque." },
+  DiagTrack:   { tradeoff: "Windows n'envoie plus de données de télémétrie avancée. Aucun impact fonctionnel.", extra: "" },
+  WerSvc:      { tradeoff: "Les rapports de crash ne seront plus envoyés à Microsoft. Aucun impact utilisateur.", extra: "" },
+  MapsBroker:  { tradeoff: "Les cartes hors-connexion ne se mettent plus à jour. Aucun impact si vous n'utilisez pas l'app Cartes.", extra: "" },
+  RetailDemo:  { tradeoff: "Service de démo en magasin. Aucun impact sur un PC personnel.", extra: "" },
+  XblAuthManager: { tradeoff: "L'authentification Xbox Live est désactivée. Les jeux Xbox/Game Pass peuvent ne plus fonctionner.", extra: "" },
+  XblGameSave:  { tradeoff: "La synchronisation cloud des sauvegardes Xbox est désactivée.", extra: "" },
+  XboxNetApiSvc: { tradeoff: "Les services réseau Xbox sont désactivés. Le multijoueur Xbox peut être impacté.", extra: "" },
+  XboxGipSvc:   { tradeoff: "Le support des manettes et accessoires Xbox est désactivé.", extra: "" },
+};
+
+function _showDetailPanel(panelId, title, desc, stats, tradeoff, source) {
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+
+  let html = `<div class="detail-panel-title">${_escapeHtml(title)}</div>`;
+  html += `<div class="detail-panel-desc">${_escapeHtml(desc)}</div>`;
+
+  for (const [label, value] of stats) {
+    const cls = (value === "—" || !value) ? "detail-stat-val none" : "detail-stat-val";
+    html += `<div class="detail-stat"><span class="detail-stat-label">${label}</span><span class="${cls}">${value || "—"}</span></div>`;
+  }
+
+  if (source) {
+    html += `<div class="detail-source">${source}</div>`;
+  }
+  if (tradeoff) {
+    html += `<div class="detail-tradeoff"><strong>Compromis :</strong> ${_escapeHtml(tradeoff)}</div>`;
+  }
+  panel.innerHTML = html;
+}
+
+function _selectTweakDetail(item) {
+  // Déselectionne l'ancien
+  document.querySelectorAll("#tweaks-list .tweak-row.selected-detail").forEach(r => r.classList.remove("selected-detail"));
+  // Sélectionne la nouvelle ligne
+  const row = document.querySelector(`#tweaks-list .tweak-row[data-id="${CSS.escape(item.id)}"]`);
+  if (row) row.classList.add("selected-detail");
+
+  const detail = _TWEAK_DETAILS[item.id] || {};
+  const impact = item.impact || {};
+  const ramVal = impact.ram_mb ? `${impact.ram_mb} Mo` : "—";
+  const procsVal = impact.processes ? `${impact.processes}` : "—";
+  const sourceText = impact.source === "measured"
+    ? `Mesuré sur ce PC${impact.measured_at ? " le " + new Date(impact.measured_at).toLocaleDateString("fr-FR") : ""}`
+    : impact.ram_mb ? "Estimation moyenne (pas de mesure locale)" : "";
+
+  const present = item.present !== false;
+  const compatible = (_detectedWindowsMajor?.() || 11) >= (item.min_windows || 10);
+
+  let status = "";
+  if (!present) status = "Absent de ce PC";
+  else if (!compatible) status = "Windows 11 uniquement";
+  else if (item.active) status = "Activé (état par défaut)";
+  else status = "Désactivé par OpenCleaner";
+
+  _showDetailPanel("tweak-detail-panel", item.label, item.desc, [
+    ["État", status],
+    ["RAM libérée", ramVal],
+    ["Processus", procsVal],
+    ["Espace disque", "—"],
+    ["Catégorie", (item.tags || []).join(", ") || "—"],
+  ], detail.tradeoff || "", sourceText + (detail.extra ? "<br>" + detail.extra : ""));
+}
+
 function _tweakRow(item) {
   const row = document.createElement("div");
   const compatible = _isTweakCompatible(item);
@@ -4055,6 +4175,13 @@ function _tweakRow(item) {
     } finally {
       sw.classList.remove("busy");
     }
+  });
+
+  // Click sur la ligne → affiche le panneau latéral
+  row.addEventListener("click", (e) => {
+    // Ne pas interférer avec le switch
+    if (e.target.closest(".sw") || e.target.closest("input")) return;
+    _selectTweakDetail(item);
   });
 
   row.append(info, sw);

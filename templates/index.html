@@ -983,11 +983,40 @@
     .sw input:checked + .slider::before { transform: translateX(16px); }
     .sw.busy { opacity: .5; pointer-events: none; }
 
+    /* ── Panneau latéral de détail (V6) ── */
+    .detail-split { display: flex; min-height: 200px; }
+    .detail-split-list { flex: 1; min-width: 0; overflow-y: auto; }
+    .detail-panel {
+      width: 280px; flex-shrink: 0;
+      border-left: 1px solid var(--border);
+      background: var(--bg2);
+      padding: 18px;
+      overflow-y: auto;
+      max-height: 600px;
+      position: sticky; top: 0;
+    }
+    .detail-panel-empty { color: var(--text-dim); font-size: 12px; padding: 20px 0; text-align: center; }
+    .detail-panel-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .detail-panel-desc { font-size: 12px; color: var(--text-mid); line-height: 1.55; margin-bottom: 14px; }
+    .detail-stat { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .detail-stat:last-of-type { border-bottom: none; }
+    .detail-stat-label { color: var(--text-dim); }
+    .detail-stat-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+    .detail-stat-val.none { color: var(--text-dim); font-weight: 400; }
+    .detail-tradeoff { margin-top: 14px; padding: 10px 12px; background: var(--bg3); border-radius: 4px; border-left: 2px solid var(--text-dim); font-size: 11px; color: var(--text-mid); line-height: 1.5; }
+    .detail-source { margin-top: 10px; font-size: 10px; color: var(--text-dim); }
+    .tweak-row.selected-detail { background: var(--bg3); }
+    @media (max-width: 900px) {
+      .detail-panel { display: none; }
+      .detail-split { display: block; }
+    }
+
     .tweak-row {
       display: flex; align-items: center; gap: 14px;
       padding: 12px 6px; border-bottom: 1px solid var(--border);
       flex-wrap: wrap;
       transition: background .3s;
+      cursor: pointer;
     }
     .tweak-row:last-child { border-bottom: none; }
     .tweak-row.tweak-ok { animation: tweak-ok-flash .6s ease; }
@@ -2804,7 +2833,12 @@
 </div>
 
 <div class="card">
-  <div id="tweaks-list"><div class="tool-loading">Chargement…</div></div>
+  <div class="detail-split">
+    <div class="detail-split-list" id="tweaks-list"><div class="tool-loading">Chargement…</div></div>
+    <div class="detail-panel" id="tweak-detail-panel">
+      <div class="detail-panel-empty">Cliquez sur un élément pour voir ses détails.</div>
+    </div>
+  </div>
 </div>
 
 <!-- Services Windows (admin requis) -->
