@@ -3360,18 +3360,21 @@ async function loadGamingMode() {
 function _renderGamingMode(data) {
   const btn = document.getElementById("btn-gaming-toggle");
   const stateEl = document.getElementById("gaming-state");
+  const card = document.getElementById("gaming-card");
   if (!btn || !stateEl) return;
   if (data.enabled) {
     btn.textContent = "Désactiver";
     btn.classList.remove("btn-primary");
     btn.classList.add("btn-ghost");
+    if (card) card.style.borderLeftColor = "var(--green)";
     const when = data.saved_at ? new Date(data.saved_at).toLocaleString("fr-FR") : "—";
-    stateEl.textContent = `Mode gaming actif depuis ${when} — ${data.services_count} services arrêtés. Cliquez pour restaurer.`;
+    stateEl.innerHTML = `<strong style="color:var(--green)">Actif</strong> depuis ${when} — ${data.services_count} services arrêtés. Cliquez sur <em>Désactiver</em> pour restaurer l'état précédent.`;
   } else {
     btn.textContent = "Activer";
     btn.classList.remove("btn-ghost");
     btn.classList.add("btn-primary");
-    stateEl.textContent = "Arrête SysMain, WSearch, DiagTrack, WerSvc, MapsBroker, RetailDemo + plan High Performance. Réversible.";
+    if (card) card.style.borderLeftColor = "var(--text)";
+    stateEl.innerHTML = `Arrête SysMain, WSearch, DiagTrack, WerSvc, MapsBroker, RetailDemo et bascule sur le plan <strong>High Performance</strong>. Entièrement réversible.`;
   }
 }
 

@@ -2722,21 +2722,17 @@
 <div id="version-banner" class="version-banner" style="display:none"></div>
 
 <!-- Mode Gaming one-click -->
-<div class="card" id="gaming-card" style="margin-bottom:10px">
-  <div class="card-body">
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <div style="flex:1;min-width:220px">
-        <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M8 10v4M15 13h.01M18 11h.01"/></svg>
-          Mode Gaming
-        </div>
-        <div id="gaming-state" style="font-size:11px;color:var(--text-dim);margin-top:2px">
-          Arrête SysMain, WSearch, DiagTrack, WerSvc, MapsBroker, RetailDemo + plan High Performance. Réversible.
-        </div>
-      </div>
-      <button class="btn-primary" id="btn-gaming-toggle" onclick="toggleGamingMode()">Activer</button>
+<div class="callout" id="gaming-card" style="margin-bottom:14px;border-left-color:var(--text);align-items:center">
+  <div class="callout-icon" style="color:var(--text)">
+    <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M8 10v4M15 13h.01M18 11h.01"/></svg>
+  </div>
+  <div class="callout-content" style="flex:1">
+    <div style="font-weight:600;color:var(--text);margin-bottom:2px">Mode Gaming</div>
+    <div id="gaming-state" style="color:var(--text-mid);font-size:13px">
+      Arrête SysMain, WSearch, DiagTrack, WerSvc, MapsBroker, RetailDemo et bascule sur le plan <strong>High Performance</strong>. Entièrement réversible.
     </div>
   </div>
+  <button class="btn-primary" id="btn-gaming-toggle" onclick="toggleGamingMode()" style="flex-shrink:0;padding:10px 18px">Activer</button>
 </div>
 
 <div class="callout callout-blue" style="margin-bottom:14px">
