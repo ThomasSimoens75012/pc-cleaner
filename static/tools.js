@@ -3676,25 +3676,90 @@ async function applyTweakPreset(presetId) {
   );
 }
 
+const _TWEAK_GROUP_DESCS = {
+  ai:         "Copilot, Edge IA, contenus recommandés par Microsoft. Désactiver libère de la RAM et réduit le trafic réseau.",
+  taskbar:    "Widgets météo/news, position de la barre, raccourcis imposés.",
+  search:     "Indexation Windows Search, suggestions de recherche. Impact direct sur les I/O disque et la RAM.",
+  start:      "Publicités dans le menu Démarrer, suggestions d'apps du Store, recommandations.",
+  lockscreen: "Tips et publicités sur l'écran de verrouillage, fréquence de feedback.",
+  explorer:   "Fichiers récents, extensions masquées, fichiers cachés, page d'accueil.",
+  privacy:    "Historique d'activité, presse-papiers cloud, frappe clavier, enregistrement Game DVR/Bar.",
+};
+
+let _tweakGroupsOpen = {};  // {groupId: true/false}
+
 function _renderTweaks() {
   const el = document.getElementById("tweaks-list");
   el.innerHTML = "";
   _tweakGroups.forEach(g => {
     const items = _tweakItems.filter(i => i.group === g.id);
     if (!items.length) return;
+
+    // Métriques agrégées
+    const compatItems = items.filter(i => (i.present !== false) && ((_detectedWindowsMajor?.() || 11) >= (i.min_windows || 10)));
+    const totalRam    = compatItems.reduce((s, i) => s + ((i.impact || {}).ram_mb || 0), 0);
+    const totalProcs  = compatItems.reduce((s, i) => s + ((i.impact || {}).processes || 0), 0);
+    const activeCount = compatItems.filter(i => i.active).length;
+    const offCount    = compatItems.filter(i => !i.active).length;
+    const absentCount = items.length - compatItems.length;
+
+    const isOpen = !!_tweakGroupsOpen[g.id];
+
+    // En-tête cliquable (accordéon)
+    const section = document.createElement("div");
+    section.className = "tweak-group-section";
+    section.dataset.group = g.id;
+
     const gh = document.createElement("div");
-    gh.className = "tweak-group-title";
+    gh.className = "tweak-group-title tweak-group-accordion" + (isOpen ? " open" : "");
     gh.dataset.group = g.id;
-    gh.innerHTML = `
-      <span>${_escapeHtml(g.label)}</span>
-      <span class="bulk">
+
+    // Ligne 1 : titre + chevron + bulk
+    const topLine = document.createElement("div");
+    topLine.className = "tweak-group-top";
+    topLine.innerHTML = `
+      <svg class="tweak-group-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      <span class="tweak-group-name">${_escapeHtml(g.label)}</span>
+      <span class="tweak-group-stats">
+        ${totalRam ? `<span>${totalRam} Mo RAM</span>` : ""}
+        ${totalProcs ? `<span>${totalProcs} proc.</span>` : ""}
+        <span>${offCount}/${compatItems.length} désactivé${offCount > 1 ? "s" : ""}</span>
+        ${absentCount ? `<span>${absentCount} absent${absentCount > 1 ? "s" : ""}</span>` : ""}
+      </span>
+      <span class="bulk" onclick="event.stopPropagation()">
         <button onclick="bulkToggleGroup('${g.id}', false)">tout désactiver</button>
         <span class="sep">·</span>
         <button onclick="bulkToggleGroup('${g.id}', true)">tout activer</button>
       </span>
     `;
-    el.appendChild(gh);
-    items.forEach(it => el.appendChild(_tweakRow(it)));
+
+    gh.appendChild(topLine);
+
+    // Ligne 2 : description du groupe
+    const descLine = document.createElement("div");
+    descLine.className = "tweak-group-desc";
+    descLine.textContent = _TWEAK_GROUP_DESCS[g.id] || "";
+    gh.appendChild(descLine);
+
+    gh.addEventListener("click", (e) => {
+      if (e.target.closest(".bulk")) return;
+      _tweakGroupsOpen[g.id] = !_tweakGroupsOpen[g.id];
+      const body = section.querySelector(".tweak-group-body");
+      const open = _tweakGroupsOpen[g.id];
+      gh.classList.toggle("open", open);
+      if (body) body.style.display = open ? "" : "none";
+    });
+
+    section.appendChild(gh);
+
+    // Corps (les rows individuelles)
+    const body = document.createElement("div");
+    body.className = "tweak-group-body";
+    body.style.display = isOpen ? "" : "none";
+    items.forEach(it => body.appendChild(_tweakRow(it)));
+    section.appendChild(body);
+
+    el.appendChild(section);
   });
   _applyTweakFilter();
 }
