@@ -1039,16 +1039,25 @@
     .tweak-info { flex: 1; min-width: 0; }
     .tweak-label { font-size: 13px; font-weight: 600; color: var(--text); }
     .tweak-desc  { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+    /* ── Groupes de tweaks — hiérarchie visuelle ── */
+    .tweak-group-section {
+      margin-top: 6px;
+    }
+    .tweak-group-section:first-child { margin-top: 0; }
     .tweak-group-title {
-      font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
-      color: var(--text-mid); font-weight: 600;
-      padding: 14px 12px 10px; border-bottom: 1px solid var(--border);
+      font-size: 13px; font-weight: 600;
+      color: var(--text);
+      padding: 14px 16px 10px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      border-left: 3px solid var(--text-dim);
       display: flex; flex-direction: column;
       gap: 4px;
       cursor: pointer;
       transition: background .12s;
     }
     .tweak-group-title:hover { background: var(--hover); }
+    .tweak-group-accordion.open { border-left-color: var(--text); }
     .tweak-group-top {
       display: flex; align-items: center; gap: 8px; width: 100%;
       flex-wrap: wrap;
@@ -1063,10 +1072,12 @@
     }
     .tweak-group-name {
       flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
     .tweak-group-stats {
       display: flex; gap: 5px; flex-wrap: wrap;
-      font-weight: 400; font-size: 10px; text-transform: none; letter-spacing: 0;
+      font-weight: 400; font-size: 10px;
       color: var(--text-dim);
     }
     .tweak-group-stats span {
@@ -1078,8 +1089,15 @@
       flex-shrink: 0;
     }
     .tweak-group-desc {
-      font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0;
+      font-size: 11px; font-weight: 400;
       color: var(--text-dim); line-height: 1.4;
+      padding-left: 22px;
+    }
+    /* Enfants indentés sous le header */
+    .tweak-group-body {
+      border-left: 3px solid var(--border);
+    }
+    .tweak-group-body .tweak-row {
       padding-left: 22px;
     }
     .tweak-group-title .bulk {
