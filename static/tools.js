@@ -3364,14 +3364,14 @@ function _renderGamingMode(data) {
     btn.textContent = "Désactiver";
     btn.classList.remove("btn-primary");
     btn.classList.add("btn-ghost");
-    if (card) card.style.borderLeftColor = "var(--green)";
+    if (card) { card.classList.add("callout-green"); card.style.borderLeftColor = ""; }
     const when = data.saved_at ? new Date(data.saved_at).toLocaleString("fr-FR") : "—";
     stateEl.innerHTML = `<strong style="color:var(--green)">Actif</strong> depuis ${when} — ${data.services_count} services arrêtés. Cliquez sur <em>Désactiver</em> pour restaurer l'état précédent.`;
   } else {
     btn.textContent = "Activer";
     btn.classList.remove("btn-ghost");
     btn.classList.add("btn-primary");
-    if (card) card.style.borderLeftColor = "var(--text)";
+    if (card) { card.classList.remove("callout-green"); card.style.borderLeftColor = ""; }
     stateEl.innerHTML = `Arrête SysMain, WSearch, DiagTrack, WerSvc, MapsBroker, RetailDemo et bascule sur le plan <strong>High Performance</strong>. Entièrement réversible.`;
   }
 }

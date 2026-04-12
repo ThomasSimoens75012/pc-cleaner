@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Mockups Layout — Onglet Personnalisation</title>
+<style>
+  :root {
+    --text: #37352f; --text-mid: #787774; --text-dim: #9b9a97;
+    --bg: #fff; --bg2: #fbfbfa; --bg3: #f1f1ef;
+    --border: #e9e9e7; --border2: #dfdedc;
+    --green: #0f7b6c; --green-bg: #e6f4ea;
+    --amber: #d9730d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'IBM Plex Sans', -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 40px 50px; max-width: 1100px; margin: auto; }
+  h1 { font-size: 20px; margin-bottom: 10px; }
+  .intro { color: var(--text-mid); font-size: 13px; margin-bottom: 30px; line-height: 1.5; }
+  h2 { font-size: 14px; margin: 50px 0 6px; color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.5px; }
+  .sub { font-size: 12px; color: var(--text-dim); margin-bottom: 14px; }
+
+  .layout { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+  .layout-title { background: var(--bg2); padding: 10px 16px; font-size: 11px; font-weight: 600; color: var(--text-mid); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.4px; }
+
+  /* Block placeholders */
+  .block { border: 1px dashed var(--border2); border-radius: 4px; padding: 10px 14px; margin: 8px; font-size: 11px; color: var(--text-mid); background: var(--bg2); }
+  .block.accent { border-color: var(--green); background: var(--green-bg); color: var(--green); font-weight: 600; }
+  .block.dark { background: var(--text); color: var(--bg); font-weight: 600; border-color: var(--text); }
+  .block.chart { height: 60px; display: flex; align-items: center; justify-content: center; }
+  .block.tall { min-height: 120px; }
+  .block.small { padding: 6px 10px; font-size: 10px; }
+  .block-label { font-weight: 600; font-size: 12px; color: var(--text); margin-bottom: 3px; }
+  .block-sub { font-size: 10px; color: var(--text-dim); }
+
+  .row { display: flex; gap: 8px; padding: 8px; }
+  .row > * { flex: 1; }
+  .col { display: flex; flex-direction: column; gap: 8px; padding: 8px; }
+  .split { display: flex; gap: 0; }
+  .split-main { flex: 1; }
+  .split-side { width: 280px; border-left: 1px solid var(--border); background: var(--bg2); padding: 12px; }
+  .split-side .block { margin: 0 0 6px; }
+
+  .order-num { display: inline-flex; width: 18px; height: 18px; align-items: center; justify-content: center; background: var(--text); color: var(--bg); border-radius: 50%; font-size: 9px; font-weight: 700; margin-right: 6px; flex-shrink: 0; }
+
+  .tag { display: inline-block; font-size: 9px; background: var(--bg3); color: var(--text-dim); padding: 1px 6px; border-radius: 3px; margin-left: 4px; }
+  .current { border: 2px solid var(--amber); }
+  .current .layout-title::after { content: " (ACTUEL)"; color: var(--amber); }
+</style>
+</head>
+<body>
+
+<h1>Layout onglet Personnalisation — 6 variantes</h1>
+<div class="intro">
+  Blocs : <strong>Titre</strong> = header page, <strong>Gaming</strong> = callout mode gaming,
+  <strong>Widgets</strong> = deep-link ms-settings, <strong>Note</strong> = callout réversibilité,
+  <strong>Chart</strong> = impact prédictif, <strong>Presets</strong> = Standard/Agressif/Paranoïaque + export,
+  <strong>Filtres</strong> = pills par tag, <strong>Tweaks</strong> = accordéons groupes + panneau détail,
+  <strong>Services</strong> = services Windows, <strong>Tâches</strong> = tâches planifiées.
+</div>
+
+<!-- ═══════════════════════════════════ V1 — ACTUEL ═══════ -->
+<h2>Variante 1 — Layout actuel</h2>
+<p class="sub">Tout empilé verticalement. Le chart et les presets sont entre le gaming et les tweaks.</p>
+<div class="layout current">
+  <div class="layout-title">Personnalisation Windows</div>
+  <div class="col">
+    <div class="block"><span class="order-num">1</span> Titre + sous-titre page</div>
+    <div class="block small"><span class="order-num">2</span> Version banner (W10/W11)</div>
+    <div class="block"><span class="order-num">3</span> Widgets &amp; actualités — deep-link ms-settings</div>
+    <div class="block accent"><span class="order-num">4</span> Mode Gaming — callout vert</div>
+    <div class="block"><span class="order-num">5</span> Note — réversibilité HKCU</div>
+    <div class="block chart"><span class="order-num">6</span> Chart impact prédictif (RAM économisée)</div>
+    <div class="block"><span class="order-num">7</span> Presets one-click + Sauvegarder / Restaurer / Export .reg</div>
+    <div class="block"><span class="order-num">8</span> Filtres pills (Performance, Télémétrie, Confidentialité…)</div>
+    <div class="block tall"><span class="order-num">9</span> Tweaks accordéons (7 groupes) + panneau détail à droite</div>
+    <div class="block"><span class="order-num">10</span> Services Windows (curé / tous)</div>
+    <div class="block"><span class="order-num">11</span> Tâches planifiées (curé / toutes)</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ V2 ═══════ -->
+<h2>Variante 2 — Gaming + Chart côte à côte en haut</h2>
+<p class="sub">Le gaming et le chart partagent la largeur en haut, économie de hauteur. Les presets passent dans la sidebar du detail panel.</p>
+<div class="layout">
+  <div class="layout-title">Personnalisation Windows</div>
+  <div class="col">
+    <div class="block"><span class="order-num">1</span> Titre + version banner inline</div>
+    <div class="row">
+      <div class="block accent"><span class="order-num">2</span> Mode Gaming<br><span class="block-sub">callout + bouton Activer</span></div>
+      <div class="block chart"><span class="order-num">3</span> Chart impact<br><span class="block-sub">RAM économisée en temps réel</span></div>
+    </div>
+    <div class="block"><span class="order-num">4</span> Presets + Filtres pills (fusionnés sur une ligne)</div>
+    <div class="split">
+      <div class="split-main">
+        <div class="col">
+          <div class="block tall"><span class="order-num">5</span> Tweaks accordéons (7 groupes)</div>
+          <div class="block"><span class="order-num">6</span> Services Windows</div>
+          <div class="block"><span class="order-num">7</span> Tâches planifiées</div>
+        </div>
+      </div>
+      <div class="split-side">
+        <div class="block small">Panneau détail V6</div>
+        <div class="block small">Sauvegarder / Restaurer</div>
+        <div class="block small">Export .reg</div>
+        <div class="block small">Widgets deep-link</div>
+        <div class="block small">Note réversibilité</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ V3 ═══════ -->
+<h2>Variante 3 — Tabs internes (Tweaks | Services | Tâches)</h2>
+<p class="sub">Les 3 panneaux (tweaks, services, tâches) sont dans un sous-tab interne. Réduit le scroll vertical. Gaming et actions en haut.</p>
+<div class="layout">
+  <div class="layout-title">Personnalisation Windows</div>
+  <div class="col">
+    <div class="block"><span class="order-num">1</span> Titre + version</div>
+    <div class="row">
+      <div class="block accent" style="flex:2"><span class="order-num">2</span> Mode Gaming — callout pleine largeur</div>
+      <div class="block" style="flex:1"><span class="order-num">3</span> Presets<br><span class="block-sub">Standard · Agressif · Paranoïaque</span></div>
+    </div>
+    <div class="row">
+      <div class="block chart" style="flex:2"><span class="order-num">4</span> Chart impact prédictif</div>
+      <div class="block" style="flex:1"><span class="order-num">5</span> Actions<br><span class="block-sub">Sauvegarder · Restaurer · .reg · Widgets</span></div>
+    </div>
+    <div class="block"><span class="order-num">6</span> Filtres pills</div>
+    <div class="block dark" style="display:flex;gap:0">
+      <span style="padding:8px 16px;border-right:1px solid rgba(255,255,255,.2)">Tweaks</span>
+      <span style="padding:8px 16px;border-right:1px solid rgba(255,255,255,.2);opacity:.5">Services</span>
+      <span style="padding:8px 16px;opacity:.5">Tâches planifiées</span>
+    </div>
+    <div class="split">
+      <div class="split-main">
+        <div class="block tall"><span class="order-num">7</span> Contenu de l'onglet sélectionné (accordéons tweaks)</div>
+      </div>
+      <div class="split-side">
+        <div class="block small">Panneau détail V6</div>
+        <div class="block small">Note réversibilité</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ V4 ═══════ -->
+<h2>Variante 4 — Sidebar permanente gauche (navigation groupes)</h2>
+<p class="sub">Les 7 groupes de tweaks + Services + Tâches sont dans une navigation latérale gauche. Le contenu défile à droite. Le detail panel reste à droite.</p>
+<div class="layout">
+  <div class="layout-title">Personnalisation Windows</div>
+  <div class="col">
+    <div class="block"><span class="order-num">1</span> Titre + version + Gaming + Chart (barre fixe)</div>
+  </div>
+  <div style="display:flex">
+    <div style="width:180px;border-right:1px solid var(--border);padding:8px">
+      <div class="block small" style="font-weight:600;background:var(--bg3)">IA &amp; contenus</div>
+      <div class="block small">Barre des tâches</div>
+      <div class="block small">Recherche</div>
+      <div class="block small">Menu Démarrer</div>
+      <div class="block small">Notifications</div>
+      <div class="block small">Explorateur</div>
+      <div class="block small">Vie privée</div>
+      <div style="border-top:1px solid var(--border);margin:6px 0"></div>
+      <div class="block small">Services</div>
+      <div class="block small">Tâches planifiées</div>
+      <div style="border-top:1px solid var(--border);margin:6px 0"></div>
+      <div class="block small">Presets</div>
+      <div class="block small">Widgets</div>
+    </div>
+    <div style="flex:1">
+      <div class="col">
+        <div class="block"><span class="order-num">2</span> Filtres pills du groupe sélectionné</div>
+        <div class="block tall"><span class="order-num">3</span> Tweaks du groupe "IA &amp; contenus" (contenu défile)</div>
+      </div>
+    </div>
+    <div class="split-side">
+      <div class="block small">Panneau détail V6</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ V5 ═══════ -->
+<h2>Variante 5 — Dashboard compact (2 colonnes)</h2>
+<p class="sub">Deux colonnes principales. Gauche = gaming + chart + presets. Droite = tweaks + services. Pas de panneau détail (les badges inline suffisent). Plus dense, moins de scroll.</p>
+<div class="layout">
+  <div class="layout-title">Personnalisation Windows</div>
+  <div class="col">
+    <div class="block"><span class="order-num">1</span> Titre + version banner</div>
+  </div>
+  <div class="row">
+    <div class="col" style="flex:1">
+      <div class="block accent"><span class="order-num">2</span> Mode Gaming callout</div>
+      <div class="block chart"><span class="order-num">3</span> Chart impact prédictif</div>
+      <div class="block"><span class="order-num">4</span> Presets one-click</div>
+      <div class="block"><span class="order-num">5</span> Actions : Sauvegarder · Restaurer · .reg</div>
+      <div class="block"><span class="order-num">6</span> Widgets deep-link</div>
+      <div class="block"><span class="order-num">7</span> Note réversibilité</div>
+    </div>
+    <div class="col" style="flex:2">
+      <div class="block"><span class="order-num">8</span> Filtres pills</div>
+      <div class="block tall"><span class="order-num">9</span> Tweaks accordéons (toute la hauteur)</div>
+      <div class="block"><span class="order-num">10</span> Services</div>
+      <div class="block"><span class="order-num">11</span> Tâches planifiées</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ V6 ═══════ -->
+<h2>Variante 6 — Minimal (tout intégré dans les accordéons)</h2>
+<p class="sub">Gaming et presets deviennent des cards compactes en haut. Le chart est inline dans le premier accordéon. Services et tâches sont des groupes supplémentaires dans la même liste. Un seul flux vertical, pas de split.</p>
+<div class="layout">
+  <div class="layout-title">Personnalisation Windows</div>
+  <div class="col">
+    <div class="block"><span class="order-num">1</span> Titre + version</div>
+    <div class="row">
+      <div class="block accent"><span class="order-num">2</span> Gaming — compact card avec switch</div>
+      <div class="block"><span class="order-num">3</span> Presets — 3 boutons + export</div>
+    </div>
+    <div class="block"><span class="order-num">4</span> Filtres pills + barre de recherche</div>
+    <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:8px">
+      <div class="block" style="background:var(--bg2);border:none;border-radius:0;border-bottom:1px solid var(--border);margin:0;font-weight:600;color:var(--text)">
+        <span class="order-num">5</span> IA &amp; contenus — 500 Mo RAM · 9/9 désactivés <span class="tag">accordéon</span>
+      </div>
+      <div class="block" style="border:none;border-radius:0;border-bottom:1px solid var(--border);margin:0;padding-left:24px">
+        Copilot · Edge Startup · Notepad IA … (tweaks individuels)
+      </div>
+      <div class="block chart" style="border:none;border-radius:0;border-bottom:1px solid var(--border);margin:0;height:50px">
+        Chart impact intégré (mini-bar horizontal)
+      </div>
+      <div class="block" style="background:var(--bg2);border:none;border-radius:0;border-bottom:1px solid var(--border);margin:0;font-weight:600;color:var(--text)">
+        Barre des tâches — 0/5 <span class="tag">fermé</span>
+      </div>
+      <div class="block" style="background:var(--bg2);border:none;border-radius:0;border-bottom:1px solid var(--border);margin:0;font-weight:600;color:var(--text)">
+        Recherche &amp; Cortana — 133 Mo RAM <span class="tag">fermé</span>
+      </div>
+      <div class="block" style="background:var(--bg2);border:none;border-radius:0;border-bottom:1px solid var(--border);margin:0;font-weight:600;color:var(--text)">
+        … (5 autres groupes) <span class="tag">fermé</span>
+      </div>
+      <div class="block" style="background:var(--bg2);border:none;border-radius:0;border-bottom:1px solid var(--border);margin:0;font-weight:600;color:var(--text)">
+        <span class="order-num">6</span> Services Windows — 14 services <span class="tag">accordéon intégré</span>
+      </div>
+      <div class="block" style="background:var(--bg2);border:none;border-radius:0;margin:0;font-weight:600;color:var(--text)">
+        <span class="order-num">7</span> Tâches planifiées — 13 tâches <span class="tag">accordéon intégré</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ V7 — BONUS ═══════ -->
+<h2>Variante 7 — Hybride recommandée</h2>
+<p class="sub">Fusion des meilleures idées : gaming + chart côte à côte (V2), presets + filtres + actions sur une ligne (V3), tweaks + services + tâches dans un seul flux accordéon avec panneau détail (V6 + V1). Minimum de scroll, hiérarchie claire.</p>
+<div class="layout" style="border-color:var(--green);border-width:2px">
+  <div class="layout-title" style="color:var(--green)">Recommandée</div>
+  <div class="col">
+    <div class="block"><span class="order-num">1</span> Titre + version banner inline</div>
+    <div class="row">
+      <div class="block accent" style="flex:3"><span class="order-num">2</span> Mode Gaming — callout avec switch + description</div>
+      <div class="block chart" style="flex:2"><span class="order-num">3</span> Chart impact prédictif compact</div>
+    </div>
+    <div class="block" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <span class="order-num">4</span>
+      <span style="font-size:11px;font-weight:600">Presets :</span>
+      <span class="tag" style="font-size:10px;padding:3px 8px">Standard</span>
+      <span class="tag" style="font-size:10px;padding:3px 8px">Agressif</span>
+      <span class="tag" style="font-size:10px;padding:3px 8px">Paranoïaque</span>
+      <span style="color:var(--border2)">|</span>
+      <span style="font-size:10px;color:var(--text-dim)">Sauvegarder · Restaurer · .reg</span>
+      <span style="color:var(--border2)">|</span>
+      <span style="font-size:10px;color:var(--text-dim)">Widgets ms-settings</span>
+    </div>
+    <div class="block"><span class="order-num">5</span> Filtres pills (Performance · Télémétrie · Confidentialité…)</div>
+    <div class="split">
+      <div class="split-main">
+        <div class="col" style="gap:0">
+          <div class="block" style="background:var(--bg2);margin-bottom:0;border-radius:4px 4px 0 0;font-weight:600;color:var(--text);border-left:3px solid var(--text)">
+            IA &amp; contenus — 500 Mo · 1 proc. · 9/9
+          </div>
+          <div class="block" style="margin-top:0;border-radius:0;padding-left:24px;border-left:3px solid var(--border)">
+            tweaks individuels (indentés)…
+          </div>
+          <div class="block" style="background:var(--bg2);margin-bottom:0;border-radius:0;font-weight:600;color:var(--text);border-left:3px solid var(--text-dim)">
+            Barre des tâches <span class="tag">fermé</span>
+          </div>
+          <div class="block" style="background:var(--bg2);margin-bottom:0;border-radius:0;font-weight:600;color:var(--text);border-left:3px solid var(--text-dim)">
+            Recherche &amp; Cortana <span class="tag">fermé</span>
+          </div>
+          <div class="block" style="background:var(--bg2);margin-bottom:0;border-radius:0;font-weight:600;color:var(--text);border-left:3px solid var(--text-dim)">
+            … (4 autres groupes)
+          </div>
+          <div style="border-top:2px solid var(--border);margin:4px 8px"></div>
+          <div class="block" style="background:var(--bg2);margin-bottom:0;border-radius:0;font-weight:600;color:var(--text);border-left:3px solid var(--text-dim)">
+            Services Windows <span class="tag">14 services</span>
+          </div>
+          <div class="block" style="background:var(--bg2);border-radius:0 0 4px 4px;font-weight:600;color:var(--text);border-left:3px solid var(--text-dim)">
+            Tâches planifiées <span class="tag">13 tâches</span>
+          </div>
+        </div>
+      </div>
+      <div class="split-side">
+        <div class="block-label">Panneau détail</div>
+        <div class="block-sub" style="margin-bottom:8px">Cliquez sur un élément</div>
+        <div class="block small">RAM libérée : 190 Mo</div>
+        <div class="block small">Processus : 3</div>
+        <div class="block small">Disque : —</div>
+        <div class="block small" style="border-left:2px solid var(--text-dim)">Compromis : la recherche sera plus lente…</div>
+        <div class="block small">Source : mesuré sur ce PC</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:40px;padding:20px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text-mid);line-height:1.7">
+  <strong style="color:var(--text)">Résumé</strong><br><br>
+  <strong>V1 (actuel)</strong> — Tout empilé, beaucoup de scroll. Gaming/Chart/Presets séparent le haut des tweaks.<br>
+  <strong>V2</strong> — Gaming + Chart côte à côte. Presets et actions dans la sidebar. Moins de hauteur perdue.<br>
+  <strong>V3</strong> — Sous-onglets internes (Tweaks|Services|Tâches). Le plus économe en scroll mais ajoute une couche de navigation.<br>
+  <strong>V4</strong> — Nav latérale gauche (7 groupes). Orientation spatiale forte mais complexe sur petit écran.<br>
+  <strong>V5</strong> — 2 colonnes : actions à gauche, contenu à droite. Dashboard-like, dense.<br>
+  <strong>V6</strong> — Minimaliste : Services et Tâches deviennent des groupes dans la même liste accordéon. Un seul flux.<br>
+  <strong style="color:var(--green)">V7 (recommandée)</strong> — Hybride : Gaming+Chart côte à côte, Presets+Actions sur une ligne, flux unique accordéon avec Services/Tâches intégrés, panneau détail à droite. Le meilleur ratio info/scroll.
+</div>
+
+</body>
+</html>
